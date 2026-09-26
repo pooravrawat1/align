@@ -1,0 +1,65 @@
+.event-recap { display: grid; gap: var(--space-6); }
+.recap-report { padding: var(--space-6); }
+.recap-introduction { padding-block: var(--space-2) var(--space-6); max-width: 70ch; }
+.recap-introduction h3 { margin: 0 0 var(--space-2); font-family: var(--font-display); font-size: var(--type-card-title); font-weight: 500; letter-spacing: -.025em; }
+.recap-introduction p, .recap-person-context p { margin: 0; color: var(--text-secondary); font-size: var(--type-body); line-height: 1.6; }
+.recap-topics { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
+.recap-list-toolbar { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding-block: var(--space-4); border-block: 1px solid var(--divider-subtle); }
+.recap-list-toolbar h3 { margin: 0; font-size: var(--type-section-title); font-weight: 500; }
+.recap-list-toolbar .workspace-tabs { margin: 0; }
+.recap-list-toolbar .workspace-tabs button { min-height: 44px; }
+.recap-report-person { padding-block: var(--space-6); border-bottom: 1px solid var(--divider-subtle); }
+.recap-report-person:last-child { border-bottom: 0; padding-bottom: 0; }
+.recap-person-main { display: grid; grid-template-columns: minmax(180px, .85fr) minmax(0, 1.4fr) auto; gap: var(--space-6); align-items: start; }
+.recap-profile-link { display: flex; gap: var(--space-3); align-items: center; padding: 0; border: 0; background: none; color: inherit; text-align: left; }
+button.recap-profile-link { min-height: 44px; cursor: pointer; }
+button.recap-profile-link:hover strong { text-decoration: underline; text-underline-offset: 4px; }
+.recap-profile-link > span { min-width: 0; display: grid; gap: 4px; }
+.recap-profile-link strong { font-size: var(--type-body); font-weight: 600; }
+.recap-profile-link > span > span { color: var(--text-secondary); font-size: var(--type-supporting); }
+.recap-relationship { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-3); color: var(--text-tertiary); font-size: var(--type-metadata); }
+.recap-relationship > span { display: inline-flex; gap: 4px; align-items: center; color: var(--text-secondary); }
+.recap-person-context { display: grid; gap: var(--space-3); overflow-wrap: anywhere; }
+.recap-person-context strong { display: block; margin-bottom: 4px; color: var(--text-primary); font-size: var(--type-supporting); font-weight: 500; }
+.recap-person-context .recap-no-note { font-size: var(--type-supporting); color: var(--text-tertiary); }
+.recap-person-actions { display: flex; align-items: flex-start; flex-direction: column; gap: var(--space-2); }
+.recap-person-actions .button { white-space: nowrap; }
+.recap-person-actions .text-action { min-height: 44px; }
+.recap-editor { display: grid; grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr); gap: var(--space-6); margin-top: var(--space-6); padding-top: var(--space-6); border-top: 1px solid var(--divider-subtle); }
+.recap-editor label { font-size: var(--type-body); font-weight: 500; }
+.recap-editor p { margin: var(--space-2) 0 var(--space-3); color: var(--text-secondary); font-size: var(--type-supporting); line-height: 1.6; }
+.recap-editor textarea { display: block; width: 100%; min-height: 100px; resize: vertical; padding: 12px; border: 1px solid var(--border-control); border-radius: var(--radius-control); background: var(--surface-subtle); color: var(--text-primary); font: inherit; font-size: var(--type-body); line-height: 1.65; }
+.recap-editor textarea:focus-visible { outline: 2px solid var(--text-secondary); outline-offset: 3px; }
+.recap-editor-heading { display: flex; align-items: baseline; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); }
+.recap-editor-heading > span { color: var(--text-tertiary); font-size: var(--type-metadata); }
+.recap-editor-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-3); align-items: center; }
+.recap-editor .text-action { min-height: 44px; }
+.recap-editor .recap-editor-footnote { margin-top: var(--space-4); font-size: var(--type-metadata); }
+.recap-generated-context { padding-block: var(--space-2); }
+.recap-generated-context strong { display: block; font-weight: 500; color: var(--text-primary); }
+.recap-error, .recap-notice, .recap-filter-empty { padding-block: var(--space-3); font-size: var(--type-body); line-height: 1.6; color: var(--text-secondary); }
+.recap-demo-cover { position: relative; min-height: 180px; overflow: hidden; border-radius: var(--radius-panel); background: var(--surface); }
+.recap-demo-cover img { position: absolute; width: 100%; height: 100%; object-fit: cover; filter: brightness(.4); }
+.recap-demo-cover > div { position: relative; padding: var(--space-6); padding-top: 64px; }
+.recap-demo-cover h2 { margin: 0 0 var(--space-2); font-family: var(--font-display); font-size: var(--type-dialog-title); letter-spacing: -.025em; font-weight: 500; }
+.recap-demo-cover p { margin: 0; color: var(--text-primary); font-size: var(--type-body); }
+.recap-demo-caption { display: flex; gap: var(--space-4); justify-content: space-between; align-items: center; margin-block: var(--space-4) var(--space-6); }
+.recap-demo-caption p { margin: 0; color: var(--text-secondary); font-size: var(--type-supporting); line-height: 1.6; }
+.recap-demo-caption strong { font-weight: 500; color: var(--text-primary); }
+.recap-demo-caption .text-action { flex-shrink: 0; min-height: 44px; }
+@media (max-width: 1150px) {
+  .recap-person-main { grid-template-columns: minmax(160px, .8fr) minmax(0, 1.2fr); }
+  .recap-person-actions { grid-column: 2; flex-direction: row; align-items: center; flex-wrap: wrap; }
+}
+@media (max-width: 700px) {
+  .recap-demo-page .ds-page-header { flex-direction: column; align-items: flex-start; gap: var(--space-4); }
+  .recap-demo-page .ds-page-header h1 { text-wrap: balance; }
+  .recap-report { padding: var(--space-5); }
+  .recap-person-main, .recap-editor { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+  .recap-person-actions { grid-column: 1; }
+  .recap-list-toolbar, .recap-demo-caption { align-items: flex-start; flex-direction: column; gap: var(--space-3); }
+  .recap-list-toolbar .workspace-tabs { width: 100%; }
+  .recap-list-toolbar .workspace-tabs button { flex: 1; padding-inline: 10px; white-space: nowrap; }
+  .recap-editor textarea { font-size: 16px; }
+  .recap-demo-cover > div { padding: var(--space-5); padding-top: 56px; }
+}

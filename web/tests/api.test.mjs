@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { after, before, test } from 'node:test';
+import { afterEach, beforeEach, test } from 'node:test';
 
 import { createServer } from '../server/index.mjs';
 
@@ -8,19 +8,31 @@ const seed = JSON.parse(
   await readFile(new URL('../shared/demo-data.json', import.meta.url), 'utf8'),
 );
 const fixtureReason =
-  'You are both building assistive technology. Maya brings computer-vision expertise, while Alex can help deploy it on wearable hardware.';
+  'You both attended Build Together in 2025. What stayed with each of you from it?';
 const defaultVisibility = {
   bio: true,
   interests: true,
   skills: true,
   lookingFor: true,
+  goals: true,
+  domains: true,
+  experiences: true,
   contact: false,
+  linkedin: false,
+  website: false,
+  email: false,
   previousConnections: true,
   activeInEvent: true,
 };
 const seededProfiles = seed.profiles.map((profile) => ({
   ...profile,
+  goals: profile.goals ?? [],
+  domains: profile.domains ?? [],
+  experiences: profile.experiences ?? [],
   contact: '',
+  linkedin: '',
+  website: '',
+  email: '',
   visibility: defaultVisibility,
 }));
 const seededConnections = seed.connections.map((connection) => ({
@@ -30,12 +42,13 @@ const seededConnections = seed.connections.map((connection) => ({
   notes: '',
   followUp: 'needed',
   reminderDate: '',
+  saved: true,
 }));
 
 let server;
 let baseUrl;
 
-before(async () => {
+beforeEach(async () => {
   server = createServer();
   await new Promise((resolve, reject) => {
     server.once('error', reject);
@@ -45,7 +58,7 @@ before(async () => {
   baseUrl = `http://127.0.0.1:${address.port}`;
 });
 
-after(async () => {
+afterEach(async () => {
   await new Promise((resolve, reject) => {
     server.close((error) => (error ? reject(error) : resolve()));
   });
@@ -101,6 +114,7 @@ test('health and public bootstrap expose a session-free demo seed', async () => 
   assert.deepEqual(bootstrap.value.events, seed.events);
   assert.deepEqual(bootstrap.value.connections, seededConnections);
   assert.deepEqual(bootstrap.value.matches, []);
+  assert.deepEqual(bootstrap.value.connectionRequests, []);
   assert.equal(bootstrap.value.session, null);
 
   const badSession = await api('/api/bootstrap', { sessionId: 'not-a-session' });
@@ -108,7 +122,7 @@ test('health and public bootstrap expose a session-free demo seed', async () => 
   assert.deepEqual(Object.keys(badSession.value), ['error']);
 });
 
-test('logins have unique, isolated cloned state', async () => {
+test('logins have unique sessions and share the latest profile identity', async () => {
   const first = await login();
   const second = await login();
   assert.notEqual(first.session.id, second.session.id);
@@ -123,7 +137,7 @@ test('logins have unique, isolated cloned state', async () => {
   assert.equal(currentProfile(changed.value).name, 'First Alex');
 
   const resumed = await api('/api/bootstrap', { sessionId: second.session.id });
-  assert.equal(currentProfile(resumed.value).name, 'Alex Morgan');
+  assert.equal(currentProfile(resumed.value).name, 'First Alex');
 });
 
 test('profile validation is atomic and edits invalidate cached matches', async () => {
@@ -138,8 +152,8 @@ test('profile validation is atomic and edits invalidate cached matches', async (
   const fixture = initialMatches.value.matches.find(
     (match) => match.userA === 'alex' && match.userB === 'maya',
   );
-  assert.equal(fixture.source, 'precomputed');
-  assert.equal(fixture.score, 0.96);
+  assert.equal(fixture.source, 'rules');
+  assert.equal(fixture.score, 1);
   assert.equal(fixture.reason, fixtureReason);
 
   const invalid = await api('/api/profile', {
@@ -168,8 +182,8 @@ test('profile validation is atomic and edits invalidate cached matches', async (
   const safeFixture = recalculated.value.matches.find(
     (match) => match.userA === 'alex' && match.userB === 'maya',
   );
-  assert.equal(safeFixture.source, 'mock');
-  assert.notEqual(safeFixture.reason, fixtureReason);
+  assert.equal(safeFixture.source, 'rules');
+  assert.equal(safeFixture.reason, fixtureReason); // Editing bio does not change supplied past experience.
   assert.ok(safeFixture.reason.trim().split(/\s+/u).length < 30);
 });
 
@@ -187,7 +201,7 @@ test('profile contact and visibility are validated and invalidate private matchi
   });
   assert.equal(
     initial.value.matches.find((match) => match.userA === 'alex' && match.userB === 'maya').source,
-    'precomputed',
+    'rules',
   );
 
   const hidden = await api('/api/profile', {
@@ -198,6 +212,8 @@ test('profile contact and visibility are validated and invalidate private matchi
       visibility: {
         contact: true,
         interests: false,
+        domains: false,
+        experiences: false,
         skills: false,
         lookingFor: false,
       },
@@ -250,6 +266,119 @@ test('profile contact and visibility are validated and invalidate private matchi
   assert.equal(invalidVisibility.status, 400);
 });
 
+test('profile contact channels save, clear, and toggle visibility independently', async () => {
+  const loggedIn = await login();
+  const sessionId = loggedIn.session.id;
+  const initial = currentProfile(loggedIn);
+  assert.equal(initial.linkedin, '');
+  assert.equal(initial.website, '');
+  assert.equal(initial.email, '');
+  assert.equal(initial.visibility.linkedin, false);
+  assert.equal(initial.visibility.website, false);
+  assert.equal(initial.visibility.email, false);
+
+  const saved = await api('/api/profile', {
+    method: 'PATCH',
+    sessionId,
+    body: {
+      linkedin: '  https://www.linkedin.com/in/alex-morgan  ',
+      website: '  http://alex.example/about  ',
+      email: '  alex@example.com  ',
+      visibility: { linkedin: true, website: true, email: true },
+    },
+  });
+  assert.equal(saved.status, 200, JSON.stringify(saved.value));
+  assert.deepEqual(
+    {
+      linkedin: currentProfile(saved.value).linkedin,
+      website: currentProfile(saved.value).website,
+      email: currentProfile(saved.value).email,
+    },
+    {
+      linkedin: 'https://www.linkedin.com/in/alex-morgan',
+      website: 'http://alex.example/about',
+      email: 'alex@example.com',
+    },
+  );
+  assert.equal(currentProfile(saved.value).visibility.linkedin, true);
+  assert.equal(currentProfile(saved.value).visibility.website, true);
+  assert.equal(currentProfile(saved.value).visibility.email, true);
+
+  const cleared = await api('/api/profile', {
+    method: 'PATCH',
+    sessionId,
+    body: {
+      linkedin: '  ',
+      website: '',
+      email: '\t',
+      visibility: { linkedin: false, website: false, email: false },
+    },
+  });
+  assert.equal(cleared.status, 200);
+  assert.equal(currentProfile(cleared.value).linkedin, '');
+  assert.equal(currentProfile(cleared.value).website, '');
+  assert.equal(currentProfile(cleared.value).email, '');
+  assert.equal(currentProfile(cleared.value).visibility.linkedin, false);
+  assert.equal(currentProfile(cleared.value).visibility.website, false);
+  assert.equal(currentProfile(cleared.value).visibility.email, false);
+});
+
+test('profile contact channel validation rejects unsafe values atomically', async () => {
+  const loggedIn = await login();
+  const sessionId = loggedIn.session.id;
+  const invalidPatches = [
+    { linkedin: 'https://example.com/in/alex' },
+    { linkedin: 'https://notlinkedin.com/in/alex' },
+    { linkedin: 'ftp://linkedin.com/in/alex' },
+    { linkedin: 'https://user:secret@linkedin.com/in/alex' },
+    { linkedin: 'https://linked\tin.com/in/alex' },
+    { linkedin: 'https://linkedin.com/in/alex\nadmin' },
+    { website: 'example.com' },
+    { website: 'javascript:alert(1)' },
+    { website: 'https://user:secret@example.com' },
+    { website: 'https://example.com/about\radmin' },
+    { email: 'alex example.com' },
+    { email: 'alex@example.com,maya@example.com' },
+    { email: 'alex@example.com\r\nBcc:maya@example.com' },
+    { linkedin: `https://linkedin.com/${'x'.repeat(500)}` },
+    { website: `https://example.com/${'x'.repeat(500)}` },
+    { email: `${'a'.repeat(243)}@example.com` },
+  ];
+
+  for (const body of invalidPatches) {
+    const result = await api('/api/profile', {
+      method: 'PATCH',
+      sessionId,
+      body: { bio: 'must not be saved', ...body },
+    });
+    assert.equal(result.status, 400, JSON.stringify(body));
+  }
+
+  const unchanged = await api('/api/bootstrap', { sessionId });
+  assert.equal(currentProfile(unchanged.value).bio, seed.profiles[0].bio);
+  assert.equal(currentProfile(unchanged.value).linkedin, '');
+  assert.equal(currentProfile(unchanged.value).website, '');
+  assert.equal(currentProfile(unchanged.value).email, '');
+});
+
+test('legacy contact remains supported alongside structured contact channels', async () => {
+  const loggedIn = await login();
+  const updated = await api('/api/profile', {
+    method: 'PATCH',
+    sessionId: loggedIn.session.id,
+    body: {
+      contact: '  alex on Matrix  ',
+      email: 'alex@example.com',
+      visibility: { contact: true, email: true },
+    },
+  });
+  assert.equal(updated.status, 200, JSON.stringify(updated.value));
+  assert.equal(currentProfile(updated.value).contact, '  alex on Matrix  ');
+  assert.equal(currentProfile(updated.value).email, 'alex@example.com');
+  assert.equal(currentProfile(updated.value).visibility.contact, true);
+  assert.equal(currentProfile(updated.value).visibility.email, true);
+});
+
 test('matching is deterministic, symmetric, canonical, cached, and deduplicated', async () => {
   const alex = await login({ profileId: 'alex' });
   const maya = await login({ profileId: 'maya' });
@@ -280,16 +409,16 @@ test('matching is deterministic, symmetric, canonical, cached, and deduplicated'
     (match) => match.userA === 'alex' && match.userB === 'maya',
   );
   assert.deepEqual(fromMaya, fromAlex);
-  assert.equal(fromAlex.source, 'mock');
+  assert.equal(fromAlex.source, 'rules');
   assert.equal(fromAlex.compatible, true);
-  assert.equal(fromAlex.score, 0.99);
+  assert.equal(fromAlex.score, 1);
   assert.equal(alexResult.value.matches.length, seed.profiles.length - 1);
   assert.equal(
     new Set(alexResult.value.matches.map((match) => `${match.userA}:${match.userB}`)).size,
     alexResult.value.matches.length,
   );
   assert.ok(alexResult.value.matches.every((match) => match.userA < match.userB));
-  assert.ok(alexResult.value.matches.every((match) => match.score >= 0 && match.score <= 1));
+  assert.ok(alexResult.value.matches.every((match) => match.score === null || (match.score >= 0 && match.score <= 1)));
   assert.ok(
     alexResult.value.matches
       .filter((match) => match.compatible)
@@ -303,9 +432,9 @@ test('matching is deterministic, symmetric, canonical, cached, and deduplicated'
     userA: 'alex',
     userB: 'sam',
     compatible: false,
-    score: 0,
+    score: null,
     reason: '',
-    source: 'mock',
+    source: 'unavailable',
   });
 });
 
@@ -564,6 +693,7 @@ test('leave clears transient room state while preserving profile and owned conne
   assert.equal(left.value.session.code, null);
   assert.equal(left.value.session.calibrated, false);
   assert.deepEqual(left.value.matches, []);
+  assert.equal(left.value.session.activeEventId, 'spatial');
   assert.equal(currentProfile(left.value).contact, 'alex@example.com');
   const saved = left.value.connections.find(
     (connection) => connection.ownerId === 'alex' && connection.participantId === 'maya',
@@ -603,6 +733,7 @@ test('reset restores the seed clone while preserving session identity', async ()
   assert.deepEqual(reset.value.session, {
     id: sessionId,
     code: null,
+    activeEventId: null,
     userId: 'maya',
     calibrated: false,
   });
@@ -651,8 +782,7 @@ test('clear event data removes only current-event owned connections unless all i
     sessionId,
     body: {},
   });
-  assert.equal(withoutRoom.status, 409);
-  assert.match(withoutRoom.value.error, /Join an event/u);
+  assert.equal(withoutRoom.status, 200);
   const preserved = await api('/api/bootstrap', { sessionId });
   assert.deepEqual(preserved.value.connections, cleared.value.connections);
 

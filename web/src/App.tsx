@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import {
-  ArrowLeft,
-  ArrowRight,
   ArrowUpRight,
   CalendarDays,
   Check,
@@ -10,7 +9,6 @@ import {
   ExternalLink,
   Glasses,
   Home,
-  LayoutGrid,
   Menu,
   Network,
   Plus,
@@ -20,14 +18,24 @@ import {
   X,
 } from "lucide-react";
 import seed from "../shared/demo-data.json";
-import { Avatar, Brand, Button, Empty, Mark } from "./ui";
+import { Avatar, Brand, Button, Empty, Mark, PageHeader } from "./ui";
 import { Spatial } from "./Spatial";
+import { SidebarSelection } from "./SidebarSelection";
 import { Landing } from "./Landing";
 import { HomeProduct, EventProduct } from "./ProductPages";
 import { NetworkProduct, ProfileProduct } from "./PersonalPages";
+import { clearSessionProfileDrafts, useProfileEditor } from "./useProfileEditor";
 import type { Action, Profile, State } from "./types";
+import { Onboarding, entryDraftKey, type OnboardingDetails } from "./Onboarding";
+import { DesignSystemPage } from "./DesignSystemPage";
+import { CompatibilityProvider } from "./CompatibilityContext";
+import { homeEvent } from "./eventModel";
+import { PersonProfileDialog } from "./PersonProfileDialog";
+import { RecapDemo } from "./RecapDemo";
+import { clearFollowUpDrafts } from "./followUpModel";
 
-const initial: State = { ...seed, matches: [], session: null, demo: true };
+const initial: State = { ...seed, profiles: seed.profiles as Profile[], matches: [], session: null, demo: true };
+
 const route = () => {
   const p = location.hash.replace("#/", "").split("?")[0] || "landing";
   return p === "events" ? "event" : p === "settings" ? "profile" : p;
@@ -35,13 +43,17 @@ const route = () => {
 export const go = (path: string) => {
   location.hash = path === "landing" ? "/" : `/${path}`;
 };
-const first = (p: Profile) => p.name.split(" ")[0];
 function readSession() {
   try {
     return sessionStorage.getItem("questmatch-session");
   } catch {
     return null;
   }
+}
+
+function clearSessionDrafts(id: string | null) {
+  clearSessionProfileDrafts(id);
+  clearFollowUpDrafts(id);
 }
 
 export default function App() {
@@ -56,12 +68,18 @@ export default function App() {
   const stateRef = useRef(state);
   const revision = useRef(0);
   const putState = (data: State) => {
+    for (const profile of data.profiles) {
+      if (profile.visibility?.previousConnections === false) clearFollowUpDrafts(data.session?.id ?? null, undefined, profile.id);
+    }
     stateRef.current = data;
     setState(data);
   };
   const [toast, setToast] = useState("");
   const [error, setError] = useState("");
   const [menu, setMenu] = useState(false);
+  const [entryActive, setEntryActive] = useState(false);
+  const [entrySaving, setEntrySaving] = useState(false);
+  const entrySubmission = useRef(false);
   useEffect(() => {
     if (!menu) return;
     const close = (event: KeyboardEvent) => {
@@ -108,6 +126,14 @@ export default function App() {
         setError("");
         try {
           const data = await request(path, body, method);
+          if (path === 'event-data/clear' || path === 'reset') {
+            const all = path === 'reset' || (body as { scope?: string } | undefined)?.scope === 'all';
+            clearFollowUpDrafts(sessionId.current, all ? undefined : stateRef.current.session?.activeEventId ?? undefined);
+          }
+          if (method === 'DELETE' && path.startsWith('connections/') && 'profiles' in data) {
+            const personId = decodeURIComponent(path.slice('connections/'.length));
+            if (!data.connections.some(connection => connection.participantId === personId)) clearFollowUpDrafts(sessionId.current, undefined, personId);
+          }
           if ("profiles" in data) {
             putState(data);
             if (path === "login" && data.session) {
@@ -122,6 +148,12 @@ export default function App() {
           }
           return stateRef.current;
         } catch (e) {
+          if (e instanceof Error && "status" in e && e.status === 401) {
+            clearSessionDrafts(sessionId.current);
+            sessionId.current = null;
+            putState({ ...stateRef.current, session: null });
+            try { sessionStorage.removeItem("questmatch-session"); } catch { /* Session is cleared in memory. */ }
+          }
           setError(
             e instanceof TypeError
               ? "The local demo service is unavailable. Start npm run dev, then try again."
@@ -138,17 +170,22 @@ export default function App() {
     return task;
   };
   useEffect(() => {
+    let currentPage = route();
     const change = () => {
-      setPage(route());
+      const nextPage = route();
+      setPage(nextPage);
+      setEntryActive(false);
       setMenu(false);
       setError("");
-      window.scrollTo(0, 0);
+      if (nextPage !== currentPage) window.scrollTo(0, 0);
+      currentPage = nextPage;
     };
     addEventListener("hashchange", change);
     return () => removeEventListener("hashchange", change);
   }, []);
   useEffect(() => {
     let active = true;
+    if (page === 'recap-demo') { setReady(true); return; }
     const startRevision = revision.current;
     request("bootstrap", undefined, "GET")
       .then((data) => {
@@ -162,6 +199,7 @@ export default function App() {
             "status" in failure &&
             failure.status === 401
           ) {
+            clearSessionDrafts(sessionId.current);
             sessionId.current = null;
             try {
               sessionStorage.removeItem("questmatch-session");
@@ -181,7 +219,29 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, [bootstrapAttempt]);
+  }, [bootstrapAttempt, page === 'recap-demo']);
+  useEffect(() => {
+    if (!state.session || pending > 0) return;
+    let active = true;
+    let refreshing = false;
+    const expectedSession = state.session.id;
+    const refresh = () => {
+      if (document.visibilityState !== "visible" || refreshing) return;
+      refreshing = true;
+      const startRevision = revision.current;
+      void request("bootstrap", undefined, "GET").then(data => {
+        if (active && revision.current === startRevision && sessionId.current === expectedSession && "profiles" in data) putState(data);
+      }).catch(() => { /* Explicit Refresh requests exposes recoverable service errors. */ })
+        .finally(() => { refreshing = false; });
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [state.session?.id, pending]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(""), 3800);
@@ -198,31 +258,53 @@ export default function App() {
   const user =
     state.profiles.find((p) => p.id === state.session?.userId) ||
     state.profiles[0];
+  const { editor: profileEditor, snapshot: profileSnapshot } = useProfileEditor(user, state.session?.id ?? null);
   const connected = state.connections
     .filter((c) => (c.ownerId ? c.ownerId === user.id : c.userA === user.id))
     .map((c) => c.participantId || (c.userA === user.id ? c.userB : c.userA));
-  const login = async (id: string, target = "home") => {
+  const login = async (id: string, details: OnboardingDetails): Promise<boolean> => {
+    if (entrySubmission.current) return false;
+    entrySubmission.current = true;
+    setEntrySaving(true);
+    setEntryActive(true);
+    const entryRoute = location.hash;
     try {
-      const destination =
-        target === "home" && !["landing", "login"].includes(page)
-          ? location.hash.replace("#/", "")
-          : target;
-      await act("login", { profileId: id });
-      go(destination);
-    } catch {
-      /* Inline error. */
+      if (stateRef.current.session?.userId !== id) {
+        await act("login", { profileId: id });
+      }
+      await act("profile", details, "PATCH");
+      if (location.hash === entryRoute) {
+        setEntryActive(false);
+        go("home");
+      }
+      return true;
+    } catch (failure) {
+      if (failure instanceof Error && "status" in failure && failure.status === 401) {
+        sessionId.current = null;
+        putState({ ...stateRef.current, session: null });
+        try { sessionStorage.removeItem("questmatch-session"); } catch { /* Memory reference is cleared. */ }
+        setError("Your demo session expired. Your draft is safe—try again.");
+      }
+      return false;
+    } finally {
+      entrySubmission.current = false;
+      setEntrySaving(false);
     }
   };
   const logout = async () => {
     try {
       await act("logout");
+      clearSessionDrafts(sessionId.current);
       sessionId.current = null;
       try {
         sessionStorage.removeItem("questmatch-session");
+        sessionStorage.removeItem(entryDraftKey);
       } catch {
         /* Memory cleared below. */
       }
       putState(initial);
+      setEntryActive(false);
+      setPage("landing");
       go("landing");
     } catch {
       /* Inline error. */
@@ -232,13 +314,25 @@ export default function App() {
     await act("connections", { participantId: id });
     setToast("Connection saved. Find them in your network.");
   };
-  const sharedProps = { state, user, connected, act, busy, notify: setToast };
-  const event = state.events.find((e) => e.code === state.session?.code);
-  const isPublic = ["landing", "login"].includes(page);
-  const activePage = !isPublic && !state.session && ready ? "login" : page;
+  const onSessionExpired = () => {
+    if (sessionId.current !== state.session?.id) return;
+    clearSessionDrafts(sessionId.current);
+    sessionId.current = null;
+    try { sessionStorage.removeItem('questmatch-session'); } catch { /* In-memory session is cleared below. */ }
+    putState({ ...stateRef.current, session: null });
+    setError('Your session expired. Enter the app again to continue.');
+  };
+  const sharedProps = { state, user, connected, act, busy, notify: setToast, onSessionExpired };
+  const event = homeEvent(state);
+  const isPublic = ["landing", "login", "recap-demo"].includes(page);
+  useEffect(() => {
+    // Keep an unfinished entry refreshable even after a partial session creation.
+    if (ready && !bootstrapError && !state.session && !isPublic) go("login");
+  }, [ready, bootstrapError, state.session, isPublic]);
+  const activePage = entryActive || (!isPublic && !state.session && ready) ? "login" : page;
   const nav = [
     { id: "home", name: "Home", icon: Home },
-    { id: "event", name: "Event", icon: CalendarDays },
+    { id: "event", name: "Events", icon: CalendarDays },
     { id: "network", name: "Network", icon: Network },
     { id: "profile", name: "Profile", icon: UserRound },
   ];
@@ -254,7 +348,7 @@ export default function App() {
       >
         Skip to content
       </a>
-      {!ready ? (
+      {page === "recap-demo" ? <RecapDemo /> : !ready ? (
         <main className="loading-screen" id="main-content" tabIndex={-1}>
           <Mark />
           <p role="status">Opening your space…</p>
@@ -276,13 +370,29 @@ export default function App() {
       ) : activePage === "landing" ? (
         <Landing
           profiles={state.profiles}
-          onEnter={() => (state.session ? go("home") : go("login"))}
+          onEnter={() => {
+            const open = () => {
+              flushSync(() => setPage("login"));
+              go("login");
+              window.scrollTo({ top: 0, behavior: "instant" });
+            };
+            if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+              open();
+              return;
+            }
+            document.documentElement.dataset.entryCrossfade = 'true';
+            const transition = document.startViewTransition(open);
+            void transition.finished.finally(() => {
+              delete document.documentElement.dataset.entryCrossfade;
+            }).catch(() => {});
+          }}
         />
       ) : activePage === "login" ? (
-        <Login
+        <Onboarding
           profiles={state.profiles}
-          busy={busy || !ready}
-          onLogin={login}
+          initialProfileId={state.session?.userId ?? "alex"}
+          busy={busy || entrySaving || !ready}
+          onComplete={login}
           error={error}
         />
       ) : (
@@ -290,14 +400,14 @@ export default function App() {
           className={`app-layout ${page === "spatial" ? "spatial-layout" : ""}`}
         >
           <aside className={`sidebar ${menu ? "open" : ""}`}>
+            <SidebarSelection page={page} />
             <Brand compact />
             <div className="workspace-label">
-              <span className="workspace-monogram">B</span>
+              <span className="workspace-monogram">{event?.name.replace(/^the\s+/i, "").charAt(0) || <CalendarDays size={17} />}</span>
               <span>
-                {event?.name || "The Builders Room"}
-                <small>Your shared space</small>
+                {event?.name || "Choose an event"}
+                <small>{event ? "Your shared space" : "Your next conversation"}</small>
               </span>
-              <ChevronDown size={14} />
             </div>
             <nav aria-label="Main navigation">
               {nav.map(({ id, name, icon: Icon }) => (
@@ -323,10 +433,6 @@ export default function App() {
               >
                 <Glasses size={18} />
                 <span>Spatial preview</span>
-              </a>
-              <a href="#/map" className={page === "map" ? "active" : ""}>
-                <LayoutGrid size={18} />
-                <span>Experience map</span>
               </a>
             </nav>
             <div className="sidebar-bottom">
@@ -354,46 +460,16 @@ export default function App() {
               onClick={() => setMenu(false)}
             />
           )}
+          <CompatibilityProvider state={state} user={user}>
           <main className="app-main" id="main-content" tabIndex={-1}>
-            <header className="app-header">
-              <div>
-                <button
-                  className="icon-button mobile-menu"
-                  aria-label="Open navigation"
-                  onClick={() => setMenu(true)}
-                >
-                  <Menu size={20} />
-                </button>
-                <span>Your space</span>
-                <span className="breadcrumb-slash">/</span>
-                <strong>
-                  {nav.find((n) => n.id === page)?.name ||
-                    (page === "spatial"
-                      ? "Spatial experience"
-                      : page === "map"
-                        ? "Experience map"
-                        : "Settings")}
-                </strong>
-              </div>
-              <div>
-                <span className="header-live">
-                  <span className="status-dot" />
-                  {event
-                    ? event.name + " · demo live"
-                    : "The Builders Room · demo available"}
-                </span>
-                <button className="header-enter" onClick={() => go("spatial")}>
-                  Enter <ArrowUpRight size={12} />
-                </button>
-                <button
-                  className="icon-button"
-                  aria-label="Open your profile"
-                  onClick={() => go("profile")}
-                >
-                  <Avatar profile={user} size="small" />
-                </button>
-              </div>
-            </header>
+            <button
+              className="icon-button app-navigation-toggle"
+              aria-label="Open navigation"
+              aria-expanded={menu}
+              onClick={() => setMenu(true)}
+            >
+              <Menu size={20} />
+            </button>
             {error && (
               <div className="error-banner" role="alert">
                 <span>{error}</span>
@@ -413,6 +489,8 @@ export default function App() {
               <ProfileProduct
                 key={user.id}
                 {...sharedProps}
+                editor={profileEditor}
+                snapshot={profileSnapshot}
                 solid={solid}
                 setSolid={setSolid}
                 logout={logout}
@@ -430,6 +508,7 @@ export default function App() {
               />
             )}
             {page === "map" && <ExperienceMap />}
+            {page === "system" && <DesignSystemPage user={user} />}
             {![
               "home",
               "event",
@@ -437,13 +516,16 @@ export default function App() {
               "profile",
               "spatial",
               "map",
+              "system",
               "settings",
             ].includes(page) && (
               <Empty title="This space is still taking shape.">
                 <a href="#/home">Back to your overview</a>
               </Empty>
             )}
+            {["home", "event", "network"].includes(page) && <PersonProfileDialog {...sharedProps} />}
           </main>
+          </CompatibilityProvider>
         </div>
       )}
       {toast && (
@@ -465,134 +547,6 @@ export default function App() {
   );
 }
 
-function Login({
-  profiles,
-  busy,
-  onLogin,
-  error,
-}: {
-  profiles: Profile[];
-  busy: boolean;
-  onLogin: (id: string, target?: string) => void;
-  error: string;
-}) {
-  const [selected, setSelected] = useState("alex");
-  return (
-    <main className="login-page" id="main-content" tabIndex={-1}>
-      <section className="login-visual">
-        <div className="scene-photo" />
-        <div className="login-wash" />
-        <Brand />
-        <div className="login-quote">
-          <h1>
-            Your next great idea
-            <br />
-            starts with a hello.
-          </h1>
-          <p>
-            A shared interest. A complementary skill.
-            <br />A conversation you wouldn’t have found otherwise.
-          </p>
-        </div>
-        <div className="login-example glass">
-          <Sparkles size={19} />
-          <p>
-            “You’re both building assistive technology.”
-            <span>A small nudge. A world of possibility.</span>
-          </p>
-        </div>
-        <span className="login-art-caption">Illustrative environment</span>
-      </section>
-      <section className="login-form">
-        <a className="back-link" href="#/">
-          <ArrowLeft size={16} />
-          Back to Align
-        </a>
-        <div>
-          <Mark />
-          <h2>
-            Make room for
-            <br />
-            new connections.
-          </h2>
-          <p>
-            Choose a profile to explore the experience.
-            <br />
-            You can make it your own once you’re inside.
-          </p>
-          <div className="preset-list" aria-label="Demo profile selection">
-            {profiles.slice(0, 3).map((p) => (
-              <button
-                key={p.id}
-                className={`preset ${selected === p.id ? "selected" : ""}`}
-                aria-pressed={selected === p.id}
-                onClick={() => setSelected(p.id)}
-              >
-                <Avatar profile={p} />
-                <span>
-                  {p.name}
-                  <small>{p.role}</small>
-                </span>
-                <span className="radio-dot">
-                  {selected === p.id && <Check size={12} />}
-                </span>
-              </button>
-            ))}
-          </div>
-          {error && (
-            <p className="field-error" role="alert">
-              {error}
-            </p>
-          )}
-          <Button
-            className="full-width"
-            busy={busy}
-            onClick={() => onLogin(selected)}
-          >
-            Continue as {first(profiles.find((p) => p.id === selected)!)}
-            <ArrowRight size={16} />
-          </Button>
-          <button
-            className="plain-button full-width"
-            disabled={busy}
-            onClick={() => onLogin(selected, "profile")}
-          >
-            Make this profile my own
-            <ArrowUpRight size={14} />
-          </button>
-          <div className="login-disclosure">
-            Demo sign-in. No password or email required.
-            <br />
-            Profiles and connections are temporary sample data.
-          </div>
-        </div>
-        <span className="login-footer">
-          Be yourself. There’s someone here for that.
-        </span>
-      </section>
-    </main>
-  );
-}
-
-function PageHeading({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div className="page-heading">
-      <div>
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </div>
-      {children}
-    </div>
-  );
-}
 
 function ExperienceMap() {
   const lanes = [
@@ -625,8 +579,8 @@ function ExperienceMap() {
       detail: "Let the room—and the people—lead.",
       steps: [
         {
-          name: "Get aligned",
-          body: "A guided spatial calibration.",
+          name: "Enter the preview",
+          body: "Explore your event without a headset.",
           route: "spatial",
           icon: Glasses,
         },
@@ -637,8 +591,8 @@ function ExperienceMap() {
           icon: Sparkles,
         },
         {
-          name: "Start a conversation",
-          body: "Quiet the room. Focus on a person.",
+          name: "Find common ground",
+          body: "See what you share and how you can help.",
           route: "spatial",
           icon: Users,
         },
@@ -671,7 +625,8 @@ function ExperienceMap() {
   ];
   return (
     <div className="page-content">
-      <PageHeading
+      <PageHeader
+        className="page-heading"
         title="One experience. Three human moments."
         description="The website prepares the introduction. The headset makes room for the conversation."
       />

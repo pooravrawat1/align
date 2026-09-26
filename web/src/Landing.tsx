@@ -1,220 +1,235 @@
-import { useState } from "react";
-import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUpRight,
-  Check,
-  Glasses,
-  Sparkles,
-} from "lucide-react";
-import { Avatar, Brand, Button, Tags } from "./ui";
-import type { Profile } from "./types";
-import "./Landing.css";
+import { useRef, useState, type MouseEvent } from 'react';
+import { ArrowDown, ArrowRight, ArrowUpRight, Check, Bookmark } from 'lucide-react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useGSAP } from '@gsap/react';
+import { Brand, Button, Chip } from './ui';
+import { VisorScene, type VisorHandle } from './VisorScene';
+import { JOURNEY, JOURNEY_TRACKS, ROOM_IMAGE, VISOR_PATH } from './visorGeometry';
+import { createCheckpointScroll, type CheckpointScroll } from './checkpointScroll';
+import { resolveJourneyMotion } from './journeyMotion';
+import type { Profile } from './types';
+import './Landing.css';
+import { LandingProduct } from './LandingProduct';
+import { SpatialSurface } from './SpatialSurface';
 
-export function Landing({
-  profiles,
-  onEnter,
-}: {
-  profiles: Profile[];
-  onEnter: () => void;
-}) {
-  const [revealed, setRevealed] = useState(false);
-  const maya = profiles.find((p) => p.id === "maya")!;
-  const alex = profiles.find((p) => p.id === "alex")!;
-  return (
-    <main className="salon-landing" id="main-content" tabIndex={-1}>
-      <header className="salon-nav">
-        <Brand />
-        <nav aria-label="Website navigation">
-          <a
-            href="#how-it-works"
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById("how-it-works")?.scrollIntoView({
-                behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
-                  ? "instant"
-                  : "smooth",
-              });
-            }}
-          >
-            The experience
-          </a>
-          <a href="#/login">Your network</a>
+gsap.registerPlugin(ScrollTrigger, useGSAP);
+
+function SavedContext() {
+  return <div className="qv-saved-body">
+    <div className="qv-context-row"><span>Where you met</span><strong>HackGT · The atrium</strong></div>
+    <div className="qv-saved-common"><span>Common ground</span><Chip>Assistive technology</Chip></div>
+    <div className="qv-saved-expertise"><div><span>You bring</span><strong>Embedded systems</strong></div><ArrowUpRight size={16} /><div><span>Maya brings</span><strong>Computer vision</strong></div></div>
+    <div className="qv-followup"><Bookmark size={16} /><div><strong>An idea to come back to</strong><p>Bring visual assistance to wearable hardware.</p></div></div>
+    <span className="qv-saved-status"><Check size={13} />Connection preview · context kept together</span>
+  </div>;
+}
+
+function MayaIdentity() {
+  return <div className="qv-match-identity"><span className="qv-portrait" style={{ backgroundImage: `url(${ROOM_IMAGE})` }} aria-hidden="true" /><div><strong>Maya</strong><small>Computer vision engineer</small></div><i className="qv-small-light" /></div>;
+}
+
+function NetworkCopy() {
+  return <div className="qv-network-copy"><h2>A reason to meet.<br /><span>A connection to keep.</span></h2><p>You bring embedded systems. Maya brings computer vision. You both care about assistive technology—now you have a reason to say hello.</p><div className="qv-network-takeaway"><Bookmark size={17} /><span>Keep the common ground and the idea you want to build on, together.</span></div><span className="qv-preview-label">From introduction to your network · Illustrative preview</span></div>;
+}
+
+function AlexConnection({ linear = false }: { linear?: boolean }) {
+  return <div className={`qv-alex-link${linear ? ' qv-alex-link-linear' : ''}`}><span aria-hidden="true">A</span><div><strong>Alex <span>· Connected with Maya</span></strong><small>You · embedded systems</small></div><i aria-hidden="true" /></div>;
+}
+
+export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void }) {
+  const root = useRef<HTMLElement>(null);
+  const runway = useRef<HTMLElement>(null);
+  const scene = useRef<VisorHandle>(null);
+  const timeline = useRef<gsap.core.Timeline | null>(null);
+  const checkpoints = useRef<CheckpointScroll | null>(null);
+  const entryTimeline = useRef<gsap.core.Timeline | null>(null);
+  const releaseEntryInput = useRef<(() => void) | null>(null);
+  const [entering, setEntering] = useState(false);
+
+  const { contextSafe } = useGSAP(() => {
+    const media = gsap.matchMedia();
+    let alive = true;
+    media.add('(min-width: 900px) and (prefers-reduced-motion: no-preference)', () => {
+      const select = gsap.utils.selector(root);
+      const syncScene = (progress: number) => {
+        scene.current?.setProgress(progress);
+        root.current?.style.setProperty('--journey-progress', String(progress));
+      };
+      const tl = gsap.timeline({
+        defaults: { ease: 'none' },
+        scrollTrigger: {
+          trigger: runway.current, start: 'top top', end: 'bottom bottom', scrub: true,
+          // Refresh restores the timeline with callbacks suppressed; synchronize the renderer explicitly.
+          onRefresh: trigger => syncScene(trigger.animation?.progress() ?? trigger.progress),
+        },
+      });
+      timeline.current = tl;
+      tl.to({}, { duration: 1 }, 0);
+      const tracks = JOURNEY_TRACKS;
+      const to = (selector: string, vars: gsap.TweenVars, range: readonly [number, number]) =>
+        tl.to(select(selector), { ...vars, duration: range[1] - range[0] }, range[0]);
+      const reveal = (selector: string, range: readonly [number, number], from: gsap.TweenVars = {}) =>
+        tl.fromTo(select(selector), { autoAlpha: 0, y: 18, filter: 'blur(10px)', clipPath: 'inset(0 0 16% 0)', ...from },
+          { autoAlpha: 1, y: 0, x: 0, scale: 1, filter: 'blur(0px)', clipPath: 'inset(0 0 0% 0)', duration: range[1] - range[0], ease: 'power2.out' }, range[0]);
+      to('.qv-hero-copy', { autoAlpha: 0, y: -20, filter: 'blur(8px)', scale: .985, transformOrigin: 'left bottom', ease: 'power2.in' }, tracks.heroExit);
+      to('.qv-scroll-cue, .qv-lens-caption', { autoAlpha: 0, y: -10, filter: 'blur(5px)', ease: 'power1.in' }, tracks.heroExit);
+      to('.qv-jordan', { autoAlpha: 0 }, tracks.jordanExit);
+      to('.qv-tether', { autoAlpha: 0 }, tracks.savedShell);
+      to('.qv-world-dim', { opacity: .88 }, tracks.worldDim);
+      tl.fromTo(select('.qv-network'), { autoAlpha: 0, clipPath: 'inset(0 0 0 8%)', filter: 'blur(12px)' },
+        { autoAlpha: 1, clipPath: 'inset(0 0 0 0%)', filter: 'blur(0px)', duration: tracks.networkIn[1] - tracks.networkIn[0], ease: 'power2.out' }, tracks.networkIn[0]);
+      reveal('.qv-match-saved', tracks.savedIn, { y: 14, scale: .975, transformOrigin: 'center top' });
+      tl.fromTo(select('.qv-network .qv-alex-link'), { autoAlpha: 0, y: 14, filter: 'blur(7px)' },
+        { autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: tracks.connectionIn[1] - tracks.connectionIn[0], ease: 'power2.out' }, tracks.connectionIn[0]);
+      tl.fromTo(select('.qv-network .qv-alex-link > i'), { scaleY: 0, transformOrigin: 'top' },
+        { scaleY: 1, duration: tracks.connectionIn[1] - tracks.connectionIn[0] }, tracks.connectionIn[0]);
+      tl.eventCallback('onUpdate', () => syncScene(tl.progress()));
+      syncScene(tl.progress());
+      const controller = createCheckpointScroll(root.current!, () => {
+        const trigger = tl.scrollTrigger!;
+        const range = trigger.end - trigger.start;
+        const sections = [...root.current!.querySelectorAll<HTMLElement>('[data-landing-stop]')];
+        const sectionStops = sections.flatMap(section => {
+          const top = section.getBoundingClientRect().top + window.scrollY;
+          const overflow = Math.max(0, section.offsetHeight - window.innerHeight);
+          // Keep tall content reachable, including an expanded connection disclosure.
+          const steps = Math.ceil(overflow / (window.innerHeight * .8));
+          return [top, ...Array.from({ length: steps }, (_, index) => top + overflow * (index + 1) / steps)];
+        });
+        return [trigger.start, trigger.start + range * JOURNEY.network, ...sectionStops];
+      }, resolveJourneyMotion);
+      checkpoints.current = controller;
+      return () => { controller.destroy(); checkpoints.current = null; timeline.current = null; scene.current?.setProgress(0); root.current?.style.removeProperty('--journey-progress'); };
+    });
+    void document.fonts.ready.then(() => { if (alive) ScrollTrigger.refresh(); });
+    return () => { alive = false; entryTimeline.current?.kill(); releaseEntryInput.current?.(); media.revert(); };
+  }, { scope: root });
+
+  const enterExperience = contextSafe((event: MouseEvent<HTMLButtonElement>) => {
+    if (entryTimeline.current || entering) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      onEnter();
+      return;
+    }
+
+    setEntering(true);
+    root.current?.classList.add('is-entering');
+    checkpoints.current?.destroy();
+    checkpoints.current = null;
+    timeline.current?.scrollTrigger?.disable(false);
+
+    const blockScroll = (event: Event) => event.preventDefault();
+    const blockKey = (event: KeyboardEvent) => {
+      if ([' ', 'ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', 'Tab', 'Enter'].includes(event.key)) event.preventDefault();
+    };
+    window.addEventListener('wheel', blockScroll, { passive: false });
+    window.addEventListener('touchmove', blockScroll, { passive: false });
+    window.addEventListener('keydown', blockKey, true);
+    releaseEntryInput.current = () => {
+      window.removeEventListener('wheel', blockScroll);
+      window.removeEventListener('touchmove', blockScroll);
+      window.removeEventListener('keydown', blockKey, true);
+    };
+
+    const select = gsap.utils.selector(root);
+    const trigger = event.currentTarget;
+    const fromScene = Boolean(trigger.closest('.qv-stage'));
+    const tl = gsap.timeline({ defaults: { overwrite: 'auto' } });
+    entryTimeline.current = tl;
+    gsap.set(select('.qv-entry-transition'), { autoAlpha: 1 });
+    gsap.set(select('.qv-entry-aperture, .qv-entry-rim'), { scale: .28, rotation: -.6, transformOrigin: '50% 50%' });
+    gsap.set(select('.qv-entry-rim'), { opacity: .12 });
+
+    tl.to(trigger, { scale: .98, duration: .1, ease: 'power2.out' }, 0)
+      .to(select('.qv-header, .qv-hero-copy, .qv-scroll-cue, .qv-stage-bottom, .qv-closing > *'),
+        { autoAlpha: 0, duration: .24, ease: 'power2.inOut' }, .02);
+
+    if (fromScene) {
+      // Continue the renderer's current geometry; never introduce a second visor.
+      gsap.set(select('.qv-entry-optics'), { visibility: 'hidden' });
+      const optical = { progress: timeline.current?.progress() ?? 0 };
+      tl.to(optical, {
+        progress: Math.max(optical.progress, JOURNEY.discover), duration: .54, ease: 'sine.inOut',
+        onUpdate: () => scene.current?.setProgress(optical.progress),
+      }, 0)
+        .to(select('.qv-hud'), { autoAlpha: 0, duration: .2 }, 0)
+        .to(select('.qv-entry-backdrop'), { opacity: .18, duration: .22, ease: 'sine.inOut' }, .08);
+    } else {
+      gsap.set(select('.qv-entry-optics'), { visibility: 'hidden' });
+      tl.to(select('.qv-entry-backdrop'), { opacity: .18, duration: .22, ease: 'sine.inOut' }, 0);
+    }
+    tl.call(onEnter, [], .32);
+  });
+
+  function jumpTo(moment: 'discover' | 'network' | 'start' | 'event' | 'connections') {
+    if (entryTimeline.current) return;
+    const trigger = timeline.current?.scrollTrigger;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (moment === 'event' || moment === 'connections') {
+      const target = root.current?.querySelector(moment === 'event' ? '#lp-event' : '#lp-network');
+      if (target && checkpoints.current) checkpoints.current.travelTo(target.getBoundingClientRect().top + window.scrollY);
+      else target?.scrollIntoView({ behavior: reduce ? 'instant' : 'smooth' });
+    } else if (trigger) {
+      const progress = moment === 'start' ? 0 : JOURNEY.network;
+      checkpoints.current?.travelTo(trigger.start + (trigger.end - trigger.start) * progress);
+    } else {
+      const target = moment === 'start' ? '#qv-experience' : '#qv-linear-network';
+      root.current?.querySelector(target)?.scrollIntoView({ behavior: reduce ? 'instant' : 'smooth' });
+    }
+  }
+
+  return <main className={`qv-landing${entering ? ' is-entering' : ''}`} ref={root} id="main-content" tabIndex={-1} aria-busy={entering || undefined}>
+    <div className="qv-entry-transition" aria-hidden="true">
+      <div className="qv-entry-backdrop" />
+      <svg className="qv-entry-optics" viewBox="0 0 1600 800" preserveAspectRatio="xMidYMid meet">
+        <path className="qv-entry-aperture" d={VISOR_PATH} />
+        <path className="qv-entry-rim" d={VISOR_PATH} fill="none" />
+      </svg>
+    </div>
+    <section className="qv-runway" ref={runway} id="qv-experience" aria-label="The Catalyst experience">
+      <div className="qv-stage">
+        <VisorScene ref={scene}>
+          <div className="qv-scene-shade" />
+          <div className="qv-world-dim" />
+          <SpatialSurface className="qv-jordan"><span className="qv-small-light" /><div><strong>Jordan</strong><small>Creative technologist</small></div><span className="qv-neutral-tether" /></SpatialSurface>
+          <SpatialSurface className="qv-match" matched>
+            <MayaIdentity />
+            <div className="qv-match-saved"><SavedContext /></div>
+            <svg className="qv-tether" viewBox="0 0 80 80" aria-hidden="true"><path d="M78 2 19 61" /><circle cx="14" cy="66" r="6" /><circle cx="14" cy="66" r="2" /></svg>
+          </SpatialSurface>
+        </VisorScene>
+        <div className="qv-top-shade" aria-hidden="true" />
+        <header className="qv-header">
+          <Brand />
+          <nav aria-label="Website navigation"><button onClick={() => jumpTo('discover')}>The experience</button><button onClick={() => jumpTo('network')}>The connection</button></nav>
+          <div className="qv-header-actions"><Button className="qv-enter" onClick={enterExperience} disabled={entering}>Step inside<ArrowUpRight size={15} /></Button></div>
+        </header>
+        <div className="qv-hero-copy"><h1>Your people.<br className="qv-mobile-break" /> In plain sight<span>.</span></h1><p>A little context. A real connection.</p><div className="qv-hero-actions"><Button className="qv-primary" onClick={enterExperience} disabled={entering}>Try the demo<ArrowUpRight size={17} /></Button><Button variant="secondary" className="qv-how" onClick={() => jumpTo('discover')}>See how it works<ArrowDown size={14} /></Button></div></div>
+        <span className="qv-lens-caption">Through Alex’s eyes<span />Catalyst</span>
+        <button className="qv-scroll-cue" onClick={() => jumpTo('discover')}><span>Scroll to find your people</span><ArrowDown size={23} strokeWidth={1.3} /></button>
+        <div className="qv-network"><NetworkCopy /><AlexConnection /></div>
+        <div className="qv-stage-bottom"><span>Mixed reality, imagined.</span><span className="qv-progress-track" aria-hidden="true"><i /></span></div>
+      </div>
+    </section>
+    <div className="qv-linear-story">
+      <section className="qv-linear-network" id="qv-linear-network"><NetworkCopy /><div className="qv-static-connection"><div className="qv-static-card qv-static-saved"><MayaIdentity /><SavedContext /></div><AlexConnection linear /></div></section>
+    </div>
+    <LandingProduct onEnter={enterExperience} entering={entering} />
+    <footer className="qv-closing" data-landing-stop aria-labelledby="qv-closing-title">
+      <div className="qv-closing-top">
+        <div className="qv-closing-copy">
+          <h2 id="qv-closing-title">Who could you<br /><span>build with?</span></h2>
+          <p>Bring what you know. Find what you’re missing.</p>
+          <div className="qv-closing-action"><Button className="qv-primary" onClick={enterExperience} disabled={entering}>Step inside<ArrowUpRight size={17} /></Button><small>Try the browser demo.<br />No headset needed.</small></div>
+        </div>
+        <nav className="qv-closing-nav" aria-label="Explore Catalyst">
+          <button onClick={() => jumpTo('start')}>The experience<ArrowRight size={20} /></button>
+          <button onClick={() => jumpTo('event')}>Find your room<ArrowRight size={20} /></button>
+          <button onClick={() => jumpTo('connections')}>Your connections<ArrowRight size={20} /></button>
         </nav>
-        <Button variant="secondary" onClick={onEnter}>
-          Step inside
-          <ArrowUpRight size={15} />
-        </Button>
-      </header>
-      <section
-        className="salon-stage"
-        aria-label="An illustration of a shared room"
-      >
-        <img
-          className="salon-environment"
-          src="/assets/event-room.webp"
-          alt="An imagined event space with people wearing mixed-reality headsets"
-          fetchPriority="high"
-        />
-        <div className="salon-stage-shade" />
-        <div className="salon-stage-meta">
-          <span>
-            <span className="status-dot" />A little common ground
-          </span>
-          <span>Mixed reality. Real connection.</span>
-        </div>
-        <div className="salon-headline">
-          <h1>
-            Walk into a room.
-            <br />
-            <span>Find your people.</span>
-          </h1>
-          <p>
-            The right conversation is already in the room.
-            <br />
-            Align helps you see it.
-          </p>
-          <div>
-            <Button onClick={onEnter}>
-              Join an event
-              <ArrowUpRight size={17} />
-            </Button>
-            <button
-              className="salon-watch"
-              onClick={() => setRevealed((v) => !v)}
-            >
-              <span>
-                <Glasses size={17} />
-              </span>
-              {revealed ? "Replay the introduction" : "See the introduction"}
-            </button>
-          </div>
-        </div>
-        <div className={`salon-introductions ${revealed ? "is-revealed" : ""}`}>
-          <div className="salon-identity salon-alex glass">
-            <div className="person-line">
-              <Avatar profile={alex} />
-              <div>
-                <h2>Alex</h2>
-                <p>Hardware engineer</p>
-              </div>
-            </div>
-            <Tags items={["Robotics", "Embedded systems"]} />
-            <span className="identity-tether" />
-          </div>
-          <button
-            className={`salon-identity salon-maya glass ${revealed ? "reason-visible" : ""}`}
-            aria-expanded={revealed}
-            onClick={() => setRevealed((v) => !v)}
-          >
-            <div className="person-line">
-              <Avatar profile={maya} />
-              <div>
-                <h2>Maya</h2>
-                <p>Computer vision engineer</p>
-              </div>
-              <ArrowUpRight size={16} />
-            </div>
-            <Tags items={["Computer vision", "Assistive tech"]} />
-            {revealed ? (
-              <div className="salon-reason">
-                <span>
-                  <Sparkles size={13} />A reason to meet
-                </span>
-                <p>
-                  You’re both building assistive technology. Maya brings
-                  computer vision; Alex can help bring it to wearable hardware.
-                </p>
-              </div>
-            ) : (
-              <span className="salon-card-hint">
-                A little curiosity goes a long way <ArrowRight size={13} />
-              </span>
-            )}
-            <span className="identity-tether" />
-          </button>
-          <span className="salon-distant glass">Jordan</span>
-        </div>
-        <div className="salon-scene-footer">
-          <span>01 / The moment before hello</span>
-          <span>Illustrative scene · interactive preview</span>
-          <ArrowDown size={17} />
-        </div>
-      </section>
-      <section className="salon-manifesto" id="how-it-works">
-        <div className="eyebrow">Designed for the space between people</div>
-        <h2>
-          Less searching.
-          <br />
-          <span>More serendipity.</span>
-        </h2>
-        <div className="salon-manifesto-copy">
-          <p>
-            Someone nearby knows the thing you’re figuring out. Someone else is
-            building what you can help bring to life.
-          </p>
-          <p>
-            Make a small introduction. Enter a shared space. Let a reason to say
-            hello find you.
-          </p>
-          <a href="#/login">
-            Find your common ground <ArrowUpRight size={16} />
-          </a>
-        </div>
-      </section>
-      <section className="salon-steps" aria-label="How Align works">
-        {[
-          {
-            n: "01",
-            title: "Bring your curiosity.",
-            text: "Share what you’re building, what you know, and who you’d love to meet.",
-          },
-          {
-            n: "02",
-            title: "See a reason to say hello.",
-            text: "Lightweight introductions appear in the room. A shared interest or complementary skill quietly comes into focus.",
-          },
-          {
-            n: "03",
-            title: "Keep the connection.",
-            text: "Save someone deliberately. Remember why you met, make a note, and pick up where you left off.",
-          },
-        ].map((s) => (
-          <article key={s.n}>
-            <span>{s.n}</span>
-            <h3>{s.title}</h3>
-            <p>{s.text}</p>
-          </article>
-        ))}
-      </section>
-      <section className="salon-closing">
-        <span className="salon-orbit" aria-hidden="true" />
-        <div>
-          <span className="eyebrow">People, not percentages</span>
-          <h2>
-            A useful introduction.
-            <br />
-            The rest is human.
-          </h2>
-          <p>
-            <Check size={15} />
-            Your words. Your interests. Your choice to connect.
-          </p>
-          <Button onClick={onEnter}>
-            Make room for possibility
-            <ArrowUpRight size={16} />
-          </Button>
-        </div>
-      </section>
-      <footer className="salon-footer">
-        <Brand compact />
-        <span>Spatial Salon · Align</span>
-        <span>Interactive concept. Not a live headset service.</span>
-        <a href="http://127.0.0.1:4310">
-          Open original draft
-          <ArrowUpRight size={13} />
-        </a>
-      </footer>
-    </main>
-  );
+      </div>
+      <div className="qv-closing-bottom"><span>Made for meeting in person.</span><button onClick={() => jumpTo('start')}>Back to the room<ArrowUpRight size={18} /></button></div>
+    </footer>
+  </main>;
 }

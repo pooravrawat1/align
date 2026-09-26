@@ -2,10 +2,28 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { createServer as createHttpServer } from 'node:http';
 import { pathToFileURL } from 'node:url';
+import { assessmentFingerprint, createAssessmentService } from './assessment.mjs';
+import { createConnectionRequestStore } from './connection-requests.mjs';
+import { createFollowUpService } from './follow-up.mjs';
+import { followUpContext } from './follow-up-context.mjs';
+import { MATCH_THRESHOLD, experienceRoutes } from '../../matcher/src/rubric.mjs';
+import { matchingProfile } from './assessment.mjs';
+import { validateProfile as validateMatchProfile } from '../../matcher/src/profiles.mjs';
 
 const HOST = '127.0.0.1';
 const DEFAULT_PORT = 4311;
 const MAX_BODY_BYTES = 16 * 1024;
+const profileContract = JSON.parse(
+  readFileSync(new URL('../shared/profile-contract.json', import.meta.url), 'utf8'),
+);
+const {
+  stringLimits: STRING_LIMITS,
+  topicLimit: ARRAY_LIMIT,
+  topicItemLimit: ARRAY_ITEM_LIMIT,
+  photo: PHOTO_CONTRACT,
+  defaultVisibility: DEFAULT_VISIBILITY,
+} = profileContract;
+const MAX_PROFILE_BODY_BYTES = MAX_BODY_BYTES + Math.ceil(PHOTO_CONTRACT.maxBytes / 3) * 4;
 const PROFILE_FIELDS = new Set([
   'name',
   'role',
@@ -13,45 +31,24 @@ const PROFILE_FIELDS = new Set([
   'interests',
   'skills',
   'lookingFor',
+  'goals',
+  'domains',
+  'experiences',
   'location',
   'contact',
+  'linkedin',
+  'website',
+  'email',
+  'avatar',
   'visibility',
 ]);
-const STRING_LIMITS = {
-  name: 80,
-  role: 120,
-  bio: 500,
-  location: 120,
-  contact: 160,
-};
-const ARRAY_LIMIT = 20;
-const ARRAY_ITEM_LIMIT = 80;
 const FOLLOW_UP_VALUES = new Set(['needed', 'contacted', 'none']);
-const VISIBILITY_FIELDS = new Set([
-  'bio',
-  'interests',
-  'skills',
-  'lookingFor',
-  'contact',
-  'previousConnections',
-  'activeInEvent',
-]);
-const DEFAULT_VISIBILITY = {
-  bio: true,
-  interests: true,
-  skills: true,
-  lookingFor: true,
-  contact: false,
-  previousConnections: true,
-  activeInEvent: true,
-};
-const DEMO_REASON =
-  'You are both building assistive technology. Maya brings computer-vision expertise, while Alex can help deploy it on wearable hardware.';
+const GOAL_LIMIT = 3;
+const VISIBILITY_FIELDS = new Set(Object.keys(DEFAULT_VISIBILITY));
 
 const seed = JSON.parse(
   readFileSync(new URL('../shared/demo-data.json', import.meta.url), 'utf8'),
 );
-const seedProfilesById = new Map(seed.profiles.map((profile) => [profile.id, profile]));
 const knownRoomCodes = new Set(seed.events.map((event) => event.code.toUpperCase()));
 
 function clone(value) {
@@ -73,7 +70,13 @@ function connectionKey(ownerId, participantId) {
 function withProfileDefaults(profile) {
   return {
     ...profile,
+    goals: profile.goals ?? [],
+    domains: profile.domains ?? [],
+    experiences: profile.experiences ?? [],
     contact: profile.contact ?? '',
+    linkedin: profile.linkedin ?? '',
+    website: profile.website ?? '',
+    email: profile.email ?? '',
     visibility: {
       ...DEFAULT_VISIBILITY,
       ...(profile.visibility ?? {}),
@@ -96,6 +99,7 @@ function withConnectionDefaults(connection) {
     notes: connection.notes ?? '',
     followUp: connection.followUp ?? 'needed',
     reminderDate: connection.reminderDate ?? '',
+    saved: connection.saved ?? true,
   };
 }
 
@@ -123,7 +127,7 @@ function cloneSeedState() {
     connections,
     customRoomCodes: new Set(),
     matches: [],
-    matchCache: new Map(),
+    matchFingerprints: new Map(),
   };
 }
 
@@ -134,23 +138,81 @@ function publicBootstrap() {
     events: data.events,
     connections: data.connections,
     matches: [],
+    connectionRequests: [],
     session: null,
     demo: true,
   };
 }
 
 function sessionBootstrap(state) {
+  if (state.session.activeEventId === undefined) {
+    state.session.activeEventId = state.session.code === null ? null : connectionEventId(state);
+  }
+  const requests = state.requestStore?.involving(state.session.userId) ?? [];
+  const accepted = requests.filter((request) => request.status === 'accepted');
+  const ownConnections = [...state.connections.values()].filter((connection) => connection.ownerId === state.session.userId);
+  const connectionByParticipant = new Map(ownConnections.map((connection) => [connection.participantId, connection]));
+  for (const request of accepted) {
+    const participantId = request.senderId === state.session.userId ? request.recipientId : request.senderId;
+    if (connectionByParticipant.has(participantId)) continue;
+    const [userA, userB] = canonicalPair(state.session.userId, participantId);
+    connectionByParticipant.set(participantId, {
+      userA, userB, ownerId: state.session.userId, participantId, eventId: request.eventId,
+      requestId: request.id, saved: false, createdAt: request.updatedAt, notes: '', followUp: 'needed', reminderDate: '',
+    });
+  }
+  const profiles = state.profiles.map((profile) => {
+    const current = state.requestStore?.profile(profile.id) ?? profile;
+    if (profile.id === state.session.userId) return clone(current);
+    const sharesEvent = state.events.some((event) => event.participantIds?.includes(state.session.userId)
+      && event.participantIds.includes(profile.id));
+    const networkAllowed = connectionByParticipant.has(profile.id)
+      && current.visibility?.previousConnections !== false;
+    const audience = networkAllowed ? 'network' : sharesEvent ? 'event' : 'network';
+    return projectRequestPeer(current, audience);
+  });
+  const ownProfile = profiles.find((profile) => profile.id === state.session.userId);
+  const ownIndex = state.profiles.findIndex((profile) => profile.id === state.session.userId);
+  if (ownProfile && ownIndex >= 0) state.profiles[ownIndex] = clone(ownProfile);
+  const matches = state.matches.filter((match) => {
+    const recorded = state.matchFingerprints?.get(pairKey(match.userA, match.userB));
+    if (!recorded) return false;
+    const first = state.requestStore?.profile(match.userA)
+      ?? state.profiles.find((profile) => profile.id === match.userA);
+    const second = state.requestStore?.profile(match.userB)
+      ?? state.profiles.find((profile) => profile.id === match.userB);
+    return Boolean(first && second)
+      && recorded.fingerprint === assessmentFingerprint(first, second, recorded.context);
+  });
+  state.matches = matches;
   return {
-    profiles: clone(state.profiles),
+    profiles,
     events: clone(state.events),
-    connections: clone(
-      [...state.connections.values()].filter(
-        (connection) => connection.ownerId === state.session.userId,
-      ),
-    ),
-    matches: clone(state.matches),
+    connections: clone([...connectionByParticipant.values()]),
+    matches: clone(matches),
+    connectionRequests: requests,
     session: clone(state.session),
     demo: true,
+  };
+}
+
+function projectRequestPeer(profile, audience) {
+  const visibility = profile.visibility ?? DEFAULT_VISIBILITY;
+  const allowed = audience === 'network' ? visibility.previousConnections !== false : visibility.activeInEvent !== false;
+  const visible = (field) => allowed && visibility[field] !== false;
+  return {
+    ...clone(profile),
+    bio: visible('bio') ? profile.bio : '',
+    interests: visible('interests') ? profile.interests : [],
+    skills: visible('skills') ? profile.skills : [],
+    lookingFor: visible('lookingFor') ? profile.lookingFor : [],
+    goals: visible('goals') ? (profile.goals ?? []) : [],
+    domains: visible('domains') ? (profile.domains ?? []) : [],
+    experiences: visible('experiences') ? (profile.experiences ?? []) : [],
+    contact: audience === 'network' && visible('contact') ? profile.contact : '',
+    linkedin: audience === 'network' && visible('linkedin') ? profile.linkedin : '',
+    website: audience === 'network' && visible('website') ? profile.website : '',
+    email: audience === 'network' && visible('email') ? profile.email : '',
   };
 }
 
@@ -181,14 +243,16 @@ function apiError(status, message) {
   return error;
 }
 
-async function readJson(request) {
+async function readJson(request, { maxBytes = MAX_BODY_BYTES, largeField } = {}) {
   let size = 0;
   const chunks = [];
 
   for await (const chunk of request) {
     size += chunk.length;
-    if (size > MAX_BODY_BYTES) {
-      throw apiError(413, 'Request body exceeds 16KB');
+    if (size > maxBytes) {
+      throw apiError(413, maxBytes === MAX_BODY_BYTES
+        ? 'Request body exceeds 16KB'
+        : 'Request body exceeds the profile upload limit');
     }
     chunks.push(chunk);
   }
@@ -199,6 +263,9 @@ async function readJson(request) {
     const value = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       throw new TypeError('JSON body must be an object');
+    }
+    if (size > MAX_BODY_BYTES && largeField !== undefined && !(largeField in value)) {
+      throw apiError(413, 'Request body exceeds 16KB');
     }
     return value;
   } catch (error) {
@@ -217,11 +284,11 @@ function requireSession(request, sessions) {
   return sessions.get(sessionId);
 }
 
-function validateString(field, value, limit, { nonBlank = false } = {}) {
+function validateString(field, value, limit, { nonBlank = false, trimmed = false } = {}) {
   if (typeof value !== 'string') {
     throw apiError(400, `${field} must be a string`);
   }
-  if (value.length > limit) {
+  if ((trimmed ? value.trim() : value).length > limit) {
     throw apiError(400, `${field} must be ${limit} characters or fewer`);
   }
   if (nonBlank && value.trim().length === 0) {
@@ -240,6 +307,115 @@ function validateStringArray(field, value) {
   }
 }
 
+function validateContactUrl(field, value, { linkedin = false } = {}) {
+  const normalized = value.trim();
+  if (normalized === '') return;
+  if (/[\u0000-\u001f\u007f]/u.test(normalized)) {
+    throw apiError(400, `${field} must not contain control characters`);
+  }
+
+  let url;
+  try {
+    url = new URL(normalized);
+  } catch {
+    throw apiError(400, `${field} must be an empty string or a valid http(s) URL`);
+  }
+
+  if (
+    (url.protocol !== 'http:' && url.protocol !== 'https:') ||
+    url.username !== '' ||
+    url.password !== ''
+  ) {
+    throw apiError(400, `${field} must be an http(s) URL without credentials`);
+  }
+  if (linkedin && url.hostname !== 'linkedin.com' && !url.hostname.endsWith('.linkedin.com')) {
+    throw apiError(400, 'linkedin must use linkedin.com or one of its subdomains');
+  }
+}
+
+function validateEmail(value) {
+  const normalized = value.trim();
+  if (normalized === '') return;
+  if (
+    /[\u0000-\u001f\u007f]/u.test(normalized) ||
+    !/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/u.test(normalized)
+  ) {
+    throw apiError(400, 'email must be empty or a single valid email address');
+  }
+}
+
+const JPEG_START_OF_FRAME_MARKERS = new Set([
+  0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7,
+  0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf,
+]);
+
+function jpegDimensions(bytes) {
+  if (
+    bytes.length < 12 ||
+    bytes[0] !== 0xff || bytes[1] !== 0xd8 ||
+    bytes[bytes.length - 2] !== 0xff || bytes[bytes.length - 1] !== 0xd9
+  ) {
+    return null;
+  }
+
+  let offset = 2;
+  while (offset < bytes.length - 1) {
+    if (bytes[offset] !== 0xff) return null;
+    while (offset < bytes.length && bytes[offset] === 0xff) offset += 1;
+    if (offset >= bytes.length) return null;
+    const marker = bytes[offset];
+    offset += 1;
+
+    if (marker === 0xd9) return null;
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) continue;
+    if (offset + 2 > bytes.length) return null;
+
+    const segmentLength = bytes.readUInt16BE(offset);
+    if (segmentLength < 2 || offset + segmentLength > bytes.length) return null;
+    if (JPEG_START_OF_FRAME_MARKERS.has(marker)) {
+      if (segmentLength < 8) return null;
+      return {
+        height: bytes.readUInt16BE(offset + 3),
+        width: bytes.readUInt16BE(offset + 5),
+      };
+    }
+    if (marker === 0xda) return null;
+    offset += segmentLength;
+  }
+  return null;
+}
+
+function validateAvatar(value) {
+  if (typeof value !== 'string') {
+    throw apiError(400, 'avatar must be a string');
+  }
+  if (value === '') return;
+
+  const prefix = `data:${PHOTO_CONTRACT.mimeType};base64,`;
+  if (!value.startsWith(prefix)) {
+    throw apiError(400, `avatar must be empty or a ${PHOTO_CONTRACT.mimeType} data URL`);
+  }
+  const encoded = value.slice(prefix.length);
+  if (
+    encoded.length === 0 ||
+    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(encoded)
+  ) {
+    throw apiError(400, 'avatar must contain valid base64');
+  }
+
+  const bytes = Buffer.from(encoded, 'base64');
+  if (bytes.length > PHOTO_CONTRACT.maxBytes) {
+    throw apiError(400, `avatar must be ${PHOTO_CONTRACT.maxBytes} bytes or fewer`);
+  }
+  const dimensions = jpegDimensions(bytes);
+  if (!dimensions || dimensions.width === 0 || dimensions.height === 0) {
+    throw apiError(400, 'avatar must contain a valid JPEG header');
+  }
+  if (dimensions.width > PHOTO_CONTRACT.size || dimensions.height > PHOTO_CONTRACT.size) {
+    throw apiError(400, `avatar dimensions must be ${PHOTO_CONTRACT.size} by ${PHOTO_CONTRACT.size} pixels or smaller`);
+  }
+}
+
 function validateProfilePatch(body) {
   for (const field of Object.keys(body)) {
     if (!PROFILE_FIELDS.has(field)) {
@@ -249,13 +425,31 @@ function validateProfilePatch(body) {
 
   for (const [field, limit] of Object.entries(STRING_LIMITS)) {
     if (field in body) {
-      validateString(field, body[field], limit, { nonBlank: field === 'name' });
+      validateString(field, body[field], limit, {
+        nonBlank: field === 'name',
+        trimmed: field === 'linkedin' || field === 'website' || field === 'email',
+      });
     }
   }
 
-  for (const field of ['interests', 'skills', 'lookingFor']) {
+  for (const field of ['interests', 'skills', 'lookingFor', 'domains']) {
     if (field in body) validateStringArray(field, body[field]);
   }
+  if ('goals' in body) {
+    validateStringArray('goals', body.goals);
+    if (body.goals.length > GOAL_LIMIT) throw apiError(400, `goals must contain at most ${GOAL_LIMIT} strings`);
+  }
+
+  if ('experiences' in body) {
+    try {
+      validateMatchProfile({ userId: 'validation', name: 'Validation', bio: '', interests: [], skills: [], lookingFor: [], networkingGoal: '', domains: [], experiences: body.experiences });
+    } catch (error) { throw apiError(400, error.message); }
+  }
+
+  if ('linkedin' in body) validateContactUrl('linkedin', body.linkedin, { linkedin: true });
+  if ('website' in body) validateContactUrl('website', body.website);
+  if ('email' in body) validateEmail(body.email);
+  if ('avatar' in body) validateAvatar(body.avatar);
 
   if ('visibility' in body) {
     if (!body.visibility || typeof body.visibility !== 'object' || Array.isArray(body.visibility)) {
@@ -281,15 +475,7 @@ function normalizedSet(values) {
 function compactLabel(value, maxWords = 8) {
   return value.trim().split(/\s+/u).slice(0, maxWords).join(' ');
 }
-
-function firstName(profile) {
-  return compactLabel(profile.name, 1);
-}
-
-function profilesEqualSeed(profile) {
-  const original = seedProfilesById.get(profile.id);
-  return original !== undefined && JSON.stringify(profile) === JSON.stringify(withProfileDefaults(original));
-}
+function firstName(profile) { return compactLabel(profile.name, 1); }
 
 function visibleProfileValues(profile, field) {
   return profile.visibility[field] ? profile[field] : [];
@@ -305,103 +491,108 @@ function sharedInterestsForProfiles(firstProfile, secondProfile) {
     .sort((left, right) => left.localeCompare(right, 'en-US', { sensitivity: 'base' }));
 }
 
-function deterministicMatch(firstProfile, secondProfile, demoMode) {
-  const [userA, userB] = canonicalPair(firstProfile.id, secondProfile.id);
-  const profileA = firstProfile.id === userA ? firstProfile : secondProfile;
-  const profileB = firstProfile.id === userB ? firstProfile : secondProfile;
+async function calculateMatches(state, demoMode, assessmentService, requestStore) {
+  const latestProfile = (profile) => requestStore.profile(profile.id) ?? profile;
+  const current = latestProfile(state.profiles.find((profile) => profile.id === state.session.userId));
+  const matches = new Map();
+  const event = eventForId(state, connectionEventId(state));
+  const participants = (demoMode
+    ? state.profiles
+    : state.profiles.filter((profile) => event?.participantIds?.includes(profile.id)))
+    .map(latestProfile);
+  const contexts = new Map(participants
+    .filter((participant) => participant.id !== current.id)
+    .map((participant) => [participant.id, {
+      audience: 'event', eventId: event?.id, ...(demoMode ? { fixture: true } : {}),
+    }]));
+  const inputFingerprints = new Map([...contexts].map(([participantId, context]) => {
+    const participant = participants.find((candidate) => candidate.id === participantId);
+    return [participantId, assessmentFingerprint(current, participant, context)];
+  }));
 
-  if (
-    demoMode &&
-    userA === 'alex' &&
-    userB === 'maya' &&
-    profilesEqualSeed(profileA) &&
-    profilesEqualSeed(profileB)
-  ) {
-    return {
-      userA,
-      userB,
-      compatible: true,
-      score: 0.96,
-      reason: DEMO_REASON,
-      source: 'precomputed',
-    };
-  }
-
-  if (!profileA.visibility.activeInEvent || !profileB.visibility.activeInEvent) {
-    return {
-      userA,
-      userB,
-      compatible: false,
-      score: 0,
-      reason: '',
-      source: 'mock',
-    };
-  }
-
-  const skillsA = normalizedSet(visibleProfileValues(profileA, 'skills'));
-  const skillsB = normalizedSet(visibleProfileValues(profileB, 'skills'));
-  const lookingA = normalizedSet(visibleProfileValues(profileA, 'lookingFor'));
-  const lookingB = normalizedSet(visibleProfileValues(profileB, 'lookingFor'));
-  const skillMatches = [];
-
-  for (const [key, skill] of skillsA) {
-    if (lookingB.has(key)) {
-      skillMatches.push({ provider: profileA, seeker: profileB, value: skill });
+  if (demoMode) {
+    for (const participant of participants) {
+      if (participant.id === current.id) continue;
+      const assessment = await assessmentService.assess(current, participant, contexts.get(participant.id));
+      const [userA, userB] = canonicalPair(current.id, participant.id);
+      const match = { userA, userB, compatible: assessment.status === 'ready' && assessment.score >= MATCH_THRESHOLD, score: assessment.score === null ? null : assessment.score / 100, reason: assessment.score >= MATCH_THRESHOLD ? assessment.reason : '', source: assessment.source };
+      matches.set(pairKey(match.userA, match.userB), match);
     }
-  }
-  for (const [key, skill] of skillsB) {
-    if (lookingA.has(key)) {
-      skillMatches.push({ provider: profileB, seeker: profileA, value: skill });
-    }
-  }
-
-  skillMatches.sort((left, right) =>
-    left.value.localeCompare(right.value, 'en-US', { sensitivity: 'base' }),
-  );
-  const sharedInterests = sharedInterestsForProfiles(profileA, profileB);
-
-  if (skillMatches.length === 0 && sharedInterests.length === 0) {
-    return {
-      userA,
-      userB,
-      compatible: false,
-      score: 0,
-      reason: '',
-      source: 'mock',
-    };
-  }
-
-  let reason;
-  if (skillMatches.length > 0) {
-    const match = skillMatches[0];
-    reason = `${firstName(match.provider)} offers ${compactLabel(match.value)}, which ${firstName(match.seeker)} is seeking.`;
   } else {
-    reason = `${firstName(profileA)} and ${firstName(profileB)} share an interest in ${compactLabel(sharedInterests[0])}.`;
+    const overlapRank = (participant) => {
+      if (!current.visibility.activeInEvent || !participant.visibility.activeInEvent) return 0;
+      const count = (left, right) => {
+        const rightValues = normalizedSet(right);
+        return [...normalizedSet(left).keys()].filter((key) => rightValues.has(key)).length;
+      };
+      const first = matchingProfile(current, 'event');
+      const second = matchingProfile(participant, 'event');
+      const routes = experienceRoutes(first, second);
+      return Math.max(routes.professional.score, routes.personal.score) * 10
+        + count(visibleProfileValues(current, 'skills'), visibleProfileValues(participant, 'lookingFor')) * 100
+        + count(visibleProfileValues(participant, 'skills'), visibleProfileValues(current, 'lookingFor')) * 100
+        + count(visibleProfileValues(current, 'interests'), visibleProfileValues(participant, 'interests')) * 10
+        + count(visibleProfileValues(current, 'goals'), visibleProfileValues(participant, 'goals')) * 5;
+    };
+    const candidates = participants.filter((participant) => participant.id !== current.id)
+      .map((participant) => ({ participant, rank: overlapRank(participant) }))
+      .filter((candidate) => candidate.rank > 0)
+      .sort((left, right) => right.rank - left.rank || left.participant.id.localeCompare(right.participant.id))
+      .slice(0, 3);
+    const assessed = await Promise.all(candidates.map(async ({ participant }) => ({
+      participant,
+      assessment: await assessmentService.assess(current, participant, contexts.get(participant.id)),
+    })));
+    const byId = new Map(assessed.map((entry) => [entry.participant.id, entry.assessment]));
+    for (const participant of participants) {
+      if (participant.id === current.id) continue;
+      const [userA, userB] = canonicalPair(current.id, participant.id);
+      const assessment = byId.get(participant.id);
+      const match = assessment ? {
+        userA, userB, compatible: assessment.status === 'ready' && assessment.score >= MATCH_THRESHOLD,
+        score: assessment.score === null ? null : assessment.score / 100,
+        reason: assessment.score >= MATCH_THRESHOLD ? assessment.reason : '', source: assessment.source,
+      } : { userA, userB, compatible: false, score: null, reason: '', source: 'unavailable' };
+      matches.set(pairKey(match.userA, match.userB), match);
+    }
   }
 
+  const latestCurrent = requestStore.profile(current.id) ?? current;
+  for (const participant of participants) {
+    if (participant.id === current.id) continue;
+    const latestParticipant = requestStore.profile(participant.id) ?? participant;
+    if (inputFingerprints.get(participant.id)
+      !== assessmentFingerprint(latestCurrent, latestParticipant, contexts.get(participant.id))) {
+      throw apiError(409, 'Profiles changed while compatibility was being generated');
+    }
+  }
   return {
-    userA,
-    userB,
-    compatible: true,
-    score: Math.min(99, 50 + skillMatches.length * 18 + sharedInterests.length * 10) / 100,
-    reason,
-    source: 'mock',
+    matches: [...matches.values()].sort(
+    (left, right) => (right.score ?? -1) - (left.score ?? -1) || pairKey(left.userA, left.userB).localeCompare(pairKey(right.userA, right.userB)),
+    ),
+    fingerprints: new Map([...inputFingerprints].map(([participantId, fingerprint]) => [
+      pairKey(current.id, participantId),
+      { fingerprint, context: contexts.get(participantId) },
+    ])),
   };
 }
 
-function calculateMatches(state, demoMode) {
-  const current = state.profiles.find((profile) => profile.id === state.session.userId);
-  const matches = new Map();
+function eventForId(state, eventId) {
+  return state.events.find((event) => event.id === eventId);
+}
 
-  for (const participant of state.profiles) {
-    if (participant.id === current.id) continue;
-    const match = deterministicMatch(current, participant, demoMode);
-    matches.set(pairKey(match.userA, match.userB), match);
+function eventForCode(state, code) {
+  return state.events.find((event) => event.code.toUpperCase() === code.toUpperCase());
+}
+
+function requireRosterPair(state, eventId, participantId) {
+  const event = eventForId(state, eventId);
+  if (!event) throw apiError(404, 'Event not found');
+  const roster = event.participantIds ?? [];
+  if (!roster.includes(state.session.userId) || !roster.includes(participantId)) {
+    throw apiError(403, 'Both people must belong to this event');
   }
-
-  return [...matches.values()].sort(
-    (left, right) => right.score - left.score || pairKey(left.userA, left.userB).localeCompare(pairKey(right.userA, right.userB)),
-  );
+  return event;
 }
 
 function validateBoolean(body, field) {
@@ -417,7 +608,7 @@ function requireJoinedRoom(state) {
 }
 
 function connectionEventId(state) {
-  if (state.session.code === null) return 'demo';
+  if (state.session.code === null) return state.session.activeEventId ?? 'demo';
   const event = state.events.find(
     (candidate) => candidate.code.toUpperCase() === state.session.code,
   );
@@ -451,7 +642,7 @@ function validateConnectionPatch(body) {
 
 function connectionMatchContext(state, userA, userB) {
   const currentMatch = state.matches.find(
-    (match) => match.userA === userA && match.userB === userB && match.compatible,
+    (match) => match.userA === userA && match.userB === userB,
   );
   const profileA = state.profiles.find((profile) => profile.id === userA);
   const profileB = state.profiles.find((profile) => profile.id === userB);
@@ -464,7 +655,38 @@ function connectionMatchContext(state, userA, userB) {
   return { reason, sharedInterests };
 }
 
-async function handleRequest(request, response, sessions) {
+function acceptedRequestFor(requestStore, firstId, secondId) {
+  return requestStore.involving(firstId).find((request) =>
+    request.status === 'accepted' &&
+    ((request.senderId === firstId && request.recipientId === secondId) || (request.senderId === secondId && request.recipientId === firstId)),
+  );
+}
+
+function compatibilityProfiles(state, requestStore, participantId, audience) {
+  const localCurrent = state.profiles.find((profile) => profile.id === state.session.userId);
+  const current = requestStore.profile(state.session.userId) ?? localCurrent;
+  const storedParticipant = requestStore.profile(participantId)
+    ?? state.profiles.find((profile) => profile.id === participantId);
+  if (!current || !storedParticipant) return { current, participant: null };
+  return {
+    current,
+    participant: projectRequestPeer(storedParticipant, audience),
+  };
+}
+
+function materializeAcceptedConnection(state, requestStore, participantId) {
+  const request = acceptedRequestFor(requestStore, state.session.userId, participantId);
+  if (!request) return null;
+  const [userA, userB] = canonicalPair(state.session.userId, participantId);
+  const connection = {
+    userA, userB, ownerId: state.session.userId, participantId, eventId: request.eventId,
+    requestId: request.id, saved: false, createdAt: request.updatedAt, notes: '', followUp: 'needed', reminderDate: '',
+  };
+  state.connections.set(connectionKey(state.session.userId, participantId), connection);
+  return connection;
+}
+
+async function handleRequest(request, response, sessions, assessmentService, requestStore, followUpService) {
   const url = new URL(request.url, `http://${request.headers.host || `${HOST}:${DEFAULT_PORT}`}`);
 
   if (request.method === 'OPTIONS') {
@@ -474,6 +696,17 @@ async function handleRequest(request, response, sessions) {
 
   if (request.method === 'GET' && url.pathname === '/api/health') {
     sendJson(response, 200, { ok: true, demo: true });
+    return;
+  }
+
+  if (request.method === 'POST' && (url.pathname === '/api/follow-up-demo' || url.pathname === '/api/follow-up')) {
+    const body = await readJson(request);
+    const state = url.pathname === '/api/follow-up' ? requireSession(request, sessions) : null;
+    const context = () => followUpContext(body, state ? sessionBootstrap(state) : null);
+    const input = context();
+    const result = await followUpService.generate(input);
+    if (state && (!sessions.has(state.session.id) || JSON.stringify(context()) !== JSON.stringify(input))) throw apiError(409, 'Connection details changed. Generate again with the updated profile.');
+    sendJson(response, 200, result);
     return;
   }
 
@@ -500,14 +733,23 @@ async function handleRequest(request, response, sessions) {
     }
 
     const state = cloneSeedState();
-    const profile = state.profiles.find((candidate) => candidate.id === profileId);
+    state.requestStore = requestStore;
+    let profile = state.profiles.find((candidate) => candidate.id === profileId);
     if (!profile) throw apiError(404, 'Profile not found');
+    const storedProfile = requestStore.profile(profileId);
+    if (storedProfile) {
+      profile = withProfileDefaults(storedProfile);
+      const index = state.profiles.findIndex((candidate) => candidate.id === profileId);
+      state.profiles[index] = profile;
+    }
     if ('name' in body) profile.name = body.name.trim();
+    requestStore.rememberProfile(profile, { overwrite: 'name' in body });
 
     const sessionId = randomUUID();
     state.session = {
       id: sessionId,
       code: null,
+      activeEventId: null,
       userId: profile.id,
       calibrated: false,
     };
@@ -519,23 +761,34 @@ async function handleRequest(request, response, sessions) {
   const state = requireSession(request, sessions);
 
   if (request.method === 'PATCH' && url.pathname === '/api/profile') {
-    const body = await readJson(request);
+    const body = await readJson(request, {
+      maxBytes: MAX_PROFILE_BODY_BYTES,
+      largeField: 'avatar',
+    });
     validateProfilePatch(body);
-    const profile = state.profiles.find((candidate) => candidate.id === state.session.userId);
+    const profileIndex = state.profiles.findIndex((candidate) => candidate.id === state.session.userId);
+    const profile = withProfileDefaults(
+      requestStore.profile(state.session.userId) ?? state.profiles[profileIndex],
+    );
+    state.profiles[profileIndex] = profile;
+    const avatarOnly = Object.keys(body).length === 1 && 'avatar' in body;
     for (const field of PROFILE_FIELDS) {
       if (!(field in body)) continue;
       if (field === 'visibility') {
         profile.visibility = { ...profile.visibility, ...body.visibility };
       } else if (Array.isArray(body[field])) {
         profile[field] = [...body[field]];
-      } else if (field === 'contact') {
+      } else if (field === 'contact' || field === 'avatar') {
         profile[field] = body[field];
       } else {
         profile[field] = body[field].trim();
       }
     }
-    state.matches = [];
-    state.matchCache.clear();
+    if (!avatarOnly) {
+      state.matches = [];
+      state.matchFingerprints.clear();
+    }
+    requestStore.rememberProfile(profile);
     sendJson(response, 200, sessionBootstrap(state));
     return;
   }
@@ -563,14 +816,20 @@ async function handleRequest(request, response, sessions) {
         location: 'Local preview',
         date: 'Demo session',
         time: 'No scheduled time',
-        status: 'Demo event',
+        status: 'Open room',
+        participantIds: state.profiles.map((profile) => profile.id),
       });
     }
     if (state.session.code !== code) {
       state.matches = [];
-      state.matchCache.clear();
+      state.matchFingerprints.clear();
     }
     state.session.code = code;
+    const joinedEvent = eventForCode(state, code);
+    state.session.activeEventId = joinedEvent?.id ?? code;
+    if (joinedEvent && !joinedEvent.participantIds?.includes(state.session.userId)) {
+      joinedEvent.participantIds = [...(joinedEvent.participantIds ?? []), state.session.userId];
+    }
     state.session.calibrated = false;
     sendJson(response, 200, sessionBootstrap(state));
     return;
@@ -589,7 +848,7 @@ async function handleRequest(request, response, sessions) {
     const body = await readJson(request);
     if (Object.keys(body).length > 0) throw apiError(400, 'Leave body must be empty');
     state.matches = [];
-    state.matchCache.clear();
+    state.matchFingerprints.clear();
     state.session.code = null;
     state.session.calibrated = false;
     sendJson(response, 200, sessionBootstrap(state));
@@ -605,18 +864,94 @@ async function handleRequest(request, response, sessions) {
     }
     requireJoinedRoom(state);
     const demoMode = body.demo === true;
-    const cacheKey = `${state.session.userId}:${demoMode ? 'demo' : 'standard'}`;
-    if (body.force === true || !state.matchCache.has(cacheKey)) {
-      state.matchCache.set(cacheKey, calculateMatches(state, demoMode));
+    const sessionId = state.session.id;
+    const roomContext = JSON.stringify({
+      code: state.session.code,
+      activeEventId: state.session.activeEventId ?? null,
+    });
+    const calculated = await calculateMatches(state, demoMode, assessmentService, requestStore);
+    if (sessions.get(sessionId) !== state || roomContext !== JSON.stringify({
+      code: state.session.code,
+      activeEventId: state.session.activeEventId ?? null,
+    })) {
+      throw apiError(409, 'Event changed while compatibility was being generated');
     }
-    state.matches = clone(state.matchCache.get(cacheKey));
+    state.matches = clone(calculated.matches);
+    state.matchFingerprints = calculated.fingerprints;
+    sendJson(response, 200, sessionBootstrap(state));
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/compatibility') {
+    const body = await readJson(request);
+    for (const field of Object.keys(body)) {
+      if (!['participantId', 'eventId', 'audience', 'retry'].includes(field)) throw apiError(400, `Unknown compatibility field: ${field}`);
+    }
+    validateBoolean(body, 'retry');
+    if (typeof body.participantId !== 'string') throw apiError(400, 'participantId must be a string');
+    if (body.participantId === state.session.userId) throw apiError(400, 'Cannot assess a profile against itself');
+    if (body.audience !== 'event' && body.audience !== 'network') throw apiError(400, 'audience must be event or network');
+    let { current, participant } = compatibilityProfiles(state, requestStore, body.participantId, body.audience);
+    if (!participant) throw apiError(404, 'Participant not found');
+    let eventId = null;
+    if (body.audience === 'event') {
+      eventId = body.eventId ?? (state.session.code === null ? null : connectionEventId(state));
+      if (typeof eventId !== 'string') throw apiError(400, 'eventId is required for event compatibility');
+      requireRosterPair(state, eventId, participant.id);
+    } else {
+      const connected = state.connections.has(connectionKey(state.session.userId, participant.id))
+        || Boolean(acceptedRequestFor(requestStore, state.session.userId, participant.id));
+      if (!connected) throw apiError(403, 'Save this person or connect before requesting network compatibility');
+      if (participant.visibility.previousConnections === false) throw apiError(403, 'This profile is not shared with saved connections');
+    }
+    const context = { audience: body.audience, eventId, retry: body.retry === true };
+    const before = assessmentFingerprint(current, participant, context);
+    const assessment = await assessmentService.assess(current, participant, context);
+    ({ current, participant } = compatibilityProfiles(state, requestStore, body.participantId, body.audience));
+    if (!current || !participant || before !== assessmentFingerprint(current, participant, context)) {
+      throw apiError(409, 'Profiles changed while compatibility was being generated');
+    }
+    sendJson(response, 200, assessment);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/connection-requests') {
+    const body = await readJson(request);
+    for (const field of Object.keys(body)) {
+      if (field !== 'participantId' && field !== 'eventId') throw apiError(400, `Unknown connection request field: ${field}`);
+    }
+    if (typeof body.participantId !== 'string') throw apiError(400, 'participantId must be a string');
+    if (body.participantId === state.session.userId) throw apiError(400, 'Cannot request a connection with yourself');
+    if (typeof body.eventId !== 'string') throw apiError(400, 'eventId must be a string');
+    requireRosterPair(state, body.eventId, body.participantId);
+    const sender = requestStore.profile(state.session.userId) ?? state.profiles.find((profile) => profile.id === state.session.userId);
+    const recipient = requestStore.profile(body.participantId) ?? state.profiles.find((profile) => profile.id === body.participantId);
+    if (!sender || !recipient) throw apiError(404, 'Participant not found');
+    if (sender.visibility?.activeInEvent === false || recipient.visibility?.activeInEvent === false) {
+      throw apiError(403, 'Both people must be sharing their profile in this event');
+    }
+    requestStore.send({ senderId: state.session.userId, recipientId: body.participantId, eventId: body.eventId });
+    sendJson(response, 200, sessionBootstrap(state));
+    return;
+  }
+
+  if (request.method === 'PATCH' && url.pathname.startsWith('/api/connection-requests/')) {
+    const body = await readJson(request);
+    if (Object.keys(body).some((field) => field !== 'action')) throw apiError(400, 'Unknown connection request field');
+    if (!['accept', 'decline', 'cancel'].includes(body.action)) throw apiError(400, 'action must be accept, decline, or cancel');
+    const id = decodeURIComponent(url.pathname.slice('/api/connection-requests/'.length));
+    if (!id || id.includes('/')) throw apiError(400, 'Connection request id is required');
+    const result = requestStore.update(id, state.session.userId, body.action);
+    if (result.error === 'not-found') throw apiError(404, 'Connection request not found');
+    if (result.error === 'forbidden') throw apiError(403, 'Only the appropriate participant can perform this action');
+    if (result.error === 'settled') throw apiError(409, 'Connection request is already settled');
     sendJson(response, 200, sessionBootstrap(state));
     return;
   }
 
   if (request.method === 'POST' && url.pathname === '/api/connections') {
     const body = await readJson(request);
-    if (Object.keys(body).some((field) => field !== 'participantId')) {
+    if (Object.keys(body).some((field) => field !== 'participantId' && field !== 'eventId')) {
       throw apiError(400, 'Unknown connections field');
     }
     if (typeof body.participantId !== 'string') {
@@ -628,6 +963,9 @@ async function handleRequest(request, response, sessions) {
     if (!state.profiles.some((profile) => profile.id === body.participantId)) {
       throw apiError(404, 'Participant not found');
     }
+    const eventId = body.eventId ?? connectionEventId(state);
+    if (typeof eventId !== 'string') throw apiError(400, 'eventId must be a string');
+    requireRosterPair(state, eventId, body.participantId);
     const [userA, userB] = canonicalPair(state.session.userId, body.participantId);
     const key = connectionKey(state.session.userId, body.participantId);
     if (!state.connections.has(key)) {
@@ -637,13 +975,17 @@ async function handleRequest(request, response, sessions) {
         userB,
         ownerId: state.session.userId,
         participantId: body.participantId,
-        eventId: connectionEventId(state),
+        eventId,
         createdAt: new Date().toISOString(),
         notes: '',
         followUp: 'needed',
         reminderDate: '',
+        saved: true,
+        requestId: acceptedRequestFor(requestStore, state.session.userId, body.participantId)?.id,
         ...matchContext,
       });
+    } else if (state.connections.get(key).saved === false) {
+      state.connections.set(key, { ...state.connections.get(key), saved: true });
     }
     sendJson(response, 200, sessionBootstrap(state));
     return;
@@ -657,7 +999,7 @@ async function handleRequest(request, response, sessions) {
       throw apiError(400, 'participantId is required');
     }
     const key = connectionKey(state.session.userId, participantId);
-    const connection = state.connections.get(key);
+    const connection = state.connections.get(key) ?? materializeAcceptedConnection(state, requestStore, participantId);
     if (!connection) throw apiError(404, 'Saved connection not found');
     state.connections.set(key, { ...connection, ...body });
     sendJson(response, 200, sessionBootstrap(state));
@@ -670,7 +1012,13 @@ async function handleRequest(request, response, sessions) {
     if (!participantId || participantId.includes('/')) {
       throw apiError(400, 'participantId is required');
     }
-    state.connections.delete(connectionKey(state.session.userId, participantId));
+    const key = connectionKey(state.session.userId, participantId);
+    const connection = state.connections.get(key);
+    if (connection && acceptedRequestFor(requestStore, state.session.userId, participantId)) {
+      state.connections.set(key, { ...connection, saved: false });
+    } else {
+      state.connections.delete(key);
+    }
     sendJson(response, 200, sessionBootstrap(state));
     return;
   }
@@ -683,18 +1031,20 @@ async function handleRequest(request, response, sessions) {
     if ('scope' in body && body.scope !== 'all') {
       throw apiError(400, 'scope must be "all" when provided');
     }
-    if (state.session.code === null && body.scope !== 'all') {
-      throw apiError(409, 'Join an event before clearing its data, or use scope "all"');
+    if (state.session.activeEventId === null && body.scope !== 'all') {
+      throw apiError(409, 'Select an event before clearing its data, or use scope "all"');
     }
-    const eventId = state.session.code === null ? null : connectionEventId(state);
+    const eventId = state.session.activeEventId ?? (state.session.code === null ? null : connectionEventId(state));
     for (const [key, connection] of state.connections) {
       const ownedByCurrentUser = connection.ownerId === state.session.userId;
       const inScope = body.scope === 'all' || connection.eventId === eventId;
       if (ownedByCurrentUser && inScope) state.connections.delete(key);
     }
+    requestStore.removeFor(state.session.userId, { eventId, all: body.scope === 'all' });
     state.matches = [];
-    state.matchCache.clear();
+    state.matchFingerprints.clear();
     state.session.code = null;
+    state.session.activeEventId = body.scope === 'all' ? null : state.session.activeEventId;
     state.session.calibrated = false;
     sendJson(response, 200, sessionBootstrap(state));
     return;
@@ -704,9 +1054,15 @@ async function handleRequest(request, response, sessions) {
     const body = await readJson(request);
     if (Object.keys(body).length > 0) throw apiError(400, 'Reset body must be empty');
     const resetState = cloneSeedState();
+    requestStore.removeFor(state.session.userId, { all: true });
+    requestStore.rememberProfile(
+      resetState.profiles.find((profile) => profile.id === state.session.userId),
+    );
+    resetState.requestStore = requestStore;
     resetState.session = {
       id: state.session.id,
       code: null,
+      activeEventId: null,
       userId: state.session.userId,
       calibrated: false,
     };
@@ -726,10 +1082,12 @@ async function handleRequest(request, response, sessions) {
   throw apiError(404, 'Endpoint not found');
 }
 
-export function createServer() {
-  const sessions = new Map();
-  return createHttpServer((request, response) => {
-    handleRequest(request, response, sessions).catch((error) => {
+export function createRequestHandler(sessions = new Map(), options = {}) {
+  const assessmentService = options.assessmentService ?? createAssessmentService(options);
+  const requestStore = options.connectionRequestStore ?? createConnectionRequestStore();
+  const followUpService = options.followUpService ?? createFollowUpService(options);
+  return (request, response) => {
+    handleRequest(request, response, sessions, assessmentService, requestStore, followUpService).catch((error) => {
       if (response.headersSent) {
         response.destroy();
         return;
@@ -737,7 +1095,11 @@ export function createServer() {
       const status = Number.isInteger(error.status) ? error.status : 500;
       sendJson(response, status, { error: status === 500 ? 'Internal server error' : error.message });
     });
-  });
+  };
+}
+
+export function createServer(options = {}) {
+  return createHttpServer(createRequestHandler(new Map(), options));
 }
 
 function configuredPort() {
@@ -755,6 +1117,6 @@ const executedDirectly =
 if (executedDirectly) {
   const port = configuredPort();
   createServer().listen(port, HOST, () => {
-    console.log(`Align mock API listening at http://${HOST}:${port}`);
+    console.log(`Catalyst demo API listening at http://${HOST}:${port}`);
   });
 }

@@ -1,33 +1,26 @@
-import { ArrowUpRight, LoaderCircle } from "lucide-react";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { ArrowUpRight, ChevronDown, LoaderCircle } from "lucide-react";
+import type { ButtonHTMLAttributes, DetailsHTMLAttributes, ReactNode } from "react";
 import { useState } from "react";
 import type { Profile } from "./types";
 export function Mark({ small = false }: { small?: boolean }) {
   return (
-    <svg
+    <img
       className={small ? "mark small" : "mark"}
-      viewBox="0 0 40 40"
-      fill="none"
+      src="/assets/catalyst-logo.png"
+      alt=""
       aria-hidden="true"
-    >
-      <circle cx="17" cy="17" r="11" stroke="currentColor" strokeWidth="3.3" />
-      <path
-        d="m24 24 9 9m-9-9v8m0-8h8"
-        stroke="currentColor"
-        strokeWidth="3.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    />
   );
 }
-export function Brand({ compact = false }: { compact?: boolean }) {
+export function Brand({
+  compact = false,
+}: {
+  compact?: boolean;
+}) {
   return (
-    <a className="brand" href="#/" aria-label="Align home">
+    <a className={`brand${compact ? " brand--compact" : ""}`} href="#/" aria-label="Catalyst home">
       <Mark small={compact} />
-      <span>
-        align<span className="brand-dot">.</span>
-      </span>
+      <span>catalyst</span>
     </a>
   );
 }
@@ -39,7 +32,7 @@ export function Button({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
-  variant?: "primary" | "secondary" | "ghost" | "green";
+  variant?: "primary" | "secondary" | "ghost" | "accent";
   busy?: boolean;
 }) {
   return (
@@ -47,6 +40,7 @@ export function Button({
       {...props}
       className={`button ${variant} ${className}`}
       disabled={props.disabled || busy}
+      aria-busy={busy || undefined}
     >
       {busy && <LoaderCircle size={16} className="spin" />}
       {children}
@@ -60,8 +54,8 @@ export function Avatar({
   profile: Profile;
   size?: "small" | "normal" | "large";
 }) {
-  const [failed, setFailed] = useState(false);
-  if (failed || !profile.avatar)
+  const [failedSource, setFailedSource] = useState<string | null>(null);
+  if (failedSource === profile.avatar || !profile.avatar)
     return (
       <span className={`avatar avatar-fallback ${size}`} aria-hidden="true">
         {profile.name
@@ -77,19 +71,161 @@ export function Avatar({
       className={`avatar ${size}`}
       src={profile.avatar}
       alt=""
-      onError={() => setFailed(true)}
+      onError={() => setFailedSource(profile.avatar)}
     />
   );
+}
+export function Chip({
+  children,
+  className = "",
+  as: Component = "span",
+}: {
+  children: ReactNode;
+  className?: string;
+  as?: "span" | "li";
+}) {
+  return <Component className={`chip ${className}`.trim()}>{children}</Component>;
 }
 export function Tags({ items, limit }: { items: string[]; limit?: number }) {
   return (
     <div className="tags">
       {items.slice(0, limit).map((item) => (
-        <span className="tag" key={item}>
+        <Chip key={item}>
           {item}
-        </span>
+        </Chip>
       ))}
     </div>
+  );
+}
+export function PageHeader({
+  title,
+  description,
+  eyebrow,
+  action,
+  className = "",
+}: {
+  title: ReactNode;
+  description?: ReactNode;
+  eyebrow?: ReactNode;
+  action?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <header className={`ds-page-header ${className}`.trim()}>
+      <div className="ds-page-header-copy">
+        {eyebrow && <span className="ds-eyebrow">{eyebrow}</span>}
+        <h1>{title}</h1>
+        {description && <p>{description}</p>}
+      </div>
+      {action && <div className="ds-page-header-action">{action}</div>}
+    </header>
+  );
+}
+export function PanelHeader({
+  title,
+  description,
+  icon,
+  action,
+  headingId,
+  headingClassName = "",
+  className = "",
+}: {
+  title: ReactNode;
+  description?: ReactNode;
+  icon?: ReactNode;
+  action?: ReactNode;
+  headingId?: string;
+  headingClassName?: string;
+  className?: string;
+}) {
+  const stacked = Boolean(description || icon);
+  return (
+    <header className={`ds-panel-header ${stacked ? "ds-panel-header--stacked" : "ds-panel-header--row"}${action ? " ds-panel-header--action" : ""} ${className}`.trim()}>
+      <div className="ds-panel-header-copy">
+        <div className="ds-panel-header-title">
+          <h2 id={headingId} className={headingClassName}>{title}</h2>
+          {icon && <span className="ds-panel-header-icon" aria-hidden="true">{icon}</span>}
+        </div>
+        {description && <p>{description}</p>}
+      </div>
+      {action && <div className="ds-panel-header-action">{action}</div>}
+    </header>
+  );
+}
+export function Disclosure({
+  title,
+  description,
+  children,
+  className = "",
+  ...props
+}: DetailsHTMLAttributes<HTMLDetailsElement> & {
+  title: ReactNode;
+  description?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <details {...props} className={`ds-disclosure ${className}`.trim()}>
+      <summary>
+        <span>
+          <strong>{title}</strong>
+          {description && <small>{description}</small>}
+        </span>
+        <ChevronDown size={16} aria-hidden="true" />
+      </summary>
+      <div className="ds-disclosure-body">{children}</div>
+    </details>
+  );
+}
+export function TextAction({
+  children,
+  icon,
+  iconPosition = "end",
+  href,
+  onClick,
+  disabled,
+  className = "",
+  "aria-label": ariaLabel,
+}: {
+  children: ReactNode;
+  icon?: ReactNode;
+  iconPosition?: "start" | "end";
+  href?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+  "aria-label"?: string;
+}) {
+  const content = (
+    <>
+      {iconPosition === "start" && icon}
+      <span>{children}</span>
+      {iconPosition === "end" && icon}
+    </>
+  );
+  if (href) {
+    return (
+      <a
+        className={`text-action ${className}`}
+        data-icon-position={iconPosition}
+        href={href}
+        aria-label={ariaLabel}
+        onClick={onClick}
+      >
+        {content}
+      </a>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className={`text-action ${className}`}
+      data-icon-position={iconPosition}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      onClick={onClick}
+    >
+      {content}
+    </button>
   );
 }
 export function TextLink({
@@ -100,10 +236,9 @@ export function TextLink({
   onClick: () => void;
 }) {
   return (
-    <button className="text-link" onClick={onClick}>
+    <TextAction icon={<ArrowUpRight size={15} />} onClick={onClick}>
       {children}
-      <ArrowUpRight size={15} />
-    </button>
+    </TextAction>
   );
 }
 export function Empty({

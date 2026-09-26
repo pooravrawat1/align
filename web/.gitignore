@@ -4,7 +4,9 @@ dist/
 test-results/
 playwright-report/
 .impeccable/review/
+.impeccable/matcher-test-results/
 *.tsbuildinfo
 .env
 .env.*
 !.env.example
+.vercel

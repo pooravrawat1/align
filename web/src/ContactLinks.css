@@ -1,0 +1,42 @@
+.contact-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.contact-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 8px;
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  font-size: var(--type-supporting);
+  text-decoration: none;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.contact-link:hover {
+  background: #ffffff08;
+  color: var(--text);
+}
+.contact-link:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+.profile-other-contact {
+  margin: 16px 0;
+}
+.profile-other-contact > summary {
+  min-height: 40px;
+  padding: 10px 0;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: var(--type-supporting);
+}
+.profile-other-contact > summary:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}

@@ -1,8 +1,20 @@
 # Align — 24-Hour Hackathon Execution Plan
 
-Source of truth: [`match-prd.md`](match-prd.md)
+Original source of truth (superseded for the current demo): [`match-prd.md`](match-prd.md)
 Team size: 4 people  
 Deadline: 24 hours from kickoff
+
+> **Current demo override (September 26, 2026):** The checklist below is the
+> original execution snapshot. The current headset demo uses bundled Alex on
+> headset A and Maya/Sam on headset B, name-only floating cues, and no headset
+> profile editor or expanded profile cards. The Person 3 contract and offline
+> results are in [matcher/README.md](../matcher/README.md) and
+> [quest-demo-fixtures.json](quest-demo-fixtures.json); the current scoring rules
+> are in [align-matching-rubric.md](align-matching-rubric.md). In particular,
+> Q-06/Q-08, D-01 through D-05, D-14, and the custom-profile acceptance items
+> below do **not** apply to this two-headset build. Unity/Photon teammates own
+> the one-caller coordinator and Maya/Sam operator switch. The web UI is not
+> being reworked.
 
 ## Ship target
 
@@ -94,7 +106,7 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 
 ## Immediate start while Quest hardware is unavailable
 
-**Current status:** Unity `6000.0.66f2` and its Android toolchain are installed. The project opens and compiles, the simulation and Quest demo scenes have been generated, and a Quest 2-only APK builds successfully at `unity/Builds/Quest/Align.apk`. The APK was installed and launched on Quest 2 `CoralWallaby3906`; logs confirm OpenXR, 72 Hz, and an active passthrough layer, but the visible scene has not yet been confirmed in-headset. The second headset still has ADB authorization trouble. The nine EditMode tests are discovered by Unity but still need a recorded run. Hold APK rebuild/install until explicitly requested.
+**Current status:** Unity `6000.0.66f2` and its Android toolchain are installed. The project opens and compiles, the simulation and Quest demo scenes have been generated, and a Quest 2-only APK builds successfully at `unity/Builds/Quest/Align.apk`. The APK was installed and launched on Quest 2 `CoralWallaby3906`; logs confirm OpenXR, 72 Hz, and an active passthrough layer, but the visible scene has not yet been confirmed in-headset. The second headset still has ADB authorization trouble. All nine EditMode tests pass in a recorded Unity batch run. Hold APK rebuild/install until explicitly requested.
 
 - [x] **S-01** Create the Unity project scaffold and pin Unity `6000.0.66f2` in the repository.
 - [x] **S-02** Implement `IHeadPoseProvider` and a keyboard-controlled `SimulatedHeadPoseProvider`.
@@ -106,7 +118,7 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 
 - [x] **P1-NEXT-01** Install Unity Hub and Unity `6000.0.66f2` or newer with Android Build Support, Android SDK/NDK Tools, and OpenJDK.
 - [x] **P1-NEXT-02** Open `unity/`, resolve packages, import TextMeshPro Essential Resources, and reach a clean Console with no compile errors.
-- [ ] **P1-NEXT-03** Run all EditMode tests and fix any Unity-version or package compatibility issues.
+- [x] **P1-NEXT-03** Run all EditMode tests and fix any Unity-version or package compatibility issues.
 - [x] **P1-NEXT-04** Run **Align → Setup → Create Person 1 Simulation Scene** and save the generated scene/assets.
 - [x] **P1-NEXT-05** Verify `WASD`, `Q/E`, arrow-key movement, and the `T` tracking toggle in Play Mode.
 - [ ] **P1-NEXT-06** Verify cards hide for invalid tracking, stale pose, range, calibration, room, and view-frustum failures; then complete S-03 and S-05.

@@ -2,12 +2,23 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  connectionIdsForEvent,
   createReplayableRequest,
   initialRoomState,
   roomReducer,
   selectActiveRemoteProfiles,
+  selectSpatialCards,
 } from "../src/SpatialState.ts";
+
+test("spatial identities stay attached to their scene positions as the roster grows", () => {
+  const profiles = ['maya', 'alex', 'jordan', 'leo', 'amina', 'elena'].map(id => ({ id }));
+  assert.deepEqual(selectSpatialCards(profiles).map(p => p.id), ['jordan', 'leo', 'maya']);
+  assert.deepEqual(selectSpatialCards(profiles.slice().reverse()).map(p => p.id), ['jordan', 'leo', 'maya']);
+  assert.deepEqual(selectSpatialCards([{ id: 'custom' }]), []);
+  assert.deepEqual(selectSpatialCards(profiles.filter(p => p.id !== 'jordan')).map(p => p.id), ['leo', 'maya']);
+  assert.deepEqual(selectSpatialCards([{ id: 'maya' }]).map(p => p.id), ['maya']);
+  assert.deepEqual(selectSpatialCards([]), []);
+  assert.deepEqual(profiles.map(p => p.id), ['maya', 'alex', 'jordan', 'leo', 'amina', 'elena']);
+});
 
 test("effect replay reuses one pending request and can start again after settlement", async () => {
   const requests = createReplayableRequest();
@@ -37,51 +48,24 @@ test("effect replay reuses one pending request and can start again after settlem
   assert.equal(starts, 2);
 });
 
-test("cancelling recalibration preserves hidden-card reliability states", () => {
+test("closing recovery does not reveal cards or admit a profile while interrupted", () => {
   for (const kind of ["offline", "alignment-lost"]) {
-    const interrupted = roomReducer(initialRoomState, {
-      type: "SIMULATE_RELIABILITY",
-      kind,
-    });
-    const cancelled = roomReducer(interrupted, {
-      type: "CALIBRATION_CANCELLED",
-    });
-
-    assert.deepEqual(cancelled, interrupted);
-    assert.equal(cancelled.kind, kind);
+    const interrupted = roomReducer(initialRoomState, { type: "SIMULATE_RELIABILITY", kind });
+    assert.equal(roomReducer(interrupted, { type: "OPEN_PROFILE", profileId: "maya" }), interrupted);
+    const opened = roomReducer(interrupted, { type: "OPEN_PANEL", panel: "recovery" });
+    assert.equal(opened.recoveryOpen, true);
+    const closed = roomReducer(opened, { type: "CLOSE_LAYER" });
+    assert.equal(closed.kind, kind);
+    assert.equal(closed.recoveryOpen, false);
+    assert.deepEqual(roomReducer(closed, { type: "RESTORE_PREVIEW" }), initialRoomState);
   }
 });
 
-test("successful calibration is the transition that restores ambient cards", () => {
-  const interrupted = roomReducer(initialRoomState, {
-    type: "SIMULATE_RELIABILITY",
-    kind: "alignment-lost",
-  });
-
-  assert.deepEqual(
-    roomReducer(interrupted, { type: "CALIBRATION_SUCCEEDED" }),
-    initialRoomState,
-  );
-});
-
-test("failed conversation save becomes idle and can be retried", () => {
-  const profile = roomReducer(initialRoomState, {
-    type: "OPEN_PROFILE",
-    profileId: "maya",
-  });
-  const conversation = roomReducer(profile, {
-    type: "START_CONVERSATION",
-    profileId: "maya",
-    saved: false,
-  });
-  const saving = roomReducer(conversation, { type: "SAVE_PENDING" });
-  const failed = roomReducer(saving, { type: "SAVE_FAILED" });
-  const retrying = roomReducer(failed, { type: "SAVE_PENDING" });
-
-  assert.equal(failed.kind, "conversation");
-  assert.equal(failed.saveStatus, "idle");
-  assert.equal(retrying.kind, "conversation");
-  assert.equal(retrying.saveStatus, "saving");
+test("people list opens a profile, and closing returns to the room", () => {
+  const people = roomReducer(initialRoomState, { type: "OPEN_PANEL", panel: "people" });
+  const profile = roomReducer(people, { type: "OPEN_PROFILE", profileId: "maya" });
+  assert.deepEqual(profile, { kind: "profile", profileId: "maya" });
+  assert.deepEqual(roomReducer(profile, { type: "CLOSE_LAYER" }), initialRoomState);
 });
 
 test("participant selection uses profile IDs, not names, as identity", () => {
@@ -104,15 +88,15 @@ test("participant selection uses profile IDs, not names, as identity", () => {
   );
 });
 
-test("recap connection selection is scoped to the current event and user", () => {
-  const connections = [
-    { userA: "alex", userB: "maya", eventId: "demo" },
-    { userA: "alex", userB: "sam", eventId: "spatial" },
-    { userA: "maya", userB: "sam", eventId: "demo" },
-  ];
 
-  assert.deepEqual(connectionIdsForEvent(connections, "alex", "demo"), [
-    "maya",
-  ]);
-  assert.deepEqual(connectionIdsForEvent(connections, "alex", null), []);
+test("conversation starts only from a selected profile and finishes back at that same profile", () => {
+  assert.equal(roomReducer(initialRoomState, { type: "START_CONVERSATION" }), initialRoomState);
+  const unpicturedProfile = { kind: "profile", profileId: "sam" };
+  assert.equal(roomReducer(unpicturedProfile, { type: "START_CONVERSATION" }), unpicturedProfile);
+  const profile = { kind: "profile", profileId: "maya" };
+  const conversation = roomReducer(profile, { type: "START_CONVERSATION" });
+  assert.deepEqual(conversation, { kind: "conversation", profileId: "maya" });
+  assert.deepEqual(roomReducer(conversation, { type: "FINISH_CONVERSATION" }), { ...profile, afterConversation: true });
+  assert.deepEqual(roomReducer(conversation, { type: "CLOSE_LAYER" }), { ...profile, afterConversation: true });
+  assert.deepEqual(roomReducer(conversation, { type: "SIMULATE_RELIABILITY", kind: "offline" }), { kind: "offline", recoveryOpen: false });
 });

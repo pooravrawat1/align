@@ -25,8 +25,8 @@
       },
       {
         "name": "spatial-panel",
-        "value": "inset 0 1px 0 #F0FFED38, inset 0 -1px 0 #00000025, 0 18px 50px rgb(0 0 0 / 30%)",
-        "purpose": "Physical edge and depth for milky white spatial glass."
+        "value": "inset 0 1px 0 #ffffff30, inset 1px 0 0 #ffffff10, 0 14px 38px #080e0b26",
+        "purpose": "Physical edge and depth for original v1 spatial glass."
       }
     ],
     "motion": [
@@ -54,59 +54,66 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The default high-priority product action; neutral rather than jade.",
+      "description": "The shared high-priority pill CTA with the Creo-inspired inner rim and outer hover capsule.",
       "html": "<button class=\"ds-button-primary\">Enter experience</button>",
-      "css": ".ds-button-primary { min-height: 44px; padding: 10px 16px; border: 0; border-radius: 10px; color: var(--bg, #101113); background: var(--text, #F2F3F5); font: 500 13px/1.2 'Inter Variable', sans-serif; transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), background 180ms ease; } .ds-button-primary:hover { background: #FFFFFF; transform: translateY(-1px); } .ds-button-primary:active { transform: translateY(0); } .ds-button-primary:focus-visible { outline: 2px solid var(--jade, #69E6A6); outline-offset: 4px; }"
+      "css": ".ds-button-primary { position: relative; min-height: 44px; padding: 10px 16px; border: 0; border-radius: 999px; color: #111214; background: #FFFFFF; box-shadow: inset 0 0 0 1.5px #FFFFFF; font: 500 13px/1.2 'Inter Variable', sans-serif; transition: color 220ms ease, background-color 220ms ease, box-shadow 220ms ease, transform 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-button-primary::before { content: ''; position: absolute; inset: -6px; border: 2px solid #F2F1ED; border-radius: inherit; opacity: 0; transform: scale(.94); transition: opacity 160ms ease, transform 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-button-primary:hover, .ds-button-primary:focus-visible { color: #F2F1ED; background: #080909; box-shadow: inset 0 0 0 1px #FFFFFF50; outline: 0; } .ds-button-primary:hover::before, .ds-button-primary:focus-visible::before { opacity: 1; transform: scale(1); } .ds-button-primary:active { transform: scale(.97); }"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "A quiet bordered action for secondary product tasks.",
+      "description": "A quiet pill CTA for secondary tasks that shares the primary button's inner rim and outer capsule behavior.",
       "html": "<button class=\"ds-button-secondary\">View network</button>",
-      "css": ".ds-button-secondary { min-height: 44px; padding: 10px 16px; border: 1px solid #FFFFFF20; border-radius: 10px; color: var(--text, #F2F3F5); background: #FFFFFF06; font: 500 13px/1.2 'Inter Variable', sans-serif; transition: background 180ms ease, border-color 180ms ease; } .ds-button-secondary:hover { border-color: #FFFFFF30; background: #FFFFFF10; } .ds-button-secondary:focus-visible { outline: 2px solid var(--jade, #69E6A6); outline-offset: 4px; }"
+      "css": ".ds-button-secondary { position: relative; min-height: 44px; padding: 10px 16px; border: 1px solid #FFFFFF20; border-radius: 999px; color: #F2F3F5; background: #FFFFFF06; font: 500 13px/1.2 'Inter Variable', sans-serif; transition: color 220ms ease, background-color 220ms ease, transform 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-button-secondary::before { content: ''; position: absolute; inset: -6px; border: 2px solid #F2F1ED; border-radius: inherit; opacity: 0; transform: scale(.94); transition: opacity 160ms ease, transform 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-button-secondary:hover, .ds-button-secondary:focus-visible { border-color: transparent; color: #080909; background: #FFFFFF; outline: 0; } .ds-button-secondary:hover::before, .ds-button-secondary:focus-visible::before { opacity: 1; transform: scale(1); } .ds-button-secondary:active { transform: scale(.97); }"
+    },
+    {
+      "name": "Text Action",
+      "kind": "button",
+      "description": "A quiet secondary CTA for contextual navigation and low-emphasis actions; utility controls do not use it.",
+      "html": "<button class=\"ds-text-action\"><span>View network</span><svg aria-hidden=\"true\"></svg></button>",
+      "css": ".ds-text-action { display: inline-flex; min-height: 44px; align-items: center; gap: 7px; padding: 8px 0; border: 0; color: var(--muted, #A8ABB2); background: transparent; font: 500 13px/1.4 'Inter Variable', sans-serif; } .ds-text-action > span { position: relative; } .ds-text-action > span::after { content: ''; position: absolute; right: 0; bottom: -4px; left: 0; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-text-action:hover, .ds-text-action:focus-visible { color: var(--text, #F2F3F5); font-weight: 650; outline: 0; } .ds-text-action:hover > span::after, .ds-text-action:focus-visible > span::after { transform: scaleX(1); } .ds-text-action:hover svg, .ds-text-action:focus-visible svg { transform: translate(2px, -1px); }"
     },
     {
       "name": "Room Code Input",
       "kind": "input",
       "refersTo": "input",
-      "description": "Compact uppercase room entry with a restrained jade focus state.",
+      "description": "Compact uppercase room entry with a visible neutral focus state.",
       "html": "<label class=\"ds-code-label\">Room code<input class=\"ds-code-input\" value=\"DEMO\" aria-label=\"Room code\"></label>",
-      "css": ".ds-code-label { display: grid; gap: 7px; color: var(--muted, #A8ABB2); font: 600 11px/1.4 'Inter Variable', sans-serif; } .ds-code-input { width: 180px; min-height: 44px; padding: 10px 13px; border: 1px solid #FFFFFF18; border-radius: 9px; outline: 0; color: var(--text, #F2F3F5); background: var(--bg, #101113); font: 500 13px/1 'Inter Variable', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; } .ds-code-input:focus { border-color: var(--jade, #69E6A6); box-shadow: 0 0 0 3px rgb(105 230 166 / 8%); }"
+      "css": ".ds-code-label { display: grid; gap: 7px; color: var(--muted, #A8ABB2); font: 600 11px/1.4 'Inter Variable', sans-serif; } .ds-code-input { width: 180px; min-height: 44px; padding: 10px 13px; border: 1px solid #FFFFFF18; border-radius: 9px; outline: 0; color: var(--text, #F2F3F5); background: var(--bg, #101113); font: 500 13px/1 'Inter Variable', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; } .ds-code-input:focus { border-color: var(--text, #F2F3F5); box-shadow: 0 0 0 3px rgb(255 255 255 / 8%); }"
     },
     {
       "name": "Primary Navigation Item",
       "kind": "nav",
-      "description": "A compact shell destination with a neutral active fill and jade icon detail.",
+      "description": "A compact shell destination with a neutral active fill and white icon detail.",
       "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-item-active\" href=\"#\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 11.5 12 4l9 7.5v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linejoin=\"round\"/></svg><span>Home</span></a></nav>",
-      "css": ".ds-nav { width: 190px; padding: 4px; background: #161719; } .ds-nav-item { display: flex; min-height: 44px; align-items: center; gap: 10px; padding: 0 12px; border-radius: 10px; color: var(--muted, #A8ABB2); font: 500 13px/1 'Inter Variable', sans-serif; text-decoration: none; } .ds-nav-item svg { width: 18px; height: 18px; } .ds-nav-item:hover { color: var(--text, #F2F3F5); background: #FFFFFF05; } .ds-nav-item-active { color: #ECEEF2; background: #FFFFFF09; } .ds-nav-item-active svg { color: var(--jade, #69E6A6); } .ds-nav-item:focus-visible { outline: 2px solid var(--jade, #69E6A6); outline-offset: 2px; }"
+      "css": ".ds-nav { width: 190px; padding: 4px; background: #161719; } .ds-nav-item { display: flex; min-height: 44px; align-items: center; gap: 10px; padding: 0 12px; border-radius: 10px; color: var(--muted, #A8ABB2); font: 500 13px/1 'Inter Variable', sans-serif; text-decoration: none; } .ds-nav-item svg { width: 18px; height: 18px; } .ds-nav-item:hover { color: var(--text, #F2F3F5); background: #FFFFFF05; } .ds-nav-item-active { color: #ECEEF2; background: #FFFFFF09; } .ds-nav-item-active svg { color: var(--text, #F2F3F5); } .ds-nav-item:focus-visible { outline: 2px solid var(--text, #F2F3F5); outline-offset: 2px; }"
     },
     {
       "name": "Event Card",
       "kind": "card",
       "description": "The approved two-column browse card: room photography above compact event context.",
-      "html": "<article class=\"ds-event-card\"><div class=\"ds-event-image\"><span>DEMO EVENT</span></div><div class=\"ds-event-body\"><small>SEPTEMBER 26 · 10:00 AM</small><h2>The Builders Room</h2><p>Good ideas start with a conversation.</p><button>Explore event</button></div></article>",
-      "css": ".ds-event-card { overflow: hidden; border: 1px solid var(--line, #FFFFFF14); border-radius: 14px; color: var(--text, #F2F3F5); background: var(--surface, #191A1D); font-family: 'Inter Variable', sans-serif; } .ds-event-image { display: flex; min-height: 190px; align-items: flex-start; padding: 16px; background: linear-gradient(0deg, #101113A8, transparent), #55585C; } .ds-event-image span { padding: 7px 10px; border: 1px solid #FFFFFF31; border-radius: 999px; background: #292C32B8; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; } .ds-event-body { padding: 20px; } .ds-event-body small { color: var(--quiet, #93979F); font-size: 12px; } .ds-event-body h2 { margin: 10px 0 7px; font: 500 24px/1.15 'Geist Variable', sans-serif; letter-spacing: -0.025em; } .ds-event-body p { margin: 0 0 18px; color: var(--muted, #A8ABB2); font-size: 13px; line-height: 1.5; } .ds-event-body button { min-height: 44px; padding: 10px 14px; border: 1px solid #FFFFFF20; border-radius: 10px; color: var(--text, #F2F3F5); background: #FFFFFF06; font: 500 13px/1 'Inter Variable', sans-serif; } .ds-event-body button:hover { background: #FFFFFF10; } .ds-event-body button:focus-visible { outline: 2px solid var(--jade, #69E6A6); outline-offset: 3px; }"
+      "html": "<article class=\"ds-event-card\"><div class=\"ds-event-image\"><span>DEMO EVENT</span></div><div class=\"ds-event-body\"><small>SEPTEMBER 26 · 10:00 AM</small><h2>The Builders Room</h2><p>Good ideas start with a conversation.</p><button class=\"ds-button-primary\">Explore event</button></div></article>",
+      "css": ".ds-event-card { overflow: hidden; border: 1px solid var(--line, #FFFFFF14); border-radius: 14px; color: var(--text, #F2F3F5); background: var(--surface, #191A1D); font-family: 'Inter Variable', sans-serif; } .ds-event-image { display: flex; min-height: 190px; align-items: flex-start; padding: 16px; background: linear-gradient(0deg, #101113A8, transparent), #55585C; } .ds-event-image span { padding: 7px 10px; border: 1px solid #FFFFFF31; border-radius: 999px; background: #292C32B8; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; } .ds-event-body { padding: 20px; } .ds-event-body small { color: var(--quiet, #93979F); font-size: 12px; } .ds-event-body h2 { margin: 10px 0 7px; font: 500 24px/1.15 'Geist Variable', sans-serif; letter-spacing: -0.025em; } .ds-event-body p { margin: 0 0 18px; color: var(--muted, #A8ABB2); font-size: 13px; line-height: 1.5; }"
     },
     {
-      "name": "Profile Tag",
+      "name": "Profile Pill",
       "kind": "chip",
       "refersTo": "tag",
-      "description": "A quiet metadata chip for interests, skills, and shared topics.",
-      "html": "<span class=\"ds-tag\">Spatial computing</span>",
-      "css": ".ds-tag { display: inline-flex; min-height: 28px; align-items: center; padding: 6px 10px; border: 1px solid #FFFFFF0D; border-radius: 999px; color: #C7CAD0; background: #FFFFFF06; font: 500 11px/1.2 'Inter Variable', sans-serif; } .ds-tag:hover { border-color: #FFFFFF20; color: var(--text, #F2F3F5); } .ds-tag:focus-visible { outline: 2px solid var(--jade, #69E6A6); outline-offset: 3px; }"
+      "description": "A thin graphite-black profile pill with a fine neutral edge, shared by skills, interests, looking-for topics, and profile overlap.",
+      "html": "<span class=\"ds-chip\">Spatial computing</span><button class=\"ds-chip ds-chip-interactive\">More topics</button>",
+      "css": ".ds-chip { display: inline-flex; min-height: 26px; max-width: 100%; align-items: center; padding: 3px 9px; border: 1px solid #FFFFFF26; border-radius: 999px; color: #D7D9DE; background: #101113; box-shadow: inset 0 1px 0 #FFFFFF0B; font: 400 12px/1.4 'Inter Variable', sans-serif; overflow-wrap: anywhere; } .ds-chip-interactive { transition: color 160ms cubic-bezier(.16, 1, .3, 1), border-color 160ms cubic-bezier(.16, 1, .3, 1), background 160ms cubic-bezier(.16, 1, .3, 1); } .ds-chip-interactive:hover, .ds-chip-interactive:focus-visible { border-color: #FFFFFF4A; color: #F2F3F5; background: #18191D; outline: 2px solid #F2F3F5; outline-offset: 3px; }"
     },
     {
       "name": "Spatial Setup Panel",
       "kind": "custom",
-      "description": "Milky white scene glass sized so the complete setup remains visible without internal scrolling.",
-      "html": "<section class=\"ds-setup-panel\"><div class=\"ds-progress\"><span class=\"is-complete\"></span><span></span><span></span></div><small>ROOM DEMO</small><h2>Find your shared origin.</h2><p>Stand inside the demo area and align with the shared marker.</p><button>Begin calibration</button></section>",
-      "css": ".ds-setup-panel { width: min(100%, 420px); padding: 22px 26px; border: 1px solid rgb(255 255 255 / 24%); border-radius: 27px; color: #F5F6F7; text-align: center; background: linear-gradient(145deg, rgb(238 240 238 / 52%), rgb(116 120 116 / 60%)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 42%), inset 0 -1px 0 rgb(0 0 0 / 15%), 0 18px 50px rgb(0 0 0 / 30%); backdrop-filter: blur(28px) saturate(120%); font-family: 'Inter Variable', sans-serif; } .ds-progress { display: flex; justify-content: center; gap: 7px; margin-bottom: 20px; } .ds-progress span { width: 34px; height: 3px; border-radius: 3px; background: #FFFFFF24; } .ds-progress span.is-complete { background: #B8E4C1; } .ds-setup-panel small { color: #F2F4EF; font-size: 11px; font-weight: 650; letter-spacing: 0.09em; } .ds-setup-panel h2 { margin: 12px 0 0; font: 500 32px/1.1 'Geist Variable', sans-serif; letter-spacing: -0.035em; } .ds-setup-panel p { margin: 12px auto 18px; max-width: 42ch; color: #F2F4EF; font-size: 14px; line-height: 1.5; } .ds-setup-panel button { width: 100%; min-height: 46px; border: 0; border-radius: 12px; color: #111214; background: #F2F3F5; font: 600 14px/1 'Inter Variable', sans-serif; } .ds-setup-panel button:hover { background: #FFFFFF; } .ds-setup-panel button:focus-visible { outline: 2px solid #69E6A6; outline-offset: 3px; }"
+      "description": "Original v1 frosted scene glass sized so the complete setup remains visible without internal scrolling.",
+      "html": "<section class=\"ds-setup-panel\"><div class=\"ds-progress\"><span class=\"is-complete\"></span><span></span><span></span></div><small>ROOM DEMO</small><h2>Find your shared origin.</h2><p>Stand inside the demo area and align with the shared marker.</p><button class=\"ds-button-primary\">Begin calibration</button></section>",
+      "css": ".ds-setup-panel { width: min(100%, 420px); padding: 22px 26px; overflow: hidden; border: 1px solid rgb(255 255 255 / 28%); border-radius: 27px; color: #F5F6F7; text-align: center; background: linear-gradient(135deg, #5a6157b8, #2d372ede); box-shadow: inset 0 1px 0 #ffffff30, inset 1px 0 0 #ffffff10, 0 14px 38px #080e0b26; backdrop-filter: blur(30px) saturate(115%); font-family: 'Inter Variable', sans-serif; } .ds-progress { display: flex; justify-content: center; gap: 7px; margin-bottom: 20px; } .ds-progress span { width: 34px; height: 3px; border-radius: 3px; background: #FFFFFF24; } .ds-progress span.is-complete { background: #F2F3F5; } .ds-setup-panel small { color: #F2F3F5; font-size: 11px; font-weight: 650; letter-spacing: 0.09em; } .ds-setup-panel h2 { margin: 12px 0 0; font: 500 32px/1.1 'Geist Variable', sans-serif; letter-spacing: -0.035em; } .ds-setup-panel p { margin: 12px auto 18px; max-width: 42ch; color: #F2F3F5; font-size: 14px; line-height: 1.5; } .ds-setup-panel .ds-button-primary { width: 100%; min-height: 46px; font-size: 14px; }"
     }
   ],
   "narrative": {
     "northStar": "Spatial Salon",
-    "overview": "Align combines a neutral, Linear-like application shell with the intimacy of a modern salon. The interface stays compact, quiet, and operational until a room image or spatial scene earns atmosphere. The approved hybrid preserves the original v1 proportions and nested containers while using the sharper v2 typography, login, header, preview, and interaction language. Reference fidelity is additive, not a license to redesign: retain the old Event two-column photo cards and compact Home, Network, and Profile composition; use the final v2 type and shell; reveal Before / During / After only after an event is opened. Milky white frosted glass is inherited from the approved spatial reference and belongs over imagery or inside the spatial experience.",
+    "overview": "Align combines a neutral, Linear-like application shell with the intimacy of a modern salon. The interface stays compact, quiet, and operational until a room image or spatial scene earns atmosphere. The approved hybrid preserves the original v1 proportions and nested containers while using the sharper v2 typography, login, header, preview, and interaction language. Reference fidelity is additive, not a license to redesign: retain the old Event two-column photo cards and compact Home, Network, and Profile composition; use the final v2 type and shell; reveal Before / During / After only after an event is opened. Original v1 frosted glass belongs only over imagery or inside the spatial experience.",
     "keyCharacteristics": [
       "Neutral charcoal application layers with disciplined jade state cues.",
       "Compact, readable 13–14px interface text and 11–12px metadata.",
@@ -117,7 +124,7 @@
     "rules": [
       {
         "name": "The State Color Rule",
-        "body": "Jade communicates readiness, live state, a compatible reason to meet, selection, or completion. It is never decorative and never implies public ranking.",
+        "body": "Jade is reserved for live connection and match states. When a compatible reason to meet resolves, the full spatial card shifts to the original v1 sage glass; saved and neutral cards remain silver-gray.",
         "section": "colors"
       },
       {
@@ -139,7 +146,7 @@
     "dos": [
       "**Do** preserve the approved hybrid: v1 proportions and nested structure with v2 typography and interactions.",
       "**Do** keep room imagery prominent while maintaining readable contrast and honest demo labels.",
-      "**Do** use milky white frosted glass for spatial context and neutral opaque surfaces for product work.",
+      "**Do** use original v1 frosted glass for spatial context and neutral opaque surfaces for product work.",
       "**Do** keep event browsing separate from the opened-event phase preview.",
       "**Do** keep setup content fully visible at supported viewport heights."
     ],

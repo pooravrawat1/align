@@ -1,0 +1,58 @@
+{
+  "rubricVersion": "experience-v1",
+  "profiles": {
+    "alex": {
+      "userId": "alex",
+      "name": "Alex Morgan",
+      "bio": "Building a wearable navigation system that makes the world easier to explore.",
+      "interests": ["Assistive technology", "Robotics", "Open source"],
+      "skills": ["Embedded systems", "C++", "Electronics"],
+      "lookingFor": ["Computer vision"],
+      "networkingGoal": "Find a computer-vision collaborator for a wearable navigation project.",
+      "domains": ["Assistive technology", "Wearable computing"],
+      "experiences": [
+        { "category": "professional", "kind": "hackathon", "label": "Build Together", "year": 2025 },
+        { "category": "personal", "kind": "hiking", "label": "Appalachian Trail day hike", "year": 2024 }
+      ]
+    },
+    "maya": {
+      "userId": "maya",
+      "name": "Maya Chen",
+      "bio": "Building visual assistance software. Curious about bringing intelligence into everyday objects.",
+      "interests": ["Assistive technology", "Robotics", "Startups"],
+      "skills": ["Python", "Computer vision", "Machine learning"],
+      "lookingFor": ["Embedded systems", "Hardware"],
+      "networkingGoal": "Find a hardware collaborator to bring visual assistance software into wearable devices.",
+      "domains": ["Assistive technology", "Computer vision"],
+      "experiences": [
+        { "category": "professional", "kind": "hackathon", "label": "Build Together", "year": 2025 },
+        { "category": "personal", "kind": "hiking", "label": "Appalachian Trail day hike", "year": 2024 }
+      ]
+    },
+    "sam": {
+      "userId": "sam",
+      "name": "Sam Rivera",
+      "bio": "Making complex tools feel simple. Currently exploring creative collaboration.",
+      "interests": ["Design", "Creative tools", "Communities"],
+      "skills": ["Figma", "Research", "Prototyping"],
+      "lookingFor": ["Frontend development"],
+      "networkingGoal": "Find a frontend collaborator for a creative design tool.",
+      "domains": ["Product design", "Creative tools"],
+      "experiences": [
+        { "category": "professional", "kind": "design workshop", "label": "Creative Systems Studio", "year": 2025 },
+        { "category": "personal", "kind": "cycling", "label": "Coastal cycling trip", "year": 2024 }
+      ]
+    }
+  },
+  "offlineResults": [
+    {
+      "userA": "alex",
+      "userB": "maya",
+      "compatible": true,
+      "score": 100,
+      "reason": "You both attended Build Together in 2025 and care about assistive technology. How could Maya's computer vision complement Alex's wearable hardware?"
+    },
+    { "userA": "alex", "userB": "sam", "compatible": false, "score": 0, "reason": "" },
+    { "userA": "maya", "userB": "sam", "compatible": false, "score": 0, "reason": "" }
+  ]
+}
