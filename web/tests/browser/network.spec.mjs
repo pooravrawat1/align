@@ -9,6 +9,7 @@ test.use({ screenshot: 'off', video: 'off', trace: 'off' });
 test('opening a profile keeps portraits stationary and expands into a centered contained card', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await openNetwork(page);
+  await page.getByRole('button', { name: 'Map', exact: true }).click();
   const self = page.locator('.nm-self');
   const before = await self.boundingBox();
   const mapBefore = await page.locator('.nm-map').boundingBox();
@@ -36,6 +37,7 @@ test('opening a profile keeps portraits stationary and expands into a centered c
 test('selecting and closing a portrait preserves a short viewport map position', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 560 });
   await openNetwork(page);
+  await page.getByRole('button', { name: 'Map', exact: true }).click();
   await page.evaluate(() => scrollTo(0, 300));
 
   const self = page.locator('.nm-self');
@@ -140,6 +142,7 @@ for (const viewport of [
   test(`map selection, expansion and browser history preserve camera and draft on ${viewport.name}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await openNetwork(page);
+    await page.getByRole('button', { name: 'Map', exact: true }).click();
     await expectPortraitsInsideMap(page, 4);
 
     const zoom = page.getByLabel('Current zoom');
@@ -196,7 +199,7 @@ test('Discover selection saves through the mock state and appears in Your networ
   expect(saveRequests).toEqual([{ path: '/api/connections', method: 'POST', body: { participantId: 'maya' } }]);
 
   await page.locator('.nx-destinations > button').filter({ hasText: 'Your network' }).click();
-  await expect(page.getByRole('button', { name: 'View Maya Chen, Computer vision engineer' })).toBeVisible();
+  await expect(page.getByRole('button', { name: "View Maya Chen's profile" })).toBeVisible();
   await expect(page.locator('.nx-destinations > button').filter({ hasText: 'Your network' })).toContainText('4');
 });
 
@@ -228,6 +231,8 @@ test('arbitrary and dense networks render all 24 people and expose cluster revea
     },
   });
 
+  await page.getByRole('button', { name: 'Map', exact: true }).click();
+
   await expect(page.locator('.nm-person')).toHaveCount(25);
   await expect(page.locator('.nm-cluster')).toHaveCount(1);
   await page.locator('.nm-cluster').click();
@@ -247,6 +252,7 @@ test('a filter with zero matches offers a clear path back to the map', async ({ 
       state.connections = state.connections.map((connection) => ({ ...connection, followUp: 'contacted' }));
     },
   });
+  await page.getByRole('button', { name: 'Map', exact: true }).click();
   await page.getByRole('button', { name: 'Filters' }).click();
   await page.getByRole('checkbox', { name: 'Needs follow-up' }).check();
   await expect(page.getByRole('heading', { name: 'No people in this view' })).toBeVisible();
@@ -285,7 +291,7 @@ test('hidden profile fields never leak into common ground or sample AI copy', as
     },
   });
 
-  await page.getByRole('button', { name: 'View Leo Park, Robotics researcher' }).click();
+  await page.getByRole('button', { name: "View Leo Park's profile" }).click();
   await expect(page.locator('.np-preview-section')).toContainText('No shared interests are visible yet.');
   for (const token of privateTokens) await expect(page.getByText(token, { exact: false })).toHaveCount(0);
 
@@ -308,7 +314,8 @@ for (const width of [1440, 390]) {
       reason: getComputedStyle(node.querySelector(':scope > span')).fontSize,
     }));
     await page.goto(`${origin}/#/network`);
-    await page.getByRole('button', { name: 'People', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'People', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByText('Person', { exact: true })).toHaveCount(0);
     const row = page.getByRole('button', { name: "View Leo Park's profile", exact: true });
     await expect(row).toBeVisible();
     const listSizes = await row.locator('.nx-row-identity').evaluate(node => ({
