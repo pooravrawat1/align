@@ -69,8 +69,8 @@ export function Avatar({
   profile: Profile;
   size?: "small" | "normal" | "large";
 }) {
-  const [failed, setFailed] = useState(false);
-  if (failed || !profile.avatar)
+  const [failedSource, setFailedSource] = useState<string | null>(null);
+  if (failedSource === profile.avatar || !profile.avatar)
     return (
       <span className={`avatar avatar-fallback ${size}`} aria-hidden="true">
         {profile.name
@@ -86,7 +86,7 @@ export function Avatar({
       className={`avatar ${size}`}
       src={profile.avatar}
       alt=""
-      onError={() => setFailed(true)}
+      onError={() => setFailedSource(profile.avatar)}
     />
   );
 }

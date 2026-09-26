@@ -484,8 +484,6 @@ summary:focus-visible {
 .login-form .plain-button {
   font-size: 14px;
 }
-.profile-form input,
-.profile-form textarea,
 .connection-extra textarea,
 .connection-extra input,
 .connection-extra select {
@@ -494,43 +492,6 @@ summary:focus-visible {
   font-size: 14px;
   color: var(--text);
   min-height: 44px;
-}
-.profile-form label {
-  font-size: 12px;
-}
-.profile-form > section {
-  background: transparent;
-}
-.profile-section-heading h2 {
-  font-size: 18px;
-}
-.profile-identity p,
-.field-help,
-.visibility-intro,
-.privacy-note {
-  font-size: 12px;
-}
-.profile-preview-scene {
-  border-color: #ffffff20;
-}
-.preview-floating {
-  border-radius: 22px;
-}
-.preview-floating h3 {
-  font-size: 22px;
-}
-.preview-floating p {
-  font-size: 13px;
-}
-.preview-floating.match {
-  border-color: #c8f7cb99;
-}
-.profile-guidance h3 {
-  font-size: 18px;
-}
-.profile-guidance p,
-.preview-context p {
-  font-size: 13px;
 }
 .network-workspace {
   background: var(--surface);
@@ -588,12 +549,6 @@ summary:focus-visible {
 .network-filters select {
   min-height: 36px;
   color: #bbc0c8;
-}
-.setting-row h3 {
-  font-size: 14px;
-}
-.setting-row p {
-  font-size: 12px;
 }
 .toggle.on {
   background: var(--text);
@@ -752,9 +707,6 @@ summary:focus-visible {
   .login-form h2 {
     font-size: 30px;
   }
-  .profile-preview-column .section-title h2 {
-    font-size: 15px;
-  }
   .toast {
     bottom: 16px;
   }
@@ -806,17 +758,6 @@ summary:focus-visible {
   font-size: 11px;
 }
 .network-product .segmented > button {
-  font-size: 12px;
-}
-.profile-product .profile-form input,
-.profile-product .profile-form textarea {
-  font-size: 14px;
-}
-.profile-product .profile-form label,
-.visibility-row {
-  font-size: 12px;
-}
-.profile-product .preview-tabs > button {
   font-size: 12px;
 }
 .network-product .network-filters select {

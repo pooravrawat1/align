@@ -13,8 +13,10 @@ const {
   stringLimits: STRING_LIMITS,
   topicLimit: ARRAY_LIMIT,
   topicItemLimit: ARRAY_ITEM_LIMIT,
+  photo: PHOTO_CONTRACT,
   defaultVisibility: DEFAULT_VISIBILITY,
 } = profileContract;
+const MAX_PROFILE_BODY_BYTES = MAX_BODY_BYTES + Math.ceil(PHOTO_CONTRACT.maxBytes / 3) * 4;
 const PROFILE_FIELDS = new Set([
   'name',
   'role',
@@ -27,6 +29,7 @@ const PROFILE_FIELDS = new Set([
   'linkedin',
   'website',
   'email',
+  'avatar',
   'visibility',
 ]);
 const FOLLOW_UP_VALUES = new Set(['needed', 'contacted', 'none']);
@@ -170,14 +173,16 @@ function apiError(status, message) {
   return error;
 }
 
-async function readJson(request) {
+async function readJson(request, { maxBytes = MAX_BODY_BYTES, largeField } = {}) {
   let size = 0;
   const chunks = [];
 
   for await (const chunk of request) {
     size += chunk.length;
-    if (size > MAX_BODY_BYTES) {
-      throw apiError(413, 'Request body exceeds 16KB');
+    if (size > maxBytes) {
+      throw apiError(413, maxBytes === MAX_BODY_BYTES
+        ? 'Request body exceeds 16KB'
+        : 'Request body exceeds the profile upload limit');
     }
     chunks.push(chunk);
   }
@@ -188,6 +193,9 @@ async function readJson(request) {
     const value = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       throw new TypeError('JSON body must be an object');
+    }
+    if (size > MAX_BODY_BYTES && largeField !== undefined && !(largeField in value)) {
+      throw apiError(413, 'Request body exceeds 16KB');
     }
     return value;
   } catch (error) {
@@ -266,6 +274,78 @@ function validateEmail(value) {
   }
 }
 
+const JPEG_START_OF_FRAME_MARKERS = new Set([
+  0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7,
+  0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf,
+]);
+
+function jpegDimensions(bytes) {
+  if (
+    bytes.length < 12 ||
+    bytes[0] !== 0xff || bytes[1] !== 0xd8 ||
+    bytes[bytes.length - 2] !== 0xff || bytes[bytes.length - 1] !== 0xd9
+  ) {
+    return null;
+  }
+
+  let offset = 2;
+  while (offset < bytes.length - 1) {
+    if (bytes[offset] !== 0xff) return null;
+    while (offset < bytes.length && bytes[offset] === 0xff) offset += 1;
+    if (offset >= bytes.length) return null;
+    const marker = bytes[offset];
+    offset += 1;
+
+    if (marker === 0xd9) return null;
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) continue;
+    if (offset + 2 > bytes.length) return null;
+
+    const segmentLength = bytes.readUInt16BE(offset);
+    if (segmentLength < 2 || offset + segmentLength > bytes.length) return null;
+    if (JPEG_START_OF_FRAME_MARKERS.has(marker)) {
+      if (segmentLength < 8) return null;
+      return {
+        height: bytes.readUInt16BE(offset + 3),
+        width: bytes.readUInt16BE(offset + 5),
+      };
+    }
+    if (marker === 0xda) return null;
+    offset += segmentLength;
+  }
+  return null;
+}
+
+function validateAvatar(value) {
+  if (typeof value !== 'string') {
+    throw apiError(400, 'avatar must be a string');
+  }
+  if (value === '') return;
+
+  const prefix = `data:${PHOTO_CONTRACT.mimeType};base64,`;
+  if (!value.startsWith(prefix)) {
+    throw apiError(400, `avatar must be empty or a ${PHOTO_CONTRACT.mimeType} data URL`);
+  }
+  const encoded = value.slice(prefix.length);
+  if (
+    encoded.length === 0 ||
+    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(encoded)
+  ) {
+    throw apiError(400, 'avatar must contain valid base64');
+  }
+
+  const bytes = Buffer.from(encoded, 'base64');
+  if (bytes.length > PHOTO_CONTRACT.maxBytes) {
+    throw apiError(400, `avatar must be ${PHOTO_CONTRACT.maxBytes} bytes or fewer`);
+  }
+  const dimensions = jpegDimensions(bytes);
+  if (!dimensions || dimensions.width === 0 || dimensions.height === 0) {
+    throw apiError(400, 'avatar must contain a valid JPEG header');
+  }
+  if (dimensions.width > PHOTO_CONTRACT.size || dimensions.height > PHOTO_CONTRACT.size) {
+    throw apiError(400, `avatar dimensions must be ${PHOTO_CONTRACT.size} by ${PHOTO_CONTRACT.size} pixels or smaller`);
+  }
+}
+
 function validateProfilePatch(body) {
   for (const field of Object.keys(body)) {
     if (!PROFILE_FIELDS.has(field)) {
@@ -289,6 +369,7 @@ function validateProfilePatch(body) {
   if ('linkedin' in body) validateContactUrl('linkedin', body.linkedin, { linkedin: true });
   if ('website' in body) validateContactUrl('website', body.website);
   if ('email' in body) validateEmail(body.email);
+  if ('avatar' in body) validateAvatar(body.avatar);
 
   if ('visibility' in body) {
     if (!body.visibility || typeof body.visibility !== 'object' || Array.isArray(body.visibility)) {
@@ -321,7 +402,10 @@ function firstName(profile) {
 
 function profilesEqualSeed(profile) {
   const original = seedProfilesById.get(profile.id);
-  return original !== undefined && JSON.stringify(profile) === JSON.stringify(withProfileDefaults(original));
+  if (original === undefined) return false;
+  const { avatar: _profileAvatar, ...comparableProfile } = profile;
+  const { avatar: _seedAvatar, ...comparableSeed } = withProfileDefaults(original);
+  return JSON.stringify(comparableProfile) === JSON.stringify(comparableSeed);
 }
 
 function visibleProfileValues(profile, field) {
@@ -552,23 +636,29 @@ async function handleRequest(request, response, sessions) {
   const state = requireSession(request, sessions);
 
   if (request.method === 'PATCH' && url.pathname === '/api/profile') {
-    const body = await readJson(request);
+    const body = await readJson(request, {
+      maxBytes: MAX_PROFILE_BODY_BYTES,
+      largeField: 'avatar',
+    });
     validateProfilePatch(body);
     const profile = state.profiles.find((candidate) => candidate.id === state.session.userId);
+    const avatarOnly = Object.keys(body).length === 1 && 'avatar' in body;
     for (const field of PROFILE_FIELDS) {
       if (!(field in body)) continue;
       if (field === 'visibility') {
         profile.visibility = { ...profile.visibility, ...body.visibility };
       } else if (Array.isArray(body[field])) {
         profile[field] = [...body[field]];
-      } else if (field === 'contact') {
+      } else if (field === 'contact' || field === 'avatar') {
         profile[field] = body[field];
       } else {
         profile[field] = body[field].trim();
       }
     }
-    state.matches = [];
-    state.matchCache.clear();
+    if (!avatarOnly) {
+      state.matches = [];
+      state.matchCache.clear();
+    }
     sendJson(response, 200, sessionBootstrap(state));
     return;
   }
@@ -759,9 +849,8 @@ async function handleRequest(request, response, sessions) {
   throw apiError(404, 'Endpoint not found');
 }
 
-export function createServer() {
-  const sessions = new Map();
-  return createHttpServer((request, response) => {
+export function createRequestHandler(sessions = new Map()) {
+  return (request, response) => {
     handleRequest(request, response, sessions).catch((error) => {
       if (response.headersSent) {
         response.destroy();
@@ -770,7 +859,11 @@ export function createServer() {
       const status = Number.isInteger(error.status) ? error.status : 500;
       sendJson(response, status, { error: status === 500 ? 'Internal server error' : error.message });
     });
-  });
+  };
+}
+
+export function createServer() {
+  return createHttpServer(createRequestHandler());
 }
 
 function configuredPort() {
@@ -788,6 +881,6 @@ const executedDirectly =
 if (executedDirectly) {
   const port = configuredPort();
   createServer().listen(port, HOST, () => {
-    console.log(`Align mock API listening at http://${HOST}:${port}`);
+    console.log(`Catalyst demo API listening at http://${HOST}:${port}`);
   });
 }

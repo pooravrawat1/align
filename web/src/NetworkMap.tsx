@@ -116,7 +116,7 @@ function makeRadialLayout(people: Profile[]): Layout {
   }
 
   let bounds: Bounds = { minX: -125, minY: -125, maxX: 125, maxY: 125 };
-  for (const person of positioned) bounds = includePoint(bounds, person, 112);
+  for (const person of positioned) bounds = includePoint(bounds, person, 90);
 
   return {
     self,
@@ -264,7 +264,7 @@ function getLayout(
 }
 
 function fitCamera(bounds: Bounds, width: number, height: number): Camera {
-  const padding = width < 620 ? 54 : 78;
+  const padding = width < 620 ? 30 : 36;
   const contentWidth = Math.max(1, bounds.maxX - bounds.minX);
   const contentHeight = Math.max(1, bounds.maxY - bounds.minY);
   const scale = clamp(

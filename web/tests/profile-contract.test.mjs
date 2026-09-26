@@ -73,6 +73,12 @@ test('shared profile contract has the approved bounded shape', () => {
     },
     topicLimit: 20,
     topicItemLimit: 80,
+    photo: {
+      maxSourceBytes: 10485760,
+      maxBytes: 262144,
+      size: 512,
+      mimeType: 'image/jpeg',
+    },
     defaultVisibility: {
       bio: true,
       interests: true,
@@ -86,6 +92,121 @@ test('shared profile contract has the approved bounded shape', () => {
       activeInEvent: true,
     },
   });
+});
+
+function jpegDataUrl({
+  width = contract.photo.size,
+  height = contract.photo.size,
+  byteLength = 64,
+} = {}) {
+  assert.ok(byteLength >= 23);
+  const bytes = Buffer.alloc(byteLength);
+  Buffer.from([
+    0xff, 0xd8,
+    0xff, 0xc0, 0x00, 0x11, 0x08,
+    height >> 8, height & 0xff,
+    width >> 8, width & 0xff,
+    0x03,
+    0x01, 0x11, 0x00,
+    0x02, 0x11, 0x00,
+    0x03, 0x11, 0x00,
+  ]).copy(bytes);
+  bytes[bytes.length - 2] = 0xff;
+  bytes[bytes.length - 1] = 0xd9;
+  return `data:${contract.photo.mimeType};base64,${bytes.toString('base64')}`;
+}
+
+test('profile API accepts, persists, and removes a bounded JPEG avatar', async () => {
+  const login = await api('/api/login', { method: 'POST', body: {} });
+  const sessionId = login.value.session.id;
+  const avatar = jpegDataUrl({ byteLength: contract.photo.maxBytes });
+
+  const saved = await api('/api/profile', {
+    method: 'PATCH',
+    sessionId,
+    body: { avatar },
+  });
+  assert.equal(saved.status, 200, JSON.stringify(saved.value));
+  assert.equal(currentProfile(saved.value).avatar, avatar);
+
+  const persisted = await api('/api/bootstrap', { sessionId });
+  assert.equal(currentProfile(persisted.value).avatar, avatar);
+
+  const removed = await api('/api/profile', {
+    method: 'PATCH',
+    sessionId,
+    body: { avatar: '' },
+  });
+  assert.equal(removed.status, 200);
+  assert.equal(currentProfile(removed.value).avatar, '');
+});
+
+test('profile API rejects invalid avatar writes atomically', async () => {
+  const login = await api('/api/login', { method: 'POST', body: {} });
+  const sessionId = login.value.session.id;
+  const initial = currentProfile(login.value);
+  const invalidAvatars = [
+    '/assets/replacement.jpg',
+    'https://example.com/avatar.jpg',
+    'data:image/png;base64,iVBORw0KGgo=',
+    `data:${contract.photo.mimeType};base64,!!!!`,
+    `data:${contract.photo.mimeType};base64,${Buffer.from('not a jpeg').toString('base64')}`,
+    jpegDataUrl({ width: contract.photo.size + 1 }),
+    jpegDataUrl({ height: contract.photo.size + 1 }),
+    jpegDataUrl({ byteLength: contract.photo.maxBytes + 1 }),
+  ];
+
+  for (const avatar of invalidAvatars) {
+    const rejected = await api('/api/profile', {
+      method: 'PATCH',
+      sessionId,
+      body: { avatar, bio: 'must not save' },
+    });
+    assert.equal(rejected.status, 400, avatar.slice(0, 80));
+  }
+
+  const unchanged = await api('/api/bootstrap', { sessionId });
+  assert.equal(currentProfile(unchanged.value).avatar, initial.avatar);
+  assert.equal(currentProfile(unchanged.value).bio, initial.bio);
+});
+
+test('avatar-only patches preserve matches and seed fixture matching', async () => {
+  const login = await api('/api/login', { method: 'POST', body: {} });
+  const sessionId = login.value.session.id;
+  const joined = await api('/api/room', {
+    method: 'POST',
+    sessionId,
+    body: { code: 'DEMO' },
+  });
+  assert.equal(joined.status, 200);
+
+  const matched = await api('/api/matches', {
+    method: 'POST',
+    sessionId,
+    body: { demo: true },
+  });
+  assert.equal(matched.status, 200);
+  const fixture = matched.value.matches.find(match => match.userA === 'alex' && match.userB === 'maya');
+  assert.equal(fixture.source, 'precomputed');
+
+  const avatarSaved = await api('/api/profile', {
+    method: 'PATCH',
+    sessionId,
+    body: { avatar: jpegDataUrl() },
+  });
+  assert.equal(avatarSaved.status, 200);
+  assert.deepEqual(avatarSaved.value.matches, matched.value.matches);
+
+  const forced = await api('/api/matches', {
+    method: 'POST',
+    sessionId,
+    body: { demo: true, force: true },
+  });
+  assert.equal(forced.status, 200);
+  assert.equal(
+    forced.value.matches.find(match => match.userA === 'alex' && match.userB === 'maya').source,
+    'precomputed',
+  );
 });
 
 test('profile API enforces shared string limits and keeps rejected patches atomic', async () => {

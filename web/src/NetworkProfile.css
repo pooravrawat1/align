@@ -235,18 +235,33 @@
 
 .np-preview-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   margin-top: 25px;
 }
 
 .np-open-profile {
-  min-height: 43px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   gap: 8px;
-  padding: 10px 13px;
+  padding: 10px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text, #f2f3f5);
+  cursor: pointer;
   font-size: 12px;
   font-weight: 650;
 }
+.np-open-profile span {
+  text-decoration: underline;
+  text-decoration-color: #ffffff40;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 150ms ease;
+}
+.np-open-profile:hover span,
+.np-open-profile:focus-visible span { text-decoration-color: currentColor; }
 .np-save-connection { width: 100%; padding-inline: 13px; }
 .np-save-connection:disabled { opacity: 1; cursor: default; }
 

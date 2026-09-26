@@ -67,7 +67,7 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844
     await expect(page).toHaveURL(/#\/network\?person=jordan$/);
     await page.reload();
     await expect(page.getByText('Draft a message', { exact: true })).toHaveCount(0);
-    await page.getByRole('button', { name: 'Open full profile' }).click();
+    await page.getByRole('button', { name: 'Explore profile' }).click();
     await expect(page).toHaveURL(/#\/network\?person=jordan&details=1$/);
   });
 }

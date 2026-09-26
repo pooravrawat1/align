@@ -10,21 +10,21 @@
 .pe-page h1 { font-size: 28px; font-weight: 500; line-height: 1.2; letter-spacing: -.035em; }
 .pe-page h2, .pe-dialog h2 { font-family: var(--font-display, "Geist Variable", sans-serif); font-size: 20px; font-weight: 500; line-height: 1.3; letter-spacing: -.02em; }
 .pe-page h3, .pe-dialog h3 { font-size: 14px; font-weight: 500; line-height: 1.5; }
-.pe-text-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 0; background: transparent; border: 0; color: var(--muted); font-size: 14px; transition: color 160ms ease; }
-.pe-text-action:hover:not(:disabled), .pe-inline-link:hover { color: var(--text); text-decoration: underline; text-underline-offset: 4px; }
+.pe-inline-link:hover { color: var(--text); text-decoration: underline; text-underline-offset: 4px; }
 .pe-page button:disabled { opacity: .45; cursor: default; }
-.pe-page :focus-visible, .pe-dialog :focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.pe-page :focus-visible:not(.button):not(.text-action), .pe-dialog :focus-visible:not(.button):not(.text-action) { outline: 2px solid var(--text); outline-offset: 3px; }
 .pe-page ::selection, .pe-dialog ::selection { background: #ffffff33; color: #fff; }
 .pe-tabs { display: flex; align-items: stretch; gap: 28px; border-bottom: 1px solid var(--line); margin-bottom: 28px; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #55575d transparent; }
 .pe-tabs > button { display: flex; align-items: center; gap: 8px; flex-shrink: 0; position: relative; min-height: 48px; padding: 0 2px 14px; color: var(--muted); background: transparent; border: 0; font-size: 14px; font-weight: 500; }
 .pe-tabs > button[aria-selected="true"] { color: var(--text); }
 .pe-tabs > button[aria-selected="true"]::after { content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--text); border-radius: 2px; }
 .pe-tabs > button:focus-visible { outline-offset: -3px; }
-.pe-dirty-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.pe-dirty-dot { display: inline-block; flex: none; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 .pe-layout { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(260px, 1fr); gap: 24px; align-items: start; }
 .pe-editor-column { min-width: 0; display: grid; gap: 24px; }
 .pe-panel { background: var(--surface, #191a1d); border: 1px solid var(--line); border-radius: 14px; min-width: 0; }
 .pe-panel-body, .pe-settings-panel { padding: 24px; }
+.pe-panel-body input, .pe-panel-body textarea, .pe-panel-body button, .pe-panel-body summary { scroll-margin-block: 120px 160px; }
 .pe-panel-heading { padding-bottom: 16px; margin-bottom: 24px; border-bottom: 1px solid var(--line); }
 .pe-panel-heading p { font-size: 14px; line-height: 1.5; color: var(--muted); margin: 8px 0 0; }
 .pe-identity { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
@@ -32,6 +32,14 @@
 .pe-identity > div { display: grid; gap: 5px; min-width: 0; }
 .pe-identity strong { font-size: 16px; font-weight: 500; overflow-wrap: anywhere; }
 .pe-identity span { color: var(--muted); font-size: 13px; }
+.pe-identity .pe-photo-wrap { position: relative; display: block; flex-shrink: 0; overflow: visible; }
+.pe-photo-edit { display: grid; place-items: center; position: absolute; width: 44px; height: 44px; right: -15px; bottom: -12px; border: 0; background: transparent; color: var(--text); }
+.pe-photo-edit::before { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: var(--raised, #222428); border: 1px solid #ffffff33; }
+.pe-photo-edit svg { position: relative; }
+.pe-photo-edit:hover::before { background: #393b40; }
+.pe-photo-remove { align-self: start; text-align: left; background: none; border: 0; padding: 4px 0; min-height: 32px; color: var(--muted); font-size: 13px; }
+.pe-photo-remove:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.pe-photo-error { color: var(--pe-error); font-size: 13px; line-height: 1.6; margin: -12px 0 24px; }
 .pe-field-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
 .pe-field { display: flex; flex-direction: column; gap: 9px; margin-bottom: 24px; min-width: 0; }
 .pe-field > label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 500; line-height: 1.5; }
@@ -75,8 +83,8 @@
 .pe-save-footer { position: sticky; bottom: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px; border-top: 1px solid var(--line); border-radius: 0 0 14px 14px; background: var(--surface); }
 .pe-save-status { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .pe-save-actions { display: flex; align-items: center; gap: 18px; margin-left: auto; }
-.pe-save-actions .button { min-height: 44px; padding: 10px 18px; border-radius: 10px; font-size: 14px; }
-.pe-save-actions .pe-text-action { font-size: 13px; }
+.pe-save-actions .button { min-height: 44px; padding: 10px 18px; font-size: 14px; }
+.pe-save-actions .text-action { font-size: 13px; }
 .pe-save-error { width: 100%; color: var(--pe-error); font-size: 13px; line-height: 1.6; }
 .pe-setting { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 20px 0; border-bottom: 1px solid var(--line); }
 .pe-setting:first-of-type { padding-top: 0; }
@@ -84,7 +92,10 @@
 .pe-setting > div { min-width: 0; }
 .pe-setting p { color: var(--muted); font-size: 13px; line-height: 1.6; margin-top: 5px; max-width: 48ch; }
 .pe-setting > button { flex-shrink: 0; }
-.pe-setting .button { font-size: 13px; border-radius: 10px; min-height: 44px; }
+.pe-setting-control { flex-shrink: 0; }
+.pe-setting-control:has(.toggle) { display: grid; place-items: center; min-width: 44px; min-height: 44px; }
+.pe-setting-control .toggle::before { content: ""; position: absolute; inset: -11px -3px; }
+.pe-setting .button { font-size: 13px; min-height: 44px; }
 .pe-setting .toggle { width: 38px; height: 23px; }
 .pe-setting .toggle span { width: 17px; height: 17px; }
 .pe-setting .toggle.on { background: #f2f3f5; }
@@ -95,7 +106,7 @@
 .pe-rail-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; color: var(--muted); }
 .pe-rail-heading h2 { font-size: 16px; color: var(--text); }
 .pe-preview-rail > .pe-help { margin-top: 16px; }
-.pe-preview-rail > .pe-text-action { margin-top: 6px; }
+.pe-preview-rail > .text-action { margin-top: 6px; }
 .pe-room-scene { display: flex; align-items: center; justify-content: center; min-height: 280px; padding: 24px 18px; border-radius: 14px; background: linear-gradient(#16171925, #16171980), url('/assets/home-conference.webp') center / cover; }
 .pe-room-card { display: grid; gap: 16px; width: 100%; padding: 18px; border: 1px solid var(--spatial-glass-edge, #ffffff38); border-radius: 18px; background: var(--spatial-glass); backdrop-filter: var(--spatial-glass-filter); -webkit-backdrop-filter: var(--spatial-glass-filter); color: #fff; }
 .pe-person { display: flex; align-items: center; gap: 12px; min-width: 0; }
@@ -145,11 +156,13 @@
   .pe-save-actions { width: 100%; justify-content: space-between; gap: 10px; }
   .pe-setting { align-items: flex-start; gap: 18px; }
   .pe-settings-panel .pe-setting:has(.button) { flex-wrap: wrap; }
-  .pe-settings-panel .pe-setting:has(.button) > div { width: 100%; }
+  .pe-settings-panel .pe-setting:has(.button) > div:first-child { width: 100%; }
   .pe-setting .toggle { margin-top: 4px; }
-  .pe-topic-tag > button { min-width: 40px; min-height: 40px; }
+  .pe-topic-tag > button { min-width: 44px; min-height: 44px; }
+  .pe-photo-remove { min-height: 44px; }
   .pe-suggestions button, .pe-check { min-height: 44px; }
   .pe-drawer { padding: 20px; }
 }
+@media (max-height: 640px) { .pe-save-footer { position: static; } }
 @media (prefers-reduced-motion: reduce) { .pe-page *, .pe-dialog * { transition: none !important; } }
 @media (prefers-reduced-transparency: reduce) { .pe-room-card { background: #34363a; backdrop-filter: none; -webkit-backdrop-filter: none; } }

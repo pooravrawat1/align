@@ -11,6 +11,12 @@
   },
   "topicLimit": 20,
   "topicItemLimit": 80,
+  "photo": {
+    "maxSourceBytes": 10485760,
+    "maxBytes": 262144,
+    "size": 512,
+    "mimeType": "image/jpeg"
+  },
   "defaultVisibility": {
     "bio": true,
     "interests": true,

@@ -23,30 +23,6 @@
   letter-spacing: -0.035em;
 }
 
-.home-text-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 8px 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: var(--type-supporting);
-  white-space: nowrap;
-  transition: color 160ms ease;
-}
-
-.home-text-action:hover,
-.home-text-action:focus-visible,
-.home-page .product-quiet-link:hover,
-.home-page .product-quiet-link:focus-visible {
-  color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
 .home-event {
   position: relative;
   isolation: isolate;
@@ -129,13 +105,8 @@
   padding: 10px 20px;
 }
 
-.home-event-actions .home-text-action {
+.home-event-actions .home-event-detail-action {
   color: #f2f3f5;
-}
-
-.home-event-actions .home-text-action:hover {
-  text-decoration: underline;
-  text-underline-offset: 4px;
 }
 
 .home-profile-card {
@@ -248,7 +219,7 @@
   grid-area: connections;
 }
 
-.home-page .card-header .product-quiet-link {
+.home-page .card-header .text-action {
   min-height: 32px;
 }
 
@@ -354,13 +325,8 @@
   flex-shrink: 0;
 }
 
-.home-page .product-quiet-link {
-  font-size: var(--type-supporting);
-  font-weight: 500;
-}
-
-.home-page button:not(.button):focus-visible,
-.home-page a:focus-visible,
+.home-page button:not(.button):not(.text-action):focus-visible,
+.home-page a:not(.text-action):focus-visible,
 .home-page textarea:focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 4px;

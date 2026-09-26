@@ -24,7 +24,7 @@ import {
   WifiOff,
   X,
 } from "lucide-react";
-import { Avatar, Button, Mark, Tags, Toggle } from "./ui";
+import { Avatar, Button, Mark, Tags, TextAction, Toggle } from "./ui";
 import type { Action, Match, Profile, State } from "./types";
 import {
   initialRoomState,
@@ -786,10 +786,9 @@ export function Spatial({
             ? `${participants.length} sample participants · viewing as ${user.name}`
             : "Guided browser setup"}
         </span>
-        <button type="button" onClick={() => go("network")}>
+        <TextAction icon={<ArrowUpRight size={16} />} onClick={() => go("network")}>
           View saved connections
-          <ArrowUpRight size={16} />
-        </button>
+        </TextAction>
       </footer>
     </div>
   );
@@ -907,14 +906,13 @@ function SetupFlow({
               That’s me. Continue
               <ArrowRight size={18} />
             </Button>
-            <button
-              type="button"
+            <TextAction
               className="qmv2-text-button"
+              icon={<ArrowUpRight size={16} />}
               onClick={() => go("profile")}
             >
               Edit my introduction
-              <ArrowUpRight size={16} />
-            </button>
+            </TextAction>
           </>
         )}
 
@@ -995,10 +993,9 @@ function SetupFlow({
         )}
 
         {step !== "join" && (
-          <button type="button" className="qmv2-back" onClick={onBack}>
-            <ArrowLeft size={16} />
+          <TextAction className="qmv2-back" icon={<ArrowLeft size={16} />} iconPosition="start" onClick={onBack}>
             Back
-          </button>
+          </TextAction>
         )}
       </section>
     </div>
@@ -1726,9 +1723,9 @@ function Recap({
 }) {
   return (
     <section className="qmv2-recap" aria-label="Session recap">
-      <button type="button" className="qmv2-back" onClick={onBack}>
-        <ArrowLeft size={16} /> Return to room
-      </button>
+      <TextAction className="qmv2-back" icon={<ArrowLeft size={16} />} iconPosition="start" onClick={onBack}>
+        Return to room
+      </TextAction>
       <div className="qmv2-ready-symbol">
         <Check size={34} />
       </div>

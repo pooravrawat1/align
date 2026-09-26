@@ -57,13 +57,13 @@ components:
     backgroundColor: "{colors.text}"
     textColor: "{colors.graphite-background}"
     typography: "{typography.body}"
-    rounded: "{rounded.control}"
+    rounded: "{rounded.pill}"
     height: "44px"
   button-secondary:
     backgroundColor: "{colors.control-subtle}"
     textColor: "{colors.text}"
     typography: "{typography.body}"
-    rounded: "{rounded.control}"
+    rounded: "{rounded.pill}"
     height: "44px"
   panel:
     backgroundColor: "{colors.surface}"
@@ -107,7 +107,7 @@ Reference fidelity is additive, not a license to redesign: retain the old Event 
 
 The entry screen uses the supplied split-layout reference with Catalyst's shared geometry: 10px controls and 14px panels. The outer frame uses the same `product-panel` class as Home and Event. The artwork is flush with the frame, with square right corners at the column seam. A deep emerald gradient with softly diffused teal light and three journey steps sits on the left. The first step is white with a dark-green number circle; steps two and three have a subtle white translucent fill without an outline. This artwork is a scoped exception, not a global accent.
 
-The right side is a three-step demo-entry form, not real account creation: “Create your profile,” “What are you working on?”, then “Who would you love to meet?” Use left-aligned 36px headings (30px on small phones), 14px supporting copy, shared raised charcoal inputs, and a white CTA. Headings, supporting text, and fields share a left edge and consistent top origin. Field groups use 24px spacing, with helpers kept 8px from their own field. The Alex/Maya pill appears only on step one; each person has a separate prefilled draft. Step two collects a short bio, offered skills, and an optional LinkedIn link. Step three collects interests and sought expertise, with The Builders Room selected. All three numbered journey cards are full-card buttons for direct forward/back navigation; the current step is white and the others frosted. Navigation and refresh preserve drafts, including unfinished tags. Only “Enter the room” validates the complete draft, saves the confirmed profile, and joins DEMO, then opens spatial setup. Invalid skipped fields return to the corresponding step before any API writes. Failures stay inline with the draft intact; retries reuse the current person's session and do not rejoin an already joined room. Successful completion clears the entry draft. LinkedIn is a saved link, not an import; sharing remains controlled by Profile visibility. Résumé parsing and live two-device synchronization are separate follow-ups, with no dead upload or OAuth controls. The landing page's Step inside action always opens entry, including for returning visitors. The upper-right X returns to the landing page. On mobile the artwork becomes a compact, edge-to-edge header above the form.
+The right side is a three-step demo-entry form, not real account creation: “Create your profile,” “What are you working on?”, then “Who would you love to meet?” Use left-aligned 36px headings (30px on small phones), 14px supporting copy, shared raised charcoal inputs, and a white CTA. Headings, supporting text, and fields share a left edge and consistent top origin. Field groups use 24px spacing, with helpers kept 8px from their own field. The Alex/Maya pill appears only on step one; each person has a separate prefilled draft. Step two collects a short bio, offered skills, and an optional LinkedIn link. Step three collects interests and sought expertise, with The Builders Room selected. All three numbered journey cards are full-card buttons for direct forward/back navigation; the current step is white and the others frosted. Navigation and refresh preserve drafts, including unfinished tags. Only “Go to Home” validates the complete draft, saves the confirmed profile, and joins DEMO, then opens Home. Invalid skipped fields return to the corresponding step before any API writes. Failures stay inline with the draft intact; retries reuse the current person's session and do not rejoin an already joined room. Successful completion clears the entry draft. LinkedIn is a saved link, not an import; sharing remains controlled by Profile visibility. Résumé parsing and live two-device synchronization are separate follow-ups, with no dead upload or OAuth controls. The landing page's Step inside action always opens entry, including for returning visitors. The upper-right X returns to the landing page. On mobile the artwork becomes a compact, edge-to-edge header above the form.
 
 The website palette is neutral charcoal, white, and cool gray, including branding, selected profiles, navigation, and focus states. Jade signals connections and live presence; it is not a general accent. Spatial cards restore the original v1 material exactly, retaining its subtle environmental tint and brighter diffusion over room imagery.
 
@@ -179,7 +179,7 @@ The app shell is flat and tonal by default. Opaque surfaces separate through cha
 
 ## Shapes
 
-Controls use 7–12px radii, ordinary panels 14px, cinematic frames 16–18px, and spatial feature panels 22–27px. Pills are reserved for tags, statuses, and small segmented state. Borders are one-pixel translucent hairlines; avatars and completion marks may be circular.
+Primary and secondary CTAs use the shared pill silhouette. Utility controls use 7–12px radii, ordinary panels 14px, cinematic frames 16–18px, and spatial feature panels 22–27px. Tags, statuses, and small segmented states may also use pills. Borders are one-pixel translucent hairlines; avatars and completion marks may be circular.
 
 ## Components
 
@@ -187,7 +187,8 @@ Controls use 7–12px radii, ordinary panels 14px, cinematic frames 16–18px, a
 
 - Minimum height is 44px with 13–14px medium-weight text.
 - Primary actions are warm-white on graphite; jade buttons are reserved for stateful spatial actions.
-- Secondary buttons use a translucent neutral fill and hairline border. Hover raises contrast gently; focus uses a 2px white outline with 4px offset.
+- Primary and secondary buttons are pill-shaped. Hover and keyboard focus use the Creo-inspired interaction: the surface inverts, a 1px reflective inner stroke resolves, and a separate 2px warm-white capsule appears 6px outside the control. Press compresses to 97%; reduced motion keeps the color and stroke feedback without movement.
+- Quiet secondary CTAs use the shared text-action treatment instead of a filled button. Hover and keyboard focus brighten the label, raise its weight from 500 to 650, draw a 1px underline, and move a directional icon by 2px. Filters, tabs, icon buttons, expanders, and destructive controls keep their own interaction patterns.
 
 ### Cards / Containers
 

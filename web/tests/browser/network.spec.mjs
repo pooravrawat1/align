@@ -19,7 +19,7 @@ test('opening a profile keeps portraits stationary and expands into a centered c
   expect(Math.abs(after.x - before.x)).toBeLessThan(1);
   expect(Math.abs(after.y - before.y)).toBeLessThan(1);
   expect(Math.abs(mapAfter.width - mapBefore.width)).toBeLessThan(1);
-  await page.getByRole('button', { name: 'Open full profile' }).click();
+  await page.getByRole('button', { name: 'Explore profile' }).click();
   const dialog = page.getByRole('dialog', { name: 'Jordan Lee — full profile' });
   const card = await dialog.boundingBox();
   expect(card.width).toBeLessThanOrEqual(940);
@@ -31,6 +31,31 @@ test('opening a profile keeps portraits stationary and expands into a centered c
   await page.getByRole('button', { name: "Close Jordan Lee's profile" }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(Math.abs((await self.boundingBox()).x - before.x)).toBeLessThan(1);
+});
+
+test('selecting and closing a portrait preserves a short viewport map position', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 560 });
+  await openNetwork(page);
+  await page.evaluate(() => scrollTo(0, 300));
+
+  const self = page.locator('.nm-self');
+  const beforeScroll = await page.evaluate(() => scrollY);
+  const before = await self.boundingBox();
+  expect(beforeScroll).toBeGreaterThan(0);
+
+  await page.getByRole('button', { name: 'View Jordan Lee, Creative technologist' }).click();
+  await expect(page.getByRole('dialog', { name: 'Jordan Lee — profile preview' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(beforeScroll);
+  const opened = await self.boundingBox();
+  expect(Math.abs(opened.x - before.x)).toBeLessThan(1);
+  expect(Math.abs(opened.y - before.y)).toBeLessThan(1);
+
+  await page.getByRole('button', { name: "Close Jordan Lee's profile" }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(beforeScroll);
+  const closed = await self.boundingBox();
+  expect(Math.abs(closed.x - before.x)).toBeLessThan(1);
+  expect(Math.abs(closed.y - before.y)).toBeLessThan(1);
 });
 
 async function openNetwork(page, { customize = () => {} } = {}) {
@@ -127,8 +152,13 @@ for (const viewport of [
     await expect(page.getByRole('dialog', { name: 'Jordan Lee — profile preview' })).toBeVisible();
     await expect(zoom).toHaveText(changedZoom);
 
-    await page.getByRole('button', { name: 'Open full profile' }).click();
-    await expect(page.getByRole('dialog', { name: 'Jordan Lee — full profile' })).toBeVisible();
+    await page.getByRole('button', { name: 'Explore profile' }).click();
+    const fullProfile = page.getByRole('dialog', { name: 'Jordan Lee — full profile' });
+    await expect(fullProfile).toBeVisible();
+    const expandedCard = await fullProfile.boundingBox();
+    expect(expandedCard.height).toBeLessThanOrEqual(viewport.height * 0.8 + 2);
+    expect(Math.abs(expandedCard.x + expandedCard.width / 2 - viewport.width / 2)).toBeLessThan(2);
+    expect(Math.abs(expandedCard.y + expandedCard.height / 2 - viewport.height / 2)).toBeLessThan(2);
     await page.getByText('Draft a message', { exact: true }).click();
     const draft = page.getByLabel('Message draft', { exact: true });
     await draft.fill('Jordan — let’s compare prototypes after the event.');
@@ -138,7 +168,7 @@ for (const viewport of [
     await page.getByRole('button', { name: 'Back to network' }).click();
     await expect(page.getByRole('dialog', { name: 'Jordan Lee — profile preview' })).toBeVisible();
     await expect(zoom).toHaveText(changedZoom);
-    await page.getByRole('button', { name: 'Open full profile' }).click();
+    await page.getByRole('button', { name: 'Explore profile' }).click();
     await expect(draft).toHaveValue('Jordan — let’s compare prototypes after the event.');
 
     await page.goBack();
@@ -259,7 +289,7 @@ test('hidden profile fields never leak into common ground or sample AI copy', as
   await expect(page.locator('.np-preview-section')).toContainText('No shared interests are visible yet.');
   for (const token of privateTokens) await expect(page.getByText(token, { exact: false })).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'Open full profile' }).click();
+  await page.getByRole('button', { name: 'Explore profile' }).click();
   await expect(page.getByRole('heading', { name: 'Common ground' })).toBeVisible();
   await page.getByText('Sample AI insight', { exact: true }).click();
   const guardedSurfaces = page.locator('.np-main, .np-compatibility');

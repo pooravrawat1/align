@@ -50,6 +50,20 @@ test('successful canonicalized save clears only acknowledged draft storage', asy
   restored.discard('contact'); assert.equal(storage.values.size, 0);
 });
 
+test('reverting a field or sharing switch during a save remains an unsaved edit', async () => {
+  const source = profile(), editor = new ProfileEditor(source, 'session', memory());
+  let finish;
+  editor.change('bio', 'Submitted'); editor.share('bio', false);
+  const saving = editor.save('focus', async () => new Promise(resolve => { finish = resolve; }));
+  editor.change('bio', source.bio); editor.share('bio', true);
+  const response = { ...source, bio: 'Submitted', visibility: { ...visibilityOf(source), bio: false } };
+  // Exercise App rebasing before the save promise resolves as well as acknowledgement.
+  editor.rebase(response); finish({ profiles: [response] }); await saving;
+  assert.equal(editor.getSnapshot().draft.bio, source.bio);
+  assert.equal(editor.getSnapshot().draft.visibility.bio, true);
+  assert.equal(editor.dirty('focus'), true);
+});
+
 test('drafts and pending topic text restore only for the same session and person', () => {
   const source = profile(), storage = memory(), editor = new ProfileEditor(source, 'session-a', storage);
   editor.change('bio', 'Unsaved focus'); editor.typeTopic('skills', 'New expertise');

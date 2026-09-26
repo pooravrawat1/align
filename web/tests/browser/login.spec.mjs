@@ -432,7 +432,7 @@ for (const viewport of viewports) {
 
     await continueToMeet(page);
     await expect(selector).toHaveCount(0);
-    await expectDesktopStepWithinViewport(page, 'Who would you love to meet?', 'Enter the room');
+    await expectDesktopStepWithinViewport(page, 'Who would you love to meet?', 'Go to Home');
     await expectChips(page, 'Interests', ['Assistive technology', 'Robotics', 'Open source']);
     await expect(chipGroup(page, 'Interests')).toHaveClass(/entry-tags-pills/);
     await expectTagRadius(page, 'Interests', 'Assistive technology', { pill: true });
@@ -453,13 +453,14 @@ for (const viewport of viewports) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
     if (viewport.name === 'desktop') traffic.profileDelayMs = 750;
-    await page.getByRole('button', { name: 'Enter the room', exact: true }).click();
+    await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
     if (viewport.name === 'desktop') {
       for (const step of journeySteps) await expect(stepButton(page, step.number)).toBeDisabled();
     }
-    await expect(page).toHaveURL(/#\/spatial$/);
+    await expect(page).toHaveURL(/#\/home$/);
 
     const loginRequests = traffic.requests.filter((request) => request.path === '/api/login');
+    await expect(page.getByRole('heading', { name: 'Your focus', exact: true })).toBeVisible();
     const profileRequests = traffic.requests.filter((request) => request.path === '/api/profile');
     const roomRequests = traffic.requests.filter((request) => request.path === '/api/room');
     expect(loginRequests).toHaveLength(1);
@@ -524,8 +525,8 @@ test('edited details and chips survive step navigation and reload, then drive th
   const pendingNeed = chipGroup(page, "I'm looking for help with").getByRole('textbox', { name: 'Add what you need', exact: true });
   await pendingNeed.fill('Machine learning');
   await pendingNeed.press('Enter');
-  await page.getByRole('button', { name: 'Enter the room', exact: true }).click();
-  await expect(page).toHaveURL(/#\/spatial$/);
+  await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
+  await expect(page).toHaveURL(/#\/home$/);
 
   const state = await savedState(traffic);
   expect(state.profiles.find((profile) => profile.id === 'alex')).toMatchObject({
@@ -594,7 +595,7 @@ test('final submission redirects skipped invalid fields to their owning step wit
   ]) {
     await page.getByLabel(field.label, { exact: true }).fill(field.invalid);
     await stepButton(page, 3).click();
-    await page.getByRole('button', { name: 'Enter the room', exact: true }).click();
+    await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Create your profile' })).toBeVisible();
     expect(traffic.requests.filter((request) => request.method !== 'GET')).toHaveLength(0);
     await page.getByLabel(field.label, { exact: true }).fill(field.valid);
@@ -603,7 +604,7 @@ test('final submission redirects skipped invalid fields to their owning step wit
   await stepButton(page, 2).click();
   await page.getByLabel('LinkedIn profile', { exact: true }).fill('https://example.com/in/alex');
   await stepButton(page, 3).click();
-  await page.getByRole('button', { name: 'Enter the room', exact: true }).click();
+  await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'What are you working on?' })).toBeVisible();
   expect(traffic.requests.filter((request) => request.method !== 'GET')).toHaveLength(0);
 });
@@ -616,7 +617,7 @@ test('profile and room failures retry from step 3 without losing the created ses
   await chipGroup(page, "I'm looking for help with").getByRole('textbox', { name: 'Add what you need', exact: true }).fill('Machine learning');
 
   traffic.failProfile = true;
-  await page.getByRole('button', { name: 'Enter the room', exact: true }).click();
+  await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
   await expect(page.getByRole('alert')).toHaveText('Profile save unavailable. Try again.');
   await expect(page.getByRole('heading', { name: 'Who would you love to meet?' })).toBeVisible();
   expect(traffic.requests.filter((request) => request.path === '/api/profile').at(-1).body.lookingFor).toEqual([
@@ -628,15 +629,15 @@ test('profile and room failures retry from step 3 without losing the created ses
 
   traffic.failProfile = false;
   traffic.failRoom = true;
-  await page.getByRole('button', { name: 'Enter the room', exact: true }).click();
+  await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
   await expect(page.getByRole('alert')).toHaveText('Room join unavailable. Try again.');
   await expect(page.getByRole('heading', { name: 'Who would you love to meet?' })).toBeVisible();
   await expectChips(page, "I'm looking for help with", ['Computer vision', 'Machine learning']);
   expect(traffic.sessionId).toBe(createdSession);
 
   traffic.failRoom = false;
-  await page.getByRole('button', { name: 'Enter the room', exact: true }).click();
-  await expect(page).toHaveURL(/#\/spatial$/);
+  await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
+  await expect(page).toHaveURL(/#\/home$/);
   expect(traffic.sessionId).toBe(createdSession);
   expect(traffic.requests.filter((request) => request.path === '/api/login')).toHaveLength(1);
   expect(traffic.requests.filter((request) => request.path === '/api/room')).toHaveLength(2);
@@ -649,7 +650,7 @@ test('a failed protected-route profile save remains on step 3 after refresh', as
   await bioField(page).fill('Protected-route retry draft');
   await continueToMeet(page);
   traffic.failProfile = true;
-  await page.getByRole('button', { name: 'Enter the room', exact: true }).click();
+  await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
   await expect(page.getByRole('alert')).toHaveText('Profile save unavailable. Try again.');
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Who would you love to meet?' })).toBeVisible();
@@ -671,7 +672,7 @@ test('an expired same-person session fails once, preserves step 3, and succeeds 
   await continueToMeet(page);
   await isolatedApi('/api/logout', { method: 'POST', sessionId: expiredSession, body: {} });
 
-  await page.getByRole('button', { name: 'Enter the room', exact: true }).click();
+  await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
   await expect(page.getByRole('alert')).toHaveText('Your demo session expired. Your draft is safe—try again.');
   await expect(page.getByRole('heading', { name: 'Who would you love to meet?' })).toBeVisible();
   expect(traffic.requests.filter((request) => request.path === '/api/login')).toHaveLength(0);
@@ -680,8 +681,8 @@ test('an expired same-person session fails once, preserves step 3, and succeeds 
   await stepButton(page, 2).click();
   await expect(bioField(page)).toHaveValue('Draft preserved across an expired session');
   await continueToMeet(page);
-  await page.getByRole('button', { name: 'Enter the room', exact: true }).click();
-  await expect(page).toHaveURL(/#\/spatial$/);
+  await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
+  await expect(page).toHaveURL(/#\/home$/);
   expect(traffic.sessionId).not.toBe(expiredSession);
   expect(traffic.requests.filter((request) => request.path === '/api/login')).toHaveLength(1);
   expect((await savedState(traffic)).profiles.find((profile) => profile.id === 'alex').bio).toBe(
@@ -701,8 +702,8 @@ test('a valid joined session is reused without another login or room join', asyn
   await expect(page.getByLabel('First name', { exact: true })).toHaveValue('Maya');
   await continueToWork(page);
   await continueToMeet(page);
-  await page.getByRole('button', { name: 'Enter the room', exact: true }).click();
-  await expect(page).toHaveURL(/#\/spatial$/);
+  await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
+  await expect(page).toHaveURL(/#\/home$/);
 
   expect(traffic.sessionId).toBe(existingSession);
   expect(traffic.requests.filter((request) => request.path === '/api/login')).toHaveLength(0);
@@ -745,9 +746,9 @@ test('live Vite and API create a fresh temporary entry session and clean it up',
     const loginResponse = page.waitForResponse(
       (response) => response.url().endsWith('/api/login') && response.request().method() === 'POST',
     );
-    await page.getByRole('button', { name: 'Enter the room', exact: true }).click();
+    await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
     sessionId = (await (await loginResponse).json()).session.id;
-    await expect(page).toHaveURL(/#\/spatial$/);
+    await expect(page).toHaveURL(/#\/home$/);
 
     const response = await fetch(`${origin}/api/bootstrap`, { headers: { 'x-session-id': sessionId } });
     const state = await response.json();

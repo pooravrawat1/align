@@ -31,7 +31,7 @@
 .qmv2 select {
   font: inherit;
 }
-.qmv2 button:not(.button):focus-visible,
+.qmv2 button:not(.button):not(.text-action):focus-visible,
 .qmv2 input:focus-visible,
 .qmv2 select:focus-visible {
   outline: 2px solid #d8dade;
@@ -445,16 +445,8 @@
 }
 .qmv2-text-button,
 .qmv2-back {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
   margin-top: 7px;
-  padding: 8px 10px;
-  border: 0;
   color: var(--qv2-muted);
-  background: transparent;
   font-size: 14px;
 }
 .qmv2-profile-confirmation {

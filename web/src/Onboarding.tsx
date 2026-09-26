@@ -189,7 +189,7 @@ export function Onboarding({ profiles, initialProfileId, busy, onComplete, error
           </>}
         </fieldset>
         {(validationError || error) && <p className="field-error" role="alert">{validationError || error}</p>}
-        <Button type="submit" className="full-width" busy={busy}>{step === 2 ? "Enter the room" : "Continue"}<ArrowRight size={16} /></Button>
+        <Button type="submit" className="full-width" busy={busy}>{step === 2 ? "Go to Home" : "Continue"}<ArrowRight size={16} /></Button>
       </form>
     </div></section>
   </main>;

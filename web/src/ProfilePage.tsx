@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Check, Download, Eye, EyeOff, Glasses, LogOut, Plus, X } from "lucide-react";
+import { Check, Download, Eye, EyeOff, Glasses, LogOut, Pencil, Plus, X } from "lucide-react";
 import contract from "../shared/profile-contract.json";
 import type { Action, Profile, State } from "./types";
-import { Avatar, Button, Toggle } from "./ui";
+import { Avatar, Button, TextAction, Toggle } from "./ui";
 import { NearbyProfile, ProfilePreview } from "./ProfilePreview";
+import { prepareProfilePhoto } from "./profilePhoto";
 import { profileSectionFromHash, profileSections, visibilityOf } from "./profileEditor";
 import type { EditableField, EditorSnapshot, ProfileEditor, ProfileSection, TopicField, VisibilityField } from "./profileEditor";
 import "./ProfilePage.css";
@@ -22,6 +23,10 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
   const [preview, setPreview] = useState(false);
   const [sounds, setSounds] = useState(() => { try { return localStorage.getItem("questmatch-sounds") === "true"; } catch { return false; } });
   const [preferenceError, setPreferenceError] = useState("");
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const photoInput = useRef<HTMLInputElement>(null);
+  const photoRevision = useRef(0);
   const focusRef = useRef<HTMLTextAreaElement>(null);
   const tabRefs = useRef<Partial<Record<ProfileSection, HTMLButtonElement | null>>>({});
   const internalTab = useRef(false);
@@ -30,6 +35,18 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
   const visible = visibilityOf(draft);
   const dirty = editor.dirty(section);
   const anyDirty = profileSections.some(tab => editor.dirty(tab));
+
+  useEffect(() => () => { photoRevision.current += 1; }, [editor]);
+  const choosePhoto = async (file: File) => {
+    const revision = ++photoRevision.current;
+    setPhotoBusy(true); setPhotoError("");
+    try {
+      const avatar = await prepareProfilePhoto(file);
+      if (revision === photoRevision.current) editor.change("avatar", avatar);
+    } catch (error) {
+      if (revision === photoRevision.current) setPhotoError(error instanceof Error ? error.message : "Couldn’t read this photo. Try another image.");
+    } finally { if (revision === photoRevision.current) setPhotoBusy(false); }
+  };
 
   useEffect(() => {
     const change = () => setSection(profileSectionFromHash(location.hash));
@@ -42,12 +59,25 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
     tabRefs.current[section]?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [section]);
 
+  const focusTopicError = () => {
+    const field = (["interests", "skills", "lookingFor"] as const).find(key => editor.getSnapshot().errors[key]);
+    requestAnimationFrame(() => { if (field) document.getElementById(`pe-${field}`)?.focus(); });
+  };
   const select = (next: ProfileSection) => {
-    if (section === "focus") editor.commitTopics();
+    if (next === section) return true;
+    if (section === "focus" && !editor.commitTopics()) { focusTopicError(); return false; }
     internalTab.current = true;
     location.hash = `/profile?section=${next}`;
+    return true;
+  };
+  const openPreview = () => {
+    if (!editor.commitTopics()) {
+      setSection("focus"); location.hash = "/profile?section=focus"; focusTopicError(); return;
+    }
+    setPreview(true);
   };
   const save = async () => {
+    if (photoBusy) return;
     if (!await editor.save(section, act)) {
       const field = Object.keys(editor.getSnapshot().errors).find(key => formRef.current?.querySelector(`#pe-${key}`));
       if (field) formRef.current?.querySelector<HTMLElement>(`#pe-${field}`)?.focus();
@@ -70,25 +100,35 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
   };
 
   return <div className="pe-page">
-    <header className="pe-page-heading"><h1>Profile</h1><button className="pe-text-action" type="button" onClick={() => setPreview(true)}><Eye size={17} />Preview profile</button></header>
+    <header className="pe-page-heading"><h1>Profile</h1><TextAction icon={<Eye size={17} />} iconPosition="start" onClick={openPreview}>Preview profile</TextAction></header>
     <div className="pe-tabs" role="tablist" aria-label="Profile sections">
       {profileSections.map(tab => <button key={tab} ref={element => { tabRefs.current[tab] = element; }} id={`pe-tab-${tab}`} type="button" role="tab" aria-selected={section === tab} aria-controls={`pe-panel-${tab}`} tabIndex={section === tab ? 0 : -1} onClick={() => select(tab)} onKeyDown={event => {
         const index = profileSections.indexOf(tab);
         const next = event.key === "ArrowRight" ? profileSections[(index + 1) % 4] : event.key === "ArrowLeft" ? profileSections[(index + 3) % 4] : event.key === "Home" ? "about" : event.key === "End" ? "settings" : null;
-        if (next) { event.preventDefault(); select(next); tabRefs.current[next]?.focus(); }
+        if (next) { event.preventDefault(); if (select(next)) tabRefs.current[next]?.focus(); }
       }}>{labels[tab]}{editor.dirty(tab) && <span className="pe-dirty-dot"><span className="sr-only"> — Unsaved changes</span></span>}</button>)}
     </div>
     {!snapshot.storageAvailable && <p className="pe-storage-note" role="status">Your draft stays here while you navigate. Browser storage is unavailable, so save before refreshing.</p>}
     <div className={`pe-layout ${section === "about" || section === "focus" ? "pe-with-preview" : ""}`}>
       <div className="pe-editor-column" role="tabpanel" id={`pe-panel-${section}`} aria-labelledby={`pe-tab-${section}`}>
-        <form className="pe-panel pe-editor" ref={formRef} noValidate onSubmit={event => { event.preventDefault(); void save(); }}>
+        <form className="pe-panel pe-editor" ref={formRef} noValidate onSubmit={event => { event.preventDefault(); void save(); }} onFocusCapture={event => {
+          const target = event.target;
+          if (!(target instanceof HTMLElement) || !target.closest(".pe-panel-body")) return;
+          requestAnimationFrame(() => {
+            const footer = formRef.current?.querySelector(".pe-save-footer");
+            if (!target.isConnected || !footer) return;
+            const control = target.getBoundingClientRect(), bar = footer.getBoundingClientRect();
+            if (control.bottom > bar.top && control.top < bar.bottom) target.scrollIntoView({ block: "center" });
+          });
+        }}>
           <div className="pe-panel-body">
             {section === "about" && <>
               <PanelHeading title="About you" description="The first things people see when you meet." />
-              <div className="pe-identity"><Avatar profile={draft} size="large" /><div><strong>{draft.name || "Your name"}</strong><span>Sample photo for this demo</span></div></div>
+              <div className="pe-identity"><div className="pe-photo-wrap"><Avatar key={draft.avatar} profile={draft} size="large" /><button id="pe-avatar" type="button" className="pe-photo-edit" aria-label="Upload profile photo" aria-describedby="pe-photo-help" disabled={photoBusy} onClick={() => photoInput.current?.click()}><Pencil size={15} /></button></div><div><strong>{draft.name || "Your name"}</strong><span id="pe-photo-help">{photoBusy ? "Preparing photo…" : "JPG, PNG or WebP · Up to 10 MB"}</span>{draft.avatar && <button type="button" className="pe-photo-remove" disabled={photoBusy} onClick={() => { editor.change("avatar", ""); setPhotoError(""); }}>Remove photo</button>}</div><input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp" hidden aria-label="Choose profile photo" onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void choosePhoto(file); }} /></div>
+              {photoError && <p className="pe-photo-error" role="alert">{photoError}</p>}
               <div className="pe-field-grid">{field("name", "Name", "Your name", "text", false)}{field("role", "Headline", "e.g. Hardware engineer")}</div>
               {field("location", "Location", "e.g. Atlanta, GA")}
-              <p className="pe-help">Your name and headline introduce you. Add your interests and what you’re working on in <button type="button" className="pe-inline-link" onClick={() => select("focus")}>Focus</button>.</p>
+              <p className="pe-help">Name, headline, and location appear on your saved-connection profile. Add your interests and what you’re working on in <button type="button" className="pe-inline-link" onClick={() => select("focus")}>Focus</button>.</p>
             </>}
             {section === "focus" && <>
               <PanelHeading title="Your focus" description="Help the right people find a reason to connect." />
@@ -105,13 +145,13 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
             {section === "settings" && <>
               <PanelHeading title="Visibility" description="Choose where your profile can be discovered." />
               <Setting title="Show me in rooms" description="Make your shared introduction available to people in your room."><Toggle label="Show me in rooms" checked={visible.activeInEvent} onChange={() => editor.share("activeInEvent", !visible.activeInEvent)} /></Setting>
-              <Setting title="Access for saved connections" description="Let saved connections see your shared profile details and contact links."><Toggle label="Access for saved connections" checked={visible.previousConnections} onChange={() => editor.share("previousConnections", !visible.previousConnections)} /></Setting>
+              <Setting title="Access for saved connections" description="Let saved connections see your shared focus, interests, skills, and contact links."><Toggle label="Access for saved connections" checked={visible.previousConnections} onChange={() => editor.share("previousConnections", !visible.previousConnections)} /></Setting>
               <p className="pe-help">Individual sharing choices live beside your fields in Focus and Contact. Hidden fields stay in your profile.</p>
             </>}
           </div>
           <footer className="pe-save-footer">
             <div className="pe-save-status" role="status">{saving === section ? "Saving…" : dirty ? "Unsaved changes" : saved === section ? <><Check size={15} />Saved</> : "No unsaved changes"}</div>
-            <div className="pe-save-actions"><button className="pe-text-action" type="button" disabled={!dirty || !!saving} onClick={() => editor.discard(section)}>Discard changes</button><Button type="submit" busy={saving === section} disabled={!dirty || !!saving}>Save changes</Button></div>
+            <div className="pe-save-actions"><TextAction disabled={!dirty || !!saving || photoBusy} onClick={() => { editor.discard(section); setPhotoError(""); }}>Discard changes</TextAction><Button type="submit" busy={saving === section} disabled={!dirty || !!saving || photoBusy}>Save changes</Button></div>
             {failure?.section === section && <p className="pe-save-error" role="alert">{failure.message}</p>}
           </footer>
         </form>
@@ -129,7 +169,7 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
           <p className="pe-demo-note">Profiles and sharing choices belong to this local demo. They aren’t a permanent account.</p>
         </>}
       </div>
-      {(section === "about" || section === "focus") && <aside className="pe-preview-rail" aria-label="Nearby profile preview"><div className="pe-rail-heading"><h2>In the room</h2><Glasses size={19} /></div><NearbyProfile profile={draft} /><p className="pe-help">{visible.activeInEvent ? "Your name, headline, and shared interests at a glance." : "You can change room visibility in Settings."}</p><button type="button" className="pe-text-action" onClick={() => setPreview(true)}>{visible.activeInEvent ? <Eye size={16} /> : <EyeOff size={16} />}Preview full profile</button></aside>}
+      {(section === "about" || section === "focus") && <aside className="pe-preview-rail" aria-label="Nearby profile preview"><div className="pe-rail-heading"><h2>In the room</h2><Glasses size={19} /></div><NearbyProfile profile={draft} /><p className="pe-help">{visible.activeInEvent ? "Your name, headline, and shared interests at a glance." : "You can change room visibility in Settings."}</p><TextAction icon={visible.activeInEvent ? <Eye size={16} /> : <EyeOff size={16} />} iconPosition="start" onClick={openPreview}>Preview full profile</TextAction></aside>}
     </div>
     {preview && <ProfilePreview profile={draft} profiles={state.profiles} dirty={anyDirty} onClose={() => setPreview(false)} />}
   </div>;
@@ -139,7 +179,7 @@ function PanelHeading({ title, description }: { title: string; description?: str
   return <header className="pe-panel-heading"><h2>{title}</h2>{description && <p>{description}</p>}</header>;
 }
 function Setting({ title, description, children }: { title: string; description: string; children: ReactNode }) {
-  return <div className="pe-setting"><div><h3>{title}</h3><p>{description}</p></div>{children}</div>;
+  return <div className="pe-setting"><div><h3>{title}</h3><p>{description}</p></div><div className="pe-setting-control">{children}</div></div>;
 }
 function FieldError({ field, message }: { field: EditableField; message?: string }) {
   return <span id={`pe-${field}-error`} className="pe-field-error" role={message ? "alert" : undefined}>{message}</span>;

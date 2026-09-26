@@ -146,12 +146,15 @@ export default function App() {
     return task;
   };
   useEffect(() => {
+    let currentPage = route();
     const change = () => {
-      setPage(route());
+      const nextPage = route();
+      setPage(nextPage);
       setEntryActive(false);
       setMenu(false);
       setError("");
-      window.scrollTo(0, 0);
+      if (nextPage !== currentPage) window.scrollTo(0, 0);
+      currentPage = nextPage;
     };
     addEventListener("hashchange", change);
     return () => removeEventListener("hashchange", change);
@@ -228,7 +231,7 @@ export default function App() {
       }
       if (location.hash === entryRoute) {
         setEntryActive(false);
-        go("spatial");
+        go("home");
       }
       return true;
     } catch (failure) {

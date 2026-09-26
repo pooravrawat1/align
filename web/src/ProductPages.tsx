@@ -28,7 +28,7 @@ import type {
   Profile,
   State,
 } from "./types";
-import { Avatar, Button, Tags } from "./ui";
+import { Avatar, Button, Tags, TextAction } from "./ui";
 import "./ProductPages.css";
 import "./Home.css";
 import { ContactLinks } from "./ProfileContactLinks";
@@ -423,9 +423,9 @@ export function HomeProduct(props: ProductProps) {
                 {readiness.complete ? "Enter room" : "Finish profile"}
                 <ArrowRight size={17} />
               </Button>
-              <button className="home-text-action" onClick={() => navigate(`event?event=${encodeURIComponent(event.id)}`)}>
+              <TextAction className="home-event-detail-action" onClick={() => navigate(`event?event=${encodeURIComponent(event.id)}`)}>
                 Event details
-              </button>
+              </TextAction>
             </div>
           </div>
           <button
@@ -484,12 +484,9 @@ export function HomeProduct(props: ProductProps) {
           <div className="card-header">
             <h2 className="home-section-title">Recent connections</h2>
             {connections.length > 0 && (
-              <button
-                className="product-quiet-link"
-                onClick={() => navigate("network")}
-              >
+              <TextAction onClick={() => navigate("network")}>
                 View network
-              </button>
+              </TextAction>
             )}
           </div>
           {connections.length > 0 ? (
@@ -516,7 +513,7 @@ export function HomeProduct(props: ProductProps) {
       <section className="product-panel home-explore" aria-labelledby="home-explore-title">
         <div className="card-header">
           <h2 className="home-section-title" id="home-explore-title">Other events</h2>
-          <a className="product-quiet-link" href="#/event">All events</a>
+          <TextAction href="#/event">All events</TextAction>
         </div>
         <div className="home-explore-list">
           {otherEvents.map((space) => (
@@ -862,13 +859,14 @@ export function EventProduct({
 
   return (
     <div className="product-page product-event-page">
-      <button
-        className="product-quiet-link product-back-events"
+      <TextAction
+        className="product-back-events"
+        icon={<ArrowLeft size={15} />}
+        iconPosition="start"
         onClick={() => navigate("event")}
       >
-        <ArrowLeft size={15} />
         All event spaces
-      </button>
+      </TextAction>
       <header className="product-page-heading product-event-heading">
         <div>
           <span className="product-eyebrow">{joinedCurrentRoom ? "Your demo room" : "Sample event"}</span>
@@ -1008,14 +1006,14 @@ export function EventProduct({
                 <ArrowRight size={16} />
               </Button>
             </form>
-            <button
-              className="product-quiet-link"
+            <TextAction
+              className="product-room-entry-toggle"
               onClick={() => setCreatingRoom((current) => !current)}
             >
               {creatingRoom
                 ? "Join an existing room instead"
                 : "Create a temporary demo room"}
-            </button>
+            </TextAction>
           </section>
         </div>
       )}
@@ -1104,12 +1102,12 @@ export function EventProduct({
                       : "Profile sharing paused"}
                   </h2>
                 </div>
-                <button
-                  className="product-quiet-link"
+                <TextAction
+                  icon={<ArrowUpRight size={15} />}
                   onClick={() => navigate("profile")}
                 >
-                  Edit <ArrowUpRight size={15} />
-                </button>
+                  Edit
+                </TextAction>
               </div>
               {activeInEvent ? (
                 <>

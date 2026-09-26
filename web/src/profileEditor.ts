@@ -6,11 +6,11 @@ export const profileSections = ["about", "focus", "contact", "settings"] as cons
 export type ProfileSection = typeof profileSections[number];
 export type TopicField = "interests" | "skills" | "lookingFor";
 export type VisibilityField = keyof typeof contract.defaultVisibility;
-export type EditableField = keyof typeof contract.stringLimits | TopicField;
+export type EditableField = keyof typeof contract.stringLimits | TopicField | "avatar";
 export type ProfilePatch = Partial<Pick<Profile, EditableField>> & { visibility?: Partial<Record<VisibilityField, boolean>> };
 export type FieldErrors = Partial<Record<EditableField, string>>;
 export const sectionFields: Record<ProfileSection, EditableField[]> = {
-  about: ["name", "role", "location"],
+  about: ["name", "role", "location", "avatar"],
   focus: ["bio", "interests", "skills", "lookingFor"],
   contact: ["linkedin", "website", "email", "contact"],
   settings: [],
@@ -50,6 +50,7 @@ function mergePatch(profile: Profile, patch: ProfilePatch): Profile {
 export function validateSection(profile: Profile, section: ProfileSection): FieldErrors {
   const errors: FieldErrors = {};
   for (const field of sectionFields[section]) {
+    if (field === "avatar") continue;
     if (topicFields.includes(field as TopicField)) {
       const values = profile[field as TopicField];
       if (values.length > contract.topicLimit) errors[field] = `Use up to ${contract.topicLimit} topics.`;
@@ -96,6 +97,7 @@ export class ProfileEditor {
   private active = true;
   private key: string | null;
   private storage?: DraftStorage;
+  private submitted: Profile | null = null;
   constructor(profile: Profile, sessionId: string | null, storage?: DraftStorage) {
     this.storage = storage;
     const baseline = normalize(profile);
@@ -156,7 +158,7 @@ export class ProfileEditor {
     this.emit({ draft: { ...this.snapshot.draft, [field]: result.values }, topicText: { ...this.snapshot.topicText, [field]: result.error ? value : "" }, errors: { ...this.snapshot.errors, [field]: result.error }, saved: null });
     return !result.error;
   }
-  commitTopics() { return topicFields.map(field => this.commitTopic(field)).every(Boolean); }
+  commitTopics() { return topicFields.filter(field => this.snapshot.topicText[field] !== "").map(field => this.commitTopic(field)).every(Boolean); }
   discard(section: ProfileSection) {
     const patch: ProfilePatch = {};
     for (const field of sectionFields[section]) Object.assign(patch, { [field]: this.snapshot.baseline[field] });
@@ -169,6 +171,15 @@ export class ProfileEditor {
     if (same(normalize(profile), this.snapshot.baseline)) return;
     let draft = normalize(profile);
     for (const section of profileSections) draft = mergePatch(draft, sectionPatch(this.snapshot.baseline, this.snapshot.draft, section));
+    // An edit back to the old saved value is still a new edit while a request is pending.
+    if (this.submitted) {
+      for (const field of Object.values(sectionFields).flat()) {
+        if (!same(this.snapshot.draft[field], this.submitted[field])) draft = { ...draft, [field]: this.snapshot.draft[field] };
+      }
+      for (const field of Object.keys(contract.defaultVisibility) as VisibilityField[]) {
+        if (visibilityOf(this.snapshot.draft)[field] !== visibilityOf(this.submitted)[field]) draft = { ...draft, visibility: { ...visibilityOf(draft), [field]: visibilityOf(this.snapshot.draft)[field] } };
+      }
+    }
     this.emit({ baseline: normalize(profile), draft });
   }
   async save(section: ProfileSection, act: Action): Promise<boolean> {
@@ -180,6 +191,7 @@ export class ProfileEditor {
     const submitted = this.snapshot.draft;
     const patch = sectionPatch(this.snapshot.baseline, submitted, section);
     if (!Object.keys(patch).length) return true;
+    this.submitted = submitted;
     this.emit({ saving: section, saved: null });
     try {
       const response = await act("profile", patch, "PATCH");
@@ -194,9 +206,11 @@ export class ProfileEditor {
       for (const field of sectionVisibility[section]) {
         if (field in (patch.visibility ?? {}) && visibilityOf(draft)[field] === visibilityOf(submitted)[field]) draft = { ...draft, visibility: { ...visibilityOf(draft), [field]: visibilityOf(profile)[field] } };
       }
+      this.submitted = null;
       this.emit({ draft, saving: null, saved: section });
       return true;
     } catch (error) {
+      this.submitted = null;
       this.emit({ saving: null, failure: { section, message: error instanceof TypeError ? "Couldn’t reach the service. Your edits are here—try saving again." : error instanceof Error ? error.message : "Couldn’t save. Your edits are here—try again." } });
       return false;
     }

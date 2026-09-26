@@ -230,214 +230,6 @@
 .network-product .page-footnote {
   margin-top: 14px;
 }
-.profile-product .profile-preview-column {
-  position: sticky;
-  top: 25px;
-  align-self: start;
-}
-.profile-product .profile-layout {
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 360px);
-  gap: 34px;
-}
-.profile-product .profile-form label {
-  font-size: 12px;
-}
-.profile-product .profile-form > section {
-  padding-top: 20px;
-  margin-bottom: 28px;
-}
-.profile-product .profile-section-heading {
-  margin-bottom: 18px;
-}
-.profile-product .profile-section-heading h2 {
-  font-size: 16px;
-}
-.profile-product .profile-preview-column .section-title h2 {
-  font-size: 14px;
-}
-.profile-product .profile-section-heading > span,
-.profile-product .profile-identity p,
-.profile-product .profile-preview-scene > span,
-.profile-product .privacy-note {
-  font-size: 11px;
-}
-.profile-product .profile-identity {
-  margin-bottom: 22px;
-}
-.profile-product .chip-field {
-  margin-bottom: 24px;
-}
-.profile-product .profile-form input,
-.profile-product .profile-form textarea {
-  background: var(--surface);
-  border-color: var(--line);
-  font-size: 14px;
-}
-.profile-product .profile-form input:focus,
-.profile-product .profile-form textarea:focus,
-.profile-product .chip-input:focus-within {
-  border-color: var(--text);
-}
-.profile-product .chip-input {
-  background: var(--surface);
-  border-color: var(--line);
-}
-.profile-product .chip-input input {
-  background: transparent;
-  font-size: 13px;
-}
-.profile-product .editable-tag,
-.profile-product .suggestions,
-.profile-product .suggestions button,
-.profile-product .field-help {
-  font-size: 11px;
-}
-.profile-product .preview-tabs {
-  margin-bottom: 17px;
-  display: flex;
-}
-.preview-tabs > button {
-  flex: 1;
-  justify-content: center;
-  min-height: 40px;
-  font-size: 11px;
-}
-.profile-product .profile-preview-scene {
-  height: 305px;
-}
-.preview-name {
-  position: relative;
-  border-radius: 11px;
-  padding: 10px 20px;
-  font-size: 17px;
-}
-.profile-product .profile-preview-scene .glass {
-  background: var(--spatial-glass);
-  border-color: var(--spatial-glass-edge);
-  box-shadow: var(--spatial-glass-shadow);
-  backdrop-filter: var(--spatial-glass-filter);
-  -webkit-backdrop-filter: var(--spatial-glass-filter);
-}
-.profile-product .preview-floating.match {
-  background: var(--spatial-match-glass);
-  border-color: var(--spatial-match-edge);
-  box-shadow: var(--spatial-match-shadow);
-}
-.solid-surfaces .profile-product .profile-preview-scene .glass {
-  background: #34363a;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-.solid-surfaces .profile-product .profile-preview-scene .preview-floating.match {
-  background: #3f5a48;
-}
-@media (prefers-reduced-transparency: reduce) {
-  .profile-product .profile-preview-scene .glass {
-    background: #34363a;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-  .profile-product .profile-preview-scene .preview-floating.match {
-    background: #3f5a48;
-  }
-}
-.preview-floating .match-label {
-  font-size: 11px;
-}
-.preview-floating .match-copy {
-  font-size: 12px;
-}
-.preview-inactive {
-  position: relative;
-  padding: 24px;
-  border-radius: 17px;
-  text-align: center;
-  width: 80%;
-}
-.preview-inactive p {
-  font-size: 12px;
-  margin-top: 13px;
-}
-.preview-context {
-  border-top: 1px solid var(--line);
-  padding: 23px 0;
-}
-.preview-context h3 {
-  font-size: 13px;
-  margin-bottom: 16px;
-}
-.preview-context p {
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 10px;
-}
-.preview-context strong {
-  display: inline-block;
-  min-width: 60px;
-  font-weight: 500;
-  color: var(--text);
-}
-.profile-product .profile-guidance > svg {
-  color: var(--muted);
-}
-.profile-product .profile-guidance p {
-  font-size: 12px;
-  line-height: 1.65;
-}
-.visibility-intro {
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 21px;
-}
-.visibility-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  padding: 15px 0;
-  border-bottom: 1px solid var(--line);
-  font-size: 12px;
-  color: var(--text);
-}
-.contact-input {
-  margin-top: 25px;
-}
-.profile-preferences {
-  margin-top: 48px;
-  max-width: 850px;
-}
-.profile-preferences > h2 {
-  font-size: 23px;
-  letter-spacing: -0.6px;
-  margin-bottom: 24px;
-}
-.profile-map-link {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  color: var(--muted);
-  font-size: 12px;
-  padding: 20px 0;
-}
-.profile-completion {
-  padding: 20px 2px 24px;
-  border-bottom: 1px solid var(--line);
-}
-.profile-completion .completeness {
-  margin-top: 0;
-  font-size: 11px;
-}
-.profile-completion .completeness strong {
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-.profile-completion .completion-track {
-  height: 4px;
-  background: var(--line);
-}
-.profile-completion .completion-track span {
-  background: var(--text);
-}
 .shared-event-indicator {
   display: flex;
   align-items: center;
@@ -468,10 +260,6 @@
   margin-top: 2px;
 }
 @media (max-width: 1200px) {
-  .profile-product .profile-layout {
-    grid-template-columns: minmax(0, 1fr) 300px;
-    gap: 28px;
-  }
   .network-workspace.full-person {
     grid-template-columns: minmax(0, 1fr) 340px;
   }
@@ -480,13 +268,6 @@
   }
 }
 @media (max-width: 1000px) {
-  .profile-product .profile-layout {
-    grid-template-columns: 1fr;
-  }
-  .profile-product .profile-preview-column {
-    position: static;
-    display: block;
-  }
   .network-workspace.full-person {
     grid-template-columns: 1fr;
   }
@@ -535,35 +316,11 @@
     padding: 7px 9px;
     font-size: 9px;
   }
-  .profile-product .profile-form input,
-  .profile-product .profile-form textarea {
-    font-size: 13px;
-  }
   .network-product .segmented > button {
     font-size: 11px;
     padding: 8px 10px;
   }
   .network-product .search-field {
     min-width: 105px;
-  }
-  .profile-product .profile-preview-column {
-    order: -1;
-  }
-  .profile-product .profile-preview-scene {
-    height: 275px;
-  }
-  .profile-product .profile-guidance,
-  .profile-product .preview-context {
-    display: none;
-  }
-  .profile-preferences {
-    margin-top: 45px;
-  }
-  .profile-preferences .setting-row {
-    gap: 15px;
-  }
-  .profile-preferences .button {
-    font-size: 11px;
-    padding: 10px;
   }
 }

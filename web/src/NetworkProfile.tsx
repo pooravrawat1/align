@@ -178,6 +178,9 @@ function Preview({ person, busy, onExpand, onSave }: {
         {profile.contact && (
           <p className="np-other-contact"><span>Other contact</span>{profile.contact}</p>
         )}
+        <button className="np-open-profile" type="button" onClick={onExpand}>
+          <span>Explore profile</span> <ArrowUpRight size={15} aria-hidden="true" />
+        </button>
       </div>
 
       {person.withdrawn ? (
@@ -207,9 +210,6 @@ function Preview({ person, busy, onExpand, onSave }: {
       )}
 
       <div className="np-preview-actions">
-        <Button className="np-open-profile" variant="secondary" type="button" onClick={onExpand}>
-          Open full profile <ArrowUpRight size={15} aria-hidden="true" />
-        </Button>
         <SaveConnectionButton saved={Boolean(person.connection)} busy={busy} onSave={onSave} />
       </div>
     </div>
