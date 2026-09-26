@@ -50,16 +50,16 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
   const hasSampleMatches = sampleMatches && displayedMatches.some(match => match.compatible);
   const savedIds = new Set(connected.filter(id => ownedConnection(state, user.id, id)?.saved !== false));
   const focused = room.kind === "profile" ? participants.find(person => person.id === room.profileId) : undefined;
-  const conversation = room.kind === "conversation" ? participants.find(person => person.id === room.profileId) : undefined;
   const distanceTarget = participants.find(person => person.id === distanceTargetId) ?? participants[0];
   const distanceFor = (person: Profile) => distanceOverrides[person.id] ?? Math.max(0.8, person.distance || 3.2);
   const matchFor = (id: string) => displayedMatches.find(match => match.compatible && ((match.userA === user.id && match.userB === id) || (match.userB === user.id && match.userA === id)));
   function relationFor(profile: Profile) {
     const context = networkPerson(state, user, profile, undefined, "event");
+    if (context.youOffer.length && context.theyOffer.length) return `Your ${context.youOffer[0].toLowerCase()} + ${profile.name.split(" ")[0]}’s ${context.theyOffer[0].toLowerCase()}.`;
     if (context.theyOffer.length) return `They offer the ${context.theyOffer[0].toLowerCase()} you need.`;
     if (context.youOffer.length) return `Your ${context.youOffer[0].toLowerCase()} could help them.`;
     if (context.sharedInterests.length) return `You both care about ${context.sharedInterests[0].toLowerCase()}.`;
-    return "Open their profile to find common ground.";
+    return null;
   }
   const recoveryOpen = (room.kind === "ambient" && room.panel === "recovery") || ((room.kind === "offline" || room.kind === "alignment-lost") && room.recoveryOpen);
   const panelOpen = room.kind === "profile" || (room.kind === "ambient" && room.panel !== null) || recoveryOpen;
@@ -86,6 +86,10 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
   }, [room.kind]);
 
   function closePanel() {
+    if (roomRef.current.kind === "conversation") {
+      dispatch({ type: "FINISH_CONVERSATION" });
+      return;
+    }
     dispatch({ type: "CLOSE_LAYER" });
     requestAnimationFrame(() => {
       const trigger = triggerRef.current;
@@ -229,8 +233,8 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
         </form>
         <p className="qmv2-entry-note">{state.session?.code ? "Browser preview · simulated people and distances" : "Try DEMO for a sample event. No headset needed."}</p>
       </section> : <>
-        <div className="qmv2-room-guide"><span><Glasses size={16} />Illustrative room · browser preview</span><p>{room.kind === "conversation" ? "Conversation preview · other labels are tucked away" : "Select a label, or explore everyone in People."}</p></div>
-        {socialVisible && participants.length > 0 && <SpatialScene people={cards} hidden={panelOpen} conversationId={room.kind === "conversation" ? room.profileId : undefined} renderCard={profile => <ParticipantCard relation={relationFor(profile)} conversation={room.kind === "conversation" && room.profileId === profile.id} profile={profile} match={matchFor(profile.id)} saved={savedIds.has(profile.id)} distance={distanceFor(profile)} onOpen={() => openPerson(profile.id)} />} />}
+        <div className="qmv2-room-guide"><span><Glasses size={16} />Illustrative room · browser preview</span><p>{room.kind === "conversation" ? "" : "Select a label, or explore everyone in People."}</p></div>
+        {socialVisible && participants.length > 0 && <SpatialScene people={cards} hidden={panelOpen} conversationId={room.kind === "conversation" ? room.profileId : undefined} renderCard={profile => <ParticipantCard relation={relationFor(profile)} conversation={room.kind === "conversation" && room.profileId === profile.id} profile={profile} match={matchFor(profile.id)} distance={distanceFor(profile)} onOpen={() => openPerson(profile.id)} />} />}
         {socialVisible && participants.length === 0 && <div className="qmv2-empty"><Users size={28} /><h2>No one nearby yet</h2><p>People who share their profile at this event will appear here.</p></div>}
         {!socialVisible && !recoveryOpen && <section className="qmv2-reliability" aria-live="polite">
           {room.kind === "offline" ? <WifiOff size={28} /> : room.kind === "alignment-lost" ? <Crosshair size={28} /> : <Compass size={28} />}
@@ -238,7 +242,7 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
           <p>This is a simulated interruption. People stay hidden until you restore the preview.</p>
           <Button busy={busy} onClick={() => void restorePreview()}>Restore preview<RefreshCw size={16} /></Button>
         </section>}
-        {room.kind === "profile" && focused && <ProfileDrawer state={state} user={user} profile={focused} match={matchFor(focused.id)} sampleMatch={sampleMatches} saved={savedIds.has(focused.id)} saving={savingProfileId === focused.id} disabled={busy || savingProfileId !== null} error={saveError === focused.id} onClose={closePanel} onStart={cards.some(person => person.id === focused.id) ? () => dispatch({ type: "START_CONVERSATION" }) : undefined} onSave={() => void saveConnection(focused.id)} />}
+        {room.kind === "profile" && focused && <ProfileDrawer afterConversation={Boolean(room.afterConversation)} state={state} user={user} profile={focused} match={matchFor(focused.id)} sampleMatch={sampleMatches} saved={savedIds.has(focused.id)} saving={savingProfileId === focused.id} disabled={busy || savingProfileId !== null} error={saveError === focused.id} onClose={closePanel} onStart={cards.some(person => person.id === focused.id) ? () => dispatch({ type: "START_CONVERSATION" }) : undefined} onSave={() => void saveConnection(focused.id)} />}
         {room.kind === "ambient" && room.panel === "people" && <PreviewPanel title="People in this room" onClose={closePanel}>
           <p className="qmv2-panel-intro">Choose a person to see what you have in common.</p>
           <div className="qmv2-people-list">{participants.map(profile => <button key={profile.id} onClick={() => openPerson(profile.id)}><Avatar profile={profile} /><span><strong>{profile.name}</strong><small>{profile.role}</small></span>{savedIds.has(profile.id) ? <Check size={17} aria-label="Saved" /> : matchFor(profile.id) ? <Sparkles size={17} aria-label="Reason to meet" /> : <ChevronRight size={17} />}</button>)}</div>
@@ -253,7 +257,7 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
           <TextAction disabled={busy} onClick={() => void resetPreview()}><RotateCcw size={16} />Reset demo</TextAction>
         </PreviewPanel>}
         <div className={`qmv2-room-footer${room.kind === "conversation" ? " is-conversation" : ""}`}>
-          {room.kind === "conversation" ? <><span className="qmv2-conversation-caption"><MessageCircle size={16} />Talking with {conversation?.name.split(" ")[0] ?? "your connection"}</span><button ref={finishConversationRef} className="qmv2-people-button" onClick={() => dispatch({ type: "FINISH_CONVERSATION" })}>Finish conversation<ArrowRight size={16} /></button></> : <>
+          {room.kind === "conversation" ? <><button ref={finishConversationRef} className="qmv2-people-button" onClick={() => dispatch({ type: "FINISH_CONVERSATION" })}>Finish conversation<ArrowRight size={16} /></button></> : <>
           <button ref={peopleButtonRef} className="qmv2-people-button" aria-expanded={room.kind === "ambient" && room.panel === "people"} disabled={!socialVisible} onClick={() => { triggerRef.current = peopleButtonRef.current; if (room.kind === "profile") dispatch({ type: "CLOSE_LAYER" }); dispatch({ type: "OPEN_PANEL", panel: "people" }); }}><Users size={18} />People<span>{participants.length}</span></button>
           <div className="qmv2-room-status" role="status">{matching ? <><LoaderCircle size={15} className="spin" />Finding common ground…</> : matchError ? <><span>Matching unavailable. You can still explore people.</span><button disabled={busy} onClick={() => void runMatches()}>Retry</button></> : <><span className="qmv2-match-dot" />{hasSampleMatches && "Sample match · "}Green means a reason to meet</>}</div>
           </>}
@@ -263,12 +267,12 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
   </div>;
 }
 
-function ParticipantCard({ profile, match, saved, distance, conversation, relation, onOpen }: { profile: Profile; match?: Match; saved: boolean; distance: number; conversation: boolean; relation: string; onOpen: () => void }) {
-  const expanded = Boolean(match) && distance <= 4.75 && !conversation;
+function ParticipantCard({ profile, match, distance, conversation, relation, onOpen }: { profile: Profile; match?: Match; distance: number; conversation: boolean; relation: string | null; onOpen: () => void }) {
+  const expanded = Boolean(match && relation) && distance <= 4.75 && !conversation;
   const Card = conversation ? "div" : "button";
-  return <Card className={`qmv2-card ${expanded ? "qmv2-card--expanded" : "qmv2-card--compact"}${match && !conversation ? " is-matched" : ""}${conversation ? " is-conversation" : ""}${saved ? " is-saved" : ""}`} role={conversation ? "status" : undefined} aria-label={conversation ? `In conversation with ${profile.name}` : `Open ${profile.name}${match ? ", reason to meet" : ""}${saved ? ", saved" : ""}`} onClick={conversation ? undefined : onOpen}>
-    <div className="qmv2-card-person"><Avatar profile={profile} /><span><strong>{profile.name.split(" ")[0]}</strong>{expanded && <small>{profile.role}</small>}</span>{conversation ? <span className="qmv2-card-talking">In conversation</span> : saved ? <Check className="qmv2-card-indicator" size={14} aria-label="Saved" /> : match ? <Sparkles className="qmv2-card-indicator" size={14} aria-label="Reason to meet" /> : null}</div>
-    {expanded && <p className="qmv2-card-reason" title={relation}>{relation}</p>}
+  return <Card className={`qmv2-card ${expanded ? "qmv2-card--expanded is-matched" : "qmv2-card--compact"}${conversation ? " is-conversation" : ""}`} role={conversation ? "status" : undefined} aria-label={conversation ? `In conversation with ${profile.name}` : `Open ${profile.name}`} onClick={conversation ? undefined : onOpen}>
+    <div className="qmv2-card-person"><strong>{profile.name}</strong>{expanded && <><span aria-hidden="true">·</span><small>{profile.role}</small></>}</div>
+    {expanded && <p className="qmv2-card-reason" title={relation ?? undefined}>{relation}</p>}
     <span className="qmv2-card-tether" aria-hidden="true" />
   </Card>;
 }
@@ -283,7 +287,7 @@ function PreviewPanel({ title, onClose, children, footer, className = "" }: { ti
   </aside>;
 }
 
-function ProfileDrawer({ state, user, profile, match, sampleMatch, saved, saving, disabled, error, onClose, onStart, onSave }: { state: State; user: Profile; profile: Profile; match?: Match; sampleMatch: boolean; saved: boolean; saving: boolean; disabled: boolean; error: boolean; onClose: () => void; onStart?: () => void; onSave: () => void }) {
+function ProfileDrawer({ afterConversation, state, user, profile, match, sampleMatch, saved, saving, disabled, error, onClose, onStart, onSave }: { afterConversation: boolean; state: State; user: Profile; profile: Profile; match?: Match; sampleMatch: boolean; saved: boolean; saving: boolean; disabled: boolean; error: boolean; onClose: () => void; onStart?: () => void; onSave: () => void }) {
   const confirmationRef = useRef<HTMLDivElement>(null);
   const previouslySaved = useRef(saved);
   useEffect(() => {
@@ -293,13 +297,14 @@ function ProfileDrawer({ state, user, profile, match, sampleMatch, saved, saving
     previouslySaved.current = saved;
   }, [saved]);
   const person = networkPerson(state, user, profile, undefined, "event");
+  const showFollowUp = afterConversation || !onStart;
   const shared = person.sharedInterests;
   const hasCommonGround = shared.length > 0 || person.theyOffer.length > 0 || person.youOffer.length > 0;
   return <PreviewPanel title="Meet someone new" onClose={onClose} className="qmv2-person-panel" footer={
     <div ref={confirmationRef} className={`qmv2-connect${saved ? " is-saved" : ""}`}>
-      {onStart && <Button variant="secondary" disabled={disabled || saving} onClick={onStart}><MessageCircle size={16} />Start conversation</Button>}
-      {saved ? <><div className="qmv2-save-confirmation" role="status"><Check size={20} /><div><strong>Saved to your network</strong><p>Keep notes and follow up from Network.</p></div></div><Button onClick={onClose}>Back to the room<ArrowRight size={17} /></Button></> : <><h3>Keep the conversation going</h3><p>Save {profile.name.split(" ")[0]} to your Network so you can find them after the event.</p><Button busy={saving} disabled={disabled} onClick={onSave}><Bookmark size={17} />{error ? "Try saving again" : "Save connection"}</Button><small>Only saved to your network. No request is sent.</small></>}
-      {error && !saved && <p className="qmv2-save-error" role="alert">Couldn’t save this connection. Try again.</p>}
+      {onStart && !afterConversation && <Button disabled={disabled || saving} onClick={onStart}><MessageCircle size={16} />Start conversation</Button>}
+      {showFollowUp && (saved ? <><div className="qmv2-save-confirmation" role="status"><Check size={20} /><div><strong>Saved to your network</strong><p>Keep notes and follow up from Network.</p></div></div><Button onClick={onClose}>Back to the room<ArrowRight size={17} /></Button></> : <><h3>Keep the conversation going</h3><p>Save {profile.name.split(" ")[0]} to your Network so you can find them after the event.</p><Button busy={saving} disabled={disabled} onClick={onSave}><Bookmark size={17} />{error ? "Try saving again" : "Save connection"}</Button><small>Only saved to your network. No request is sent.</small></>)}
+      {showFollowUp && error && !saved && <p className="qmv2-save-error" role="alert">Couldn’t save this connection. Try again.</p>}
     </div>
     }>
     <div className="qmv2-person-identity"><Avatar profile={profile} size="large" /><div><h3>{profile.name}</h3><p>{profile.role}</p></div></div>

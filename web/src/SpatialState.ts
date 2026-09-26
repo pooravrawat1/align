@@ -20,7 +20,7 @@ export type ReliabilityKind = "offline" | "alignment-lost";
 
 export type RoomState =
   | { kind: "ambient"; panel: AmbientPanel }
-  | { kind: "profile"; profileId: string }
+  | { kind: "profile"; profileId: string; afterConversation?: boolean }
   | { kind: "conversation"; profileId: string }
   | { kind: ReliabilityKind; recoveryOpen: boolean }
   | { kind: "outside-boundary" };
@@ -101,9 +101,9 @@ export function roomReducer(
     case "START_CONVERSATION":
       return state.kind === "profile" && spatialSceneHeads[state.profileId] ? { kind: "conversation", profileId: state.profileId } : state;
     case "FINISH_CONVERSATION":
-      return state.kind === "conversation" ? { kind: "profile", profileId: state.profileId } : state;
+      return state.kind === "conversation" ? { kind: "profile", profileId: state.profileId, afterConversation: true } : state;
     case "CLOSE_LAYER":
-      if (state.kind === "conversation") return { kind: "profile", profileId: state.profileId };
+      if (state.kind === "conversation") return { kind: "profile", profileId: state.profileId, afterConversation: true };
       if (state.kind === "profile" || state.kind === "ambient") {
         return initialRoomState;
       }

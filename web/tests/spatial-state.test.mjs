@@ -96,7 +96,7 @@ test("conversation starts only from a selected profile and finishes back at that
   const profile = { kind: "profile", profileId: "maya" };
   const conversation = roomReducer(profile, { type: "START_CONVERSATION" });
   assert.deepEqual(conversation, { kind: "conversation", profileId: "maya" });
-  assert.deepEqual(roomReducer(conversation, { type: "FINISH_CONVERSATION" }), profile);
-  assert.deepEqual(roomReducer(conversation, { type: "CLOSE_LAYER" }), profile);
+  assert.deepEqual(roomReducer(conversation, { type: "FINISH_CONVERSATION" }), { ...profile, afterConversation: true });
+  assert.deepEqual(roomReducer(conversation, { type: "CLOSE_LAYER" }), { ...profile, afterConversation: true });
   assert.deepEqual(roomReducer(conversation, { type: "SIMULATE_RELIABILITY", kind: "offline" }), { kind: "offline", recoveryOpen: false });
 });

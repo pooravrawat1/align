@@ -202,7 +202,7 @@
 }
 
 /* Product chapters inherit the companion application's semantic roles. */
-.qv-match.spatial-surface { background: var(--spatial-match-glass); border-color: var(--spatial-match-edge); box-shadow: var(--spatial-match-shadow); backdrop-filter: var(--spatial-glass-filter); -webkit-backdrop-filter: var(--spatial-glass-filter); }
+.qv-match.spatial-surface { --text-primary: #fff; --text-secondary: #ffffffd9; --text-tertiary: #ffffffb3; --border-subtle: #ffffff30; background: var(--spatial-glass); border-color: var(--spatial-match-edge); box-shadow: var(--spatial-match-shadow); backdrop-filter: var(--spatial-glass-filter); -webkit-backdrop-filter: var(--spatial-glass-filter); }
 .qv-jordan.spatial-surface { background: var(--spatial-glass); border-color: var(--spatial-glass-edge); box-shadow: var(--spatial-glass-shadow); backdrop-filter: var(--spatial-glass-filter); -webkit-backdrop-filter: var(--spatial-glass-filter); }
 .qv-chapter p, .qv-network-copy > p { font-size: var(--type-body); line-height: var(--leading-body); }
 .qv-chapter h2, .qv-network h2, .qv-linear-story h2 { font-size: var(--type-display-size); font-weight: var(--weight-medium); letter-spacing: var(--tracking-display); }
@@ -216,8 +216,6 @@
 .qv-invitation-mark { margin-bottom: 24px; }
 .qv-footer { background: var(--surface-deep); color: var(--text-secondary); font-size: var(--type-metadata); }
 .qv-match { isolation: isolate; }
-.qv-match::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--surface-panel); opacity: var(--saved, 0); }
-.qv-match.spatial-surface { border-color: color-mix(in srgb, var(--spatial-match-edge), var(--border-subtle) calc(var(--saved, 0) * 100%)); }
 .qv-network-copy { width: min(44%, 580px); top: 27%; }
 .qv-network-copy > p { max-width: 42ch; color: var(--text-secondary); line-height: 1.75; }
 .qv-network h2 > span, .qv-linear-network h2 > span { color: var(--text-secondary); }
@@ -230,6 +228,7 @@
 .qv-context-row > strong { margin-top: 0; }
 .qv-saved-common { margin-top: 16px; }
 .qv-saved-common > span { margin-bottom: 8px; }
+.qv-match .qv-saved-common .chip { width: fit-content; color: #fff; background: #ffffff12; border-color: var(--spatial-glass-edge); box-shadow: inset 0 1px 0 #ffffff20; }
 .qv-saved-expertise { display: grid; grid-template-columns: 1fr 18px 1fr; align-items: center; gap: 12px; padding-top: 16px; margin-top: 16px; border-top: 1px solid var(--border-subtle); }
 .qv-saved-expertise strong { display: block; margin-top: 5px; font-size: var(--type-metadata); font-weight: var(--weight-medium); color: var(--text-primary); }
 .qv-saved-expertise > svg { color: var(--accent); }

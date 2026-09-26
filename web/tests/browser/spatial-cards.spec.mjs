@@ -24,7 +24,7 @@ test('DEMO cards show only useful identity and shared context', async ({ page })
     await expect(maya).toHaveClass(/qmv2-card--expanded/);
     await expect(maya).toHaveClass(/is-matched/);
     await expect(maya).toContainText('Maya Chen');
-    await expect(maya.locator('.qmv2-card-role')).toBeVisible();
+    await expect(maya.locator('.qmv2-card-person small')).toBeVisible();
     const reason = maya.locator('.qmv2-card-reason');
     await expect(reason).toHaveText('Your embedded systems + Maya’s computer vision.');
 
@@ -37,7 +37,9 @@ test('DEMO cards show only useful identity and shared context', async ({ page })
     expect(dimensions.compactWidth).toBeLessThan(dimensions.expandedWidth);
     expect(dimensions.hairline).toBe('1px');
     await expect(page.locator('.qmv2-card .avatar, .qmv2-card svg, .qmv2-card .chip, .qmv2-card .qmv2-card-indicator')).toHaveCount(0);
-    await expect(page.locator('.qmv2-card')).not.toContainText(/Reason to meet|Saved/);
+    expect(await page.locator('.qmv2-card').allTextContents()).toEqual(expect.not.arrayContaining([
+      expect.stringMatching(/Reason to meet|Saved/),
+    ]));
   } finally { await env.close(); }
 });
 
@@ -53,6 +55,16 @@ test('conversation focus hides other labels and finishing does not save until Sa
     let drawer = page.locator('.qmv2-person-panel');
     await expect(drawer.getByRole('heading', { name: 'Maya Chen', exact: true })).toBeVisible();
     await expect(drawer.getByRole('button', { name: 'Save connection', exact: true })).toHaveCount(0);
+    const material = await page.evaluate(() => {
+      const panel = getComputedStyle(document.querySelector('.qmv2-person-panel'));
+      const photo = getComputedStyle(document.querySelector('.qmv2-card-field .qmv2-scene'));
+      const label = getComputedStyle(document.querySelector('.qmv2-card'));
+      return { background: panel.backgroundImage, blur: panel.backdropFilter, photoOpacity: photo.opacity, labelOpacity: label.opacity };
+    });
+    expect(material.background).not.toBe('none');
+    expect(material.blur).toContain('blur(');
+    expect(material.photoOpacity).toBe('1');
+    expect(Number(material.labelOpacity)).toBeLessThan(1);
 
     await drawer.getByRole('button', { name: 'Start conversation', exact: true }).click();
     await expect(drawer).toHaveCount(0);
@@ -78,6 +90,23 @@ test('conversation focus hides other labels and finishing does not save until Sa
     await expect(drawer.getByText('Saved to your network', { exact: true })).toBeVisible();
     await expect.poll(() => connectionPosts.length).toBe(1);
     expect(connectionPosts).toEqual([{ participantId: 'maya' }]);
+  } finally { await env.close(); }
+});
+
+test('Escape during a conversation reopens its follow-up panel with focus inside', async ({ page }) => {
+  const env = await workspace(page);
+  try {
+    await enterDemo(page);
+    await page.locator('[data-person-id="maya"] .qmv2-card').click();
+    let drawer = page.locator('.qmv2-person-panel');
+    await drawer.getByRole('button', { name: 'Start conversation', exact: true }).click();
+    await expect(drawer).toHaveCount(0);
+
+    await page.keyboard.press('Escape');
+    drawer = page.locator('.qmv2-person-panel');
+    await expect(drawer.getByRole('heading', { name: 'Maya Chen', exact: true })).toBeVisible();
+    await expect(drawer.getByRole('button', { name: 'Save connection', exact: true })).toBeVisible();
+    await expect.poll(() => drawer.evaluate(node => node.contains(document.activeElement))).toBe(true);
   } finally { await env.close(); }
 });
 
@@ -139,10 +168,10 @@ test('a compatible result becomes name-only when shared context fields are priva
   try {
     await enterDemo(page);
     const maya = page.locator('[data-person-id="maya"] .qmv2-card');
-    await expect(maya).toHaveClass(/is-matched/);
+    await expect(maya).not.toHaveClass(/is-matched/);
     await expect(maya).toHaveText('Maya Chen');
     await expect(maya).toHaveClass(/qmv2-card--compact/);
-    await expect(maya.locator('.qmv2-card-role, .qmv2-card-reason')).toHaveCount(0);
+    await expect(maya.locator('.qmv2-card-person small, .qmv2-card-reason')).toHaveCount(0);
     await expect(maya).not.toContainText(privateReason);
     expect(await maya.textContent()).not.toContain(privateReason);
     expect(await maya.locator('[title]').evaluateAll(nodes => nodes.map(node => node.getAttribute('title')))).not.toContain(privateReason);
