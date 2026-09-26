@@ -247,3 +247,31 @@
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   .qv-match.spatial-surface, .qv-jordan.spatial-surface { background: var(--surface-panel); backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
+
+/* A restrained closing invitation with a quiet navigation baseline. */
+.qv-closing { min-height: clamp(520px, 75svh, 720px); box-sizing: border-box; padding: clamp(64px, 10svh, 100px) 6% 24px; border-top: 1px solid var(--border-subtle); background: var(--surface-deep); color: var(--text-primary); display: flex; flex-direction: column; gap: 56px; }
+.qv-closing-top { display: grid; grid-template-columns: 1.6fr 1fr; align-items: center; gap: 80px; width: 100%; flex: 1; }
+.qv-closing-copy h2 { font: 500 clamp(40px, 4.6vw, 68px)/1.04 var(--font-display); letter-spacing: -.035em; }
+.qv-closing-copy h2 span { color: #b5d8c3; }
+.qv-closing-copy p { color: var(--text-secondary); margin: 24px 0 28px; font-size: var(--type-body); line-height: var(--leading-body); }
+.qv-closing-action { display: flex; align-items: center; gap: 20px; }
+.qv-closing-action .button { min-height: 48px; padding-inline: 24px; }
+.qv-closing-action small { color: var(--text-secondary); font-size: var(--type-metadata); line-height: 1.6; }
+.qv-closing-nav { width: 100%; max-width: 360px; justify-self: end; }
+.qv-closing-nav button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px 0; color: var(--text-primary); background: transparent; border: 0; border-bottom: 1px solid var(--border-subtle); font: inherit; font-size: 16px; cursor: pointer; text-align: left; transition: color .18s ease; }
+.qv-closing-nav button:first-child { border-top: 1px solid var(--border-subtle); }
+.qv-closing-nav button svg { color: var(--text-secondary); transition: transform .2s ease, color .2s ease; }
+.qv-closing-nav button:hover { color: #b5d8c3; }
+.qv-closing-nav button:hover svg { transform: translateX(5px); color: #b5d8c3; }
+.qv-closing button:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; }
+.qv-closing-bottom { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-top: 1px solid var(--border-subtle); padding-top: 16px; color: var(--text-secondary); font-size: var(--type-metadata); }
+.qv-closing-bottom button { display: flex; align-items: center; gap: 14px; min-height: 44px; padding: 0; border: 0; color: var(--text-primary); background: transparent; font: inherit; cursor: pointer; }
+.qv-closing-bottom button svg { transform: rotate(-45deg); }
+@media (max-width: 700px) {
+  .qv-closing { min-height: auto; padding-top: 64px; gap: 48px; }
+  .qv-closing-top { grid-template-columns: 1fr; gap: 40px; }
+  .qv-closing-nav { max-width: none; }
+  .qv-closing-bottom { font-size: 11px; gap: 12px; }
+  .qv-closing-bottom button { gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .qv-closing-nav button svg { transition: none; } }

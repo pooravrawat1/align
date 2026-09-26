@@ -30,7 +30,7 @@ Gemini supplies grounded networking criteria and a short reason. Shared-interest
 
 The matcher bounds successful cache entries to 256 with a 30-minute TTL and deduplicates in-flight pairs. The web adapter briefly caches unavailable results and supports explicit retry. Automatic spatial matching assesses at most three candidates ranked by reciprocal overlap and shared experiences; other attendees remain neutral. Operator fixture mode uses the same engine with Gemini disabled.
 
-Copy `.env.example` to `.env` and configure `GEMINI_API_KEY` locally. The key stays server-side. `GEMINI_TIMEOUT_MS` is capped at the matcher's three-second deadline. Live Gemini still requires a key and live verification.
+Copy `.env.example` to `.env` and configure `GEMINI_API_KEY` locally. The key stays server-side. Web assessments default to a 15-second deadline, capped at 15 seconds via `GEMINI_TIMEOUT_MS`; the standalone Quest matcher retains its three-second deadline. Live Gemini still requires a key and live verification.
 
 Run `npm run dev` for web/API on ports 4320/4321. Run `npm run dev:quest` to additionally start the standalone Quest matcher on port 4323 using the same environment. `MATCH_PORT` can override its port. The separate review URL at port 4332 proxies the API on 4321. The Quest client uses the laptop LAN address and `/match`; browser profile/session APIs stay on the web server. Sharing an engine is not web-to-Quest identity or state synchronization.
 

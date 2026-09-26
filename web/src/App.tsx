@@ -32,6 +32,7 @@ import { CompatibilityProvider } from "./CompatibilityContext";
 import { homeEvent } from "./eventModel";
 import { PersonProfileDialog } from "./PersonProfileDialog";
 import { RecapDemo } from "./RecapDemo";
+import { clearFollowUpDrafts } from "./followUpModel";
 
 const initial: State = { ...seed, profiles: seed.profiles as Profile[], matches: [], session: null, demo: true };
 
@@ -50,6 +51,11 @@ function readSession() {
   }
 }
 
+function clearSessionDrafts(id: string | null) {
+  clearSessionProfileDrafts(id);
+  clearFollowUpDrafts(id);
+}
+
 export default function App() {
   const [page, setPage] = useState(route);
   const [state, setState] = useState<State>(initial);
@@ -62,6 +68,9 @@ export default function App() {
   const stateRef = useRef(state);
   const revision = useRef(0);
   const putState = (data: State) => {
+    for (const profile of data.profiles) {
+      if (profile.visibility?.previousConnections === false) clearFollowUpDrafts(data.session?.id ?? null, undefined, profile.id);
+    }
     stateRef.current = data;
     setState(data);
   };
@@ -117,6 +126,14 @@ export default function App() {
         setError("");
         try {
           const data = await request(path, body, method);
+          if (path === 'event-data/clear' || path === 'reset') {
+            const all = path === 'reset' || (body as { scope?: string } | undefined)?.scope === 'all';
+            clearFollowUpDrafts(sessionId.current, all ? undefined : stateRef.current.session?.activeEventId ?? undefined);
+          }
+          if (method === 'DELETE' && path.startsWith('connections/') && 'profiles' in data) {
+            const personId = decodeURIComponent(path.slice('connections/'.length));
+            if (!data.connections.some(connection => connection.participantId === personId)) clearFollowUpDrafts(sessionId.current, undefined, personId);
+          }
           if ("profiles" in data) {
             putState(data);
             if (path === "login" && data.session) {
@@ -132,7 +149,7 @@ export default function App() {
           return stateRef.current;
         } catch (e) {
           if (e instanceof Error && "status" in e && e.status === 401) {
-            clearSessionProfileDrafts(sessionId.current);
+            clearSessionDrafts(sessionId.current);
             sessionId.current = null;
             putState({ ...stateRef.current, session: null });
             try { sessionStorage.removeItem("questmatch-session"); } catch { /* Session is cleared in memory. */ }
@@ -168,6 +185,7 @@ export default function App() {
   }, []);
   useEffect(() => {
     let active = true;
+    if (page === 'recap-demo') { setReady(true); return; }
     const startRevision = revision.current;
     request("bootstrap", undefined, "GET")
       .then((data) => {
@@ -181,7 +199,7 @@ export default function App() {
             "status" in failure &&
             failure.status === 401
           ) {
-            clearSessionProfileDrafts(sessionId.current);
+            clearSessionDrafts(sessionId.current);
             sessionId.current = null;
             try {
               sessionStorage.removeItem("questmatch-session");
@@ -201,7 +219,7 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, [bootstrapAttempt]);
+  }, [bootstrapAttempt, page === 'recap-demo']);
   useEffect(() => {
     if (!state.session || pending > 0) return;
     let active = true;
@@ -276,7 +294,7 @@ export default function App() {
   const logout = async () => {
     try {
       await act("logout");
-      clearSessionProfileDrafts(sessionId.current);
+      clearSessionDrafts(sessionId.current);
       sessionId.current = null;
       try {
         sessionStorage.removeItem("questmatch-session");
@@ -296,7 +314,15 @@ export default function App() {
     await act("connections", { participantId: id });
     setToast("Connection saved. Find them in your network.");
   };
-  const sharedProps = { state, user, connected, act, busy, notify: setToast };
+  const onSessionExpired = () => {
+    if (sessionId.current !== state.session?.id) return;
+    clearSessionDrafts(sessionId.current);
+    sessionId.current = null;
+    try { sessionStorage.removeItem('questmatch-session'); } catch { /* In-memory session is cleared below. */ }
+    putState({ ...stateRef.current, session: null });
+    setError('Your session expired. Enter the app again to continue.');
+  };
+  const sharedProps = { state, user, connected, act, busy, notify: setToast, onSessionExpired };
   const event = homeEvent(state);
   const isPublic = ["landing", "login", "recap-demo"].includes(page);
   useEffect(() => {

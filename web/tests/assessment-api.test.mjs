@@ -50,6 +50,23 @@ async function networkingOnly(api, sessionId) {
   await api('/api/profile', { method: 'PATCH', sessionId, body: { experiences: [] } });
 }
 
+test('web compatibility accepts a valid model response beyond the Quest deadline', async () => {
+  const { api, login } = await harness(async (_url, { signal }) => {
+    await new Promise(resolve => setTimeout(resolve, 3200));
+    assert.equal(signal.aborted, false);
+    return geminiResponse();
+  });
+  const alex = await login('alex');
+  await networkingOnly(api, alex.session.id);
+  const response = await api('/api/compatibility', {
+    sessionId: alex.session.id,
+    body: { participantId: 'maya', eventId: 'demo', audience: 'event' },
+  });
+  assert.equal(response.value.source, 'gemini');
+  assert.equal(response.value.status, 'ready');
+  assert.equal(response.value.score, 96);
+});
+
 test('compatibility is server-scoped, structured, symmetric, and deduplicated across sessions', async () => {
   const requests = [];
   const { api, login } = await harness(async (url, options) => {

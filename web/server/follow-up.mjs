@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
-const DEFAULT_MODEL = 'gemini-3.5-flash';
+const DEFAULT_MODEL = 'gemini-3.8-flash';
 const INPUT_FIELDS = Object.freeze([
   'eventName', 'senderName', 'recipientName', 'sharedInterests', 'notes', 'relationship', 'style',
 ]);

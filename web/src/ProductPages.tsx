@@ -12,7 +12,7 @@ import './EventProduct.css';
 import './Home.css';
 import './EventWorkspace.css';
 
-type ProductProps = { state: State; user: Profile; connected: string[]; act: Action; busy: boolean; notify: (message: string) => void };
+type ProductProps = { state: State; user: Profile; connected: string[]; act: Action; busy: boolean; notify: (message: string) => void; onSessionExpired?: () => void };
 const navigate = (path: string) => { location.hash = '/' + path; };
 const query = () => new URLSearchParams(location.hash.split('?')[1]);
 function useRouteQuery() {

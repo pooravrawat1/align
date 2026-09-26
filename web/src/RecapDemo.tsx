@@ -33,7 +33,7 @@ export function RecapDemo() {
   const event = seed.events.find(item => item.id === demo.eventId)!;
   const people: FollowUpPerson[] = demo.people.map(item => {
     const profile = seed.profiles.find(profile => profile.id === item.id)! as Profile;
-    return { id: item.id, profile, relationship: item.relationship as 'connected' | 'saved', sharedInterests: intersection(user.interests, profile.interests), ...progress[item.id], withdrawn: false, contacts: [] };
+    return { id: item.id, profile, relationship: item.relationship as 'connected' | 'saved', sharedInterests: intersection(user.interests, profile.interests), ...progress[item.id], withdrawn: false, contacts: [], example: { notes: item.notes, message: item.message, nextStep: item.nextStep } };
   });
   const persist = (next: Progress) => {
     setProgress(next);

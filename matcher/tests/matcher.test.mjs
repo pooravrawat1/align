@@ -277,6 +277,22 @@ test('bad input cannot reach Gemini', async () => {
   assert.equal(called, false);
 });
 
+test('the default Quest deadline still aborts a model response after three seconds', async () => {
+  let signal;
+  const matcher = createMatcher({
+    apiKey: 'test-key',
+    geminiEvaluator: async (_first, _second, options) => {
+      signal = options.signal;
+      await new Promise(resolve => setTimeout(resolve, 3200));
+      return assessment();
+    },
+  });
+  const result = await matcher.match(request(alex, maya));
+  assert.equal(signal.aborted, true);
+  assert.equal(result.source, 'fallback');
+  assert.deepEqual(result.result, demoFixtures.offlineResults[0]);
+});
+
 test('missing key, invalid model output, and timeout use known offline fixtures', async () => {
   const noKey = createMatcher({ geminiEvaluator: async () => { throw new Error('should not call'); } });
   assert.deepEqual((await noKey.match(request(alex, maya))).result, demoFixtures.offlineResults[0]);

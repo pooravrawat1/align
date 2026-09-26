@@ -2,10 +2,45 @@
   "eventId": "demo",
   "ownerId": "alex",
   "people": [
-    { "id": "maya", "relationship": "connected", "notes": "Discussed testing her detection model on my wearable prototype. I offered to send a demo before we plan a testing session.", "contacted": false },
-    { "id": "leo", "relationship": "connected", "notes": "Compared navigation challenges in crowded spaces. I want to share my sensor setup and ask about his robotics experiments.", "contacted": false },
-    { "id": "jordan", "relationship": "connected", "notes": "Talked about making spatial directions easier to understand. We wanted to swap early interface sketches.", "contacted": false },
-    { "id": "priya", "relationship": "saved", "notes": "", "contacted": false },
-    { "id": "nina", "relationship": "connected", "notes": "Discussed open-source tools and community projects. Sent a link to my prototype after the event.", "contacted": true }
+    {
+      "id": "maya",
+      "relationship": "connected",
+      "notes": "Discussed testing her detection model on my wearable prototype. I offered to send a demo before we plan a testing session.",
+      "contacted": false,
+      "nextStep": "Share the wearable prototype and suggest a testing session.",
+      "message": "Hey Maya, great connecting at The Builders Room! Following up on testing your detection model on my wearable prototype—could I send you a demo, then find a time to try it together?"
+    },
+    {
+      "id": "leo",
+      "relationship": "connected",
+      "notes": "Compared navigation challenges in crowded spaces. I want to share my sensor setup and ask about his robotics experiments.",
+      "contacted": false,
+      "nextStep": "Compare your sensor setup with Leo’s navigation experiments.",
+      "message": "Hey Leo, I enjoyed comparing navigation challenges at The Builders Room. Would you be interested in looking at my sensor setup? I’d love to hear more about your experiments in crowded spaces."
+    },
+    {
+      "id": "jordan",
+      "relationship": "connected",
+      "notes": "Talked about making spatial directions easier to understand. We wanted to swap early interface sketches.",
+      "contacted": false,
+      "nextStep": "Swap the early interface sketches you discussed.",
+      "message": "Hey Jordan, great talking about spatial directions at The Builders Room. Want to swap those early interface sketches and compare what makes the directions easier to understand?"
+    },
+    {
+      "id": "priya",
+      "relationship": "saved",
+      "notes": "",
+      "contacted": false,
+      "nextStep": "Introduce your wearable project and ask about accessibility research.",
+      "message": "Hi Priya, I came across your profile at The Builders Room. We share an interest in assistive technology. I’m building a wearable navigation prototype and would love to hear about your accessibility research."
+    },
+    {
+      "id": "nina",
+      "relationship": "connected",
+      "notes": "Discussed open-source tools and community projects. Sent a link to my prototype after the event.",
+      "contacted": true,
+      "nextStep": "Keep the open-source conversation going when there is a new update.",
+      "message": "Hey Nina, glad we connected at The Builders Room! I sent over my prototype after our conversation about open-source tools. I’d love to hear what you think when you’ve had a chance to look."
+    }
   ]
 }

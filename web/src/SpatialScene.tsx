@@ -1,18 +1,16 @@
 import { type ReactNode, type CSSProperties, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import type { Profile } from './types';
+import { spatialSceneHeads } from './SpatialState';
 
 // Coordinates belong to the photographed heads, in the image's own 1659 × 948 plane.
 // The image and labels share this plane, including when the viewport pans.
-const heads = [
-  { x: 24.5, y: 38 },
-  { x: 47.5, y: 52.4 },
-  { x: 74.7, y: 44.4 },
-] as const;
+const heads = Object.values(spatialSceneHeads);
 
-export function SpatialScene({ people, hidden, renderCard }: {
+export function SpatialScene({ people, hidden, conversationId, renderCard }: {
   people: Profile[];
   hidden: boolean;
+  conversationId?: string;
   renderCard: (profile: Profile) => ReactNode;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -45,6 +43,11 @@ export function SpatialScene({ people, hidden, renderCard }: {
     return () => resize.disconnect();
   }, []);
 
+  useEffect(() => {
+    const index = Object.keys(spatialSceneHeads).indexOf(conversationId ?? '');
+    if (index >= 0) lookToward(index, false);
+  }, [conversationId]);
+
   return <>
     <div ref={viewportRef} className="qmv2-room-viewport" inert={hidden} onScroll={() => {
       const viewport = viewportRef.current;
@@ -58,12 +61,12 @@ export function SpatialScene({ people, hidden, renderCard }: {
       <div ref={worldRef} className="qmv2-card-field" aria-label="People nearby">
         <img className="qmv2-scene" src="/assets/event-room.webp" alt="Illustrative demo room with three people at different distances" width="1659" height="948" draggable="false" />
         <div className="qmv2-atmosphere" />
-        {people.map((profile, index) => <div key={profile.id} className="qmv2-person-anchor" data-person-id={profile.id} style={{ '--head-x': `${heads[index].x}%`, '--head-y': `${heads[index].y}%` } as CSSProperties}>
+        {people.filter(profile => !conversationId || profile.id === conversationId).map(profile => <div key={profile.id} className="qmv2-person-anchor" data-person-id={profile.id} style={{ '--head-x': `${spatialSceneHeads[profile.id].x}%`, '--head-y': `${spatialSceneHeads[profile.id].y}%` } as CSSProperties}>
           {renderCard(profile)}
         </div>)}
       </div>
     </div>
-    {canPan && <nav className="qmv2-look-controls" aria-label="Look around the demo room" inert={hidden}>
+    {canPan && !conversationId && <nav className="qmv2-look-controls" aria-label="Look around the demo room" inert={hidden}>
       <button aria-label="Look left" disabled={lookIndex === 0} onClick={() => lookToward(lookIndex - 1)}><ArrowLeft size={18} /></button>
       <span>Look around</span>
       <button aria-label="Look right" disabled={lookIndex === heads.length - 1} onClick={() => lookToward(lookIndex + 1)}><ArrowRight size={18} /></button>

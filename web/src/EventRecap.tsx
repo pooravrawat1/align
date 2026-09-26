@@ -1,5 +1,5 @@
 import type { Action, Profile, State } from './types';
-export type EventRecapProps = { state: State; user: Profile; connected: string[]; act: Action; busy: boolean; notify: (message: string) => void; eventId: string };
+export type EventRecapProps = { state: State; user: Profile; connected: string[]; act: Action; busy: boolean; notify: (message: string) => void; eventId: string; onSessionExpired?: () => void };
 import { ConferenceReport } from './ConferenceReport';
 import { ConnectionInbox } from './ConnectionInbox';
 import { pendingRequests } from './connectionRequests';
@@ -11,7 +11,7 @@ import { requestFollowUp } from './requestFollowUp';
 
 
 
-export function EventRecap({ state, user, eventId, act, busy, notify }: EventRecapProps) {
+export function EventRecap({ state, user, eventId, act, busy, notify, onSessionExpired }: EventRecapProps) {
   const recap = eventRecap(state, user, eventId);
   const event = state.events.find(item => item.id === eventId);
   const pending = pendingRequests(state, user.id, eventId);
@@ -20,6 +20,7 @@ export function EventRecap({ state, user, eventId, act, busy, notify }: EventRec
     id: profile.id, profile, withdrawn, sharedInterests,
     relationship: requests.some(request => request.status === 'accepted' && ((request.senderId === user.id && request.recipientId === profile.id) || (request.recipientId === user.id && request.senderId === profile.id))) ? 'connected' as const : 'saved' as const,
     notes: connection.notes ?? '', contacted: connection.followUp === 'contacted',
+    needsFollowUp: (connection.followUp ?? 'needed') === 'needed', savedPrivately: connection.saved !== false,
     contacts: networkPerson(state, user, profile).contacts,
   }));
   return <div className="event-recap">
@@ -27,7 +28,7 @@ export function EventRecap({ state, user, eventId, act, busy, notify }: EventRec
       ownerKey={`${state.session?.id ?? 'session'}:${user.id}`} pendingCount={pending.length} notify={notify}
       onProfile={id => openPersonProfile(id, eventId, 'network')}
       onSave={async (id, patch) => { await act(`connections/${encodeURIComponent(id)}`, { ...('notes' in patch ? { notes: patch.notes } : {}), ...('contacted' in patch ? { followUp: patch.contacted ? 'contacted' : 'needed' } : {}) }, 'PATCH'); }}
-      onGenerate={(id, notes, style, signal) => requestFollowUp('follow-up', { participantId: id, eventId, notes, style }, signal, state.session?.id)} />
+      onGenerate={(id, notes, style, signal) => requestFollowUp('follow-up', { participantId: id, eventId, notes, style }, signal, state.session?.id, onSessionExpired)} />
     {recap.people.length === 0 && <TextAction href={`#/events?event=${encodeURIComponent(eventId)}`}>View event details</TextAction>}
     {pending.length > 0 && <ConnectionInbox state={state} user={user} act={act} busy={busy} notify={notify} eventId={eventId} />}
   </div>;

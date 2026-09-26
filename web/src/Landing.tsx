@@ -3,7 +3,7 @@ import { ArrowDown, ArrowRight, ArrowUpRight, Check, Bookmark } from 'lucide-rea
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
-import { Brand, Button, Chip, Mark } from './ui';
+import { Brand, Button, Chip } from './ui';
 import { VisorScene, type VisorHandle } from './VisorScene';
 import { JOURNEY, JOURNEY_TRACKS, ROOM_IMAGE, VISOR_PATH } from './visorGeometry';
 import { createCheckpointScroll, type CheckpointScroll } from './checkpointScroll';
@@ -43,7 +43,6 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
   const scene = useRef<VisorHandle>(null);
   const timeline = useRef<gsap.core.Timeline | null>(null);
   const checkpoints = useRef<CheckpointScroll | null>(null);
-  const invitation = useRef<HTMLDivElement>(null);
   const entryTimeline = useRef<gsap.core.Timeline | null>(null);
   const releaseEntryInput = useRef<(() => void) | null>(null);
   const [entering, setEntering] = useState(false);
@@ -90,8 +89,16 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
       const controller = createCheckpointScroll(root.current!, () => {
         const trigger = tl.scrollTrigger!;
         const range = trigger.end - trigger.start;
-        return [trigger.start, trigger.start + range * JOURNEY.network, invitation.current!.getBoundingClientRect().top + window.scrollY];
-      }, resolveJourneyMotion, () => invitation.current!.getBoundingClientRect().top + window.scrollY);
+        const sections = [...root.current!.querySelectorAll<HTMLElement>('[data-landing-stop]')];
+        const sectionStops = sections.flatMap(section => {
+          const top = section.getBoundingClientRect().top + window.scrollY;
+          const overflow = Math.max(0, section.offsetHeight - window.innerHeight);
+          // Keep tall content reachable, including an expanded connection disclosure.
+          const steps = Math.ceil(overflow / (window.innerHeight * .8));
+          return [top, ...Array.from({ length: steps }, (_, index) => top + overflow * (index + 1) / steps)];
+        });
+        return [trigger.start, trigger.start + range * JOURNEY.network, ...sectionStops];
+      }, resolveJourneyMotion);
       checkpoints.current = controller;
       return () => { controller.destroy(); checkpoints.current = null; timeline.current = null; scene.current?.setProgress(0); root.current?.style.removeProperty('--journey-progress'); };
     });
@@ -135,7 +142,7 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
     gsap.set(select('.qv-entry-rim'), { opacity: .12 });
 
     tl.to(trigger, { scale: .98, duration: .1, ease: 'power2.out' }, 0)
-      .to(select('.qv-header, .qv-hero-copy, .qv-scroll-cue, .qv-stage-bottom, .qv-invitation > :not(.qv-entry-transition)'),
+      .to(select('.qv-header, .qv-hero-copy, .qv-scroll-cue, .qv-stage-bottom, .qv-closing > *'),
         { autoAlpha: 0, duration: .24, ease: 'power2.inOut' }, .02);
 
     if (fromScene) {
@@ -155,11 +162,15 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
     tl.call(onEnter, [], .32);
   });
 
-  function jumpTo(moment: 'discover' | 'network' | 'start') {
+  function jumpTo(moment: 'discover' | 'network' | 'start' | 'event' | 'connections') {
     if (entryTimeline.current) return;
     const trigger = timeline.current?.scrollTrigger;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (trigger) {
+    if (moment === 'event' || moment === 'connections') {
+      const target = root.current?.querySelector(moment === 'event' ? '#lp-event' : '#lp-network');
+      if (target && checkpoints.current) checkpoints.current.travelTo(target.getBoundingClientRect().top + window.scrollY);
+      else target?.scrollIntoView({ behavior: reduce ? 'instant' : 'smooth' });
+    } else if (trigger) {
       const progress = moment === 'start' ? 0 : JOURNEY.network;
       checkpoints.current?.travelTo(trigger.start + (trigger.end - trigger.start) * progress);
     } else {
@@ -204,14 +215,21 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
     <div className="qv-linear-story">
       <section className="qv-linear-network" id="qv-linear-network"><NetworkCopy /><div className="qv-static-connection"><div className="qv-static-card qv-static-saved"><MayaIdentity /><SavedContext /></div><AlexConnection linear /></div></section>
     </div>
-    <div ref={invitation}><LandingProduct onEnter={enterExperience} entering={entering} /></div>
-    <section className="qv-invitation">
-      <div className="qv-invitation-mark" aria-hidden="true"><Mark /></div>
-      <h2>Who could you<br /><span>build with?</span></h2>
-      <p>Bring what you know. Find what you’re missing.</p>
-      <div className="qv-invitation-actions"><Button className="qv-primary" onClick={enterExperience} disabled={entering}>Try the demo<ArrowUpRight size={17} /></Button><Button variant="secondary" className="qv-back" onClick={() => jumpTo('start')}>Back to the room<ArrowRight size={15} /></Button></div>
-      <small>No headset needed for this preview.</small>
-    </section>
-    <footer className="qv-footer"><Brand compact /><span>Made for meeting in person.</span></footer>
+    <LandingProduct onEnter={enterExperience} entering={entering} />
+    <footer className="qv-closing" data-landing-stop aria-labelledby="qv-closing-title">
+      <div className="qv-closing-top">
+        <div className="qv-closing-copy">
+          <h2 id="qv-closing-title">Who could you<br /><span>build with?</span></h2>
+          <p>Bring what you know. Find what you’re missing.</p>
+          <div className="qv-closing-action"><Button className="qv-primary" onClick={enterExperience} disabled={entering}>Step inside<ArrowUpRight size={17} /></Button><small>Try the browser demo.<br />No headset needed.</small></div>
+        </div>
+        <nav className="qv-closing-nav" aria-label="Explore Catalyst">
+          <button onClick={() => jumpTo('start')}>The experience<ArrowRight size={20} /></button>
+          <button onClick={() => jumpTo('event')}>Find your room<ArrowRight size={20} /></button>
+          <button onClick={() => jumpTo('connections')}>Your connections<ArrowRight size={20} /></button>
+        </nav>
+      </div>
+      <div className="qv-closing-bottom"><span>Made for meeting in person.</span><button onClick={() => jumpTo('start')}>Back to the room<ArrowUpRight size={18} /></button></div>
+    </footer>
   </main>;
 }

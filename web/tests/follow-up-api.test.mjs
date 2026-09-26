@@ -72,7 +72,7 @@ test('returns bounded structured Gemini output through the current Interactions 
   assert.match(request.input, /explicit suggestions or questions/u);
 });
 
-test('uses the current matcher adapter model by default', async () => {
+test('uses the default follow-up model when no model is configured', async () => {
   let model;
   const followUps = createFollowUpService({
     env: { GEMINI_API_KEY: 'server-test-key' },
@@ -82,7 +82,7 @@ test('uses the current matcher adapter model by default', async () => {
     },
   });
   await followUps.generate(input());
-  assert.equal(model, 'gemini-3.5-flash');
+  assert.equal(model, 'gemini-3.8-flash');
 });
 
 test('rejects malformed model results and ungrounded evidence with one safe upstream error', async () => {

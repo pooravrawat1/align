@@ -1,8 +1,8 @@
-.lp-product { background: var(--surface-deep); color: var(--text-primary); padding: 112px max(6%, calc((100% - 1240px) / 2)); }
+.lp-product { background: var(--surface-deep); color: var(--text-primary); padding: 0; }
 .lp-section-heading { display: grid; grid-template-columns: 1.2fr 1fr; align-items: end; gap: 64px; margin-bottom: 40px; }
 .lp-product h2 { font-size: clamp(34px, 3.8vw, 53px); line-height: 1.1; font-weight: 500; text-wrap: balance; }
 .lp-section-heading > p, .lp-connection-copy > p { color: var(--text-secondary); font-size: var(--type-body); line-height: var(--leading-body); max-width: 44ch; }
-.lp-event-frame { position: relative; isolation: isolate; overflow: hidden; border-radius: var(--radius-scene); min-height: 480px; padding: 30px; display: flex; flex-direction: column; justify-content: space-between; background: var(--surface-panel); }
+.lp-event-frame { position: relative; isolation: isolate; overflow: hidden; border-radius: var(--radius-scene); min-height: clamp(360px, 48svh, 480px); padding: 30px; display: flex; flex-direction: column; justify-content: space-between; background: var(--surface-panel); }
 .lp-event-frame > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
 .lp-event-frame::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, #05060660, #05060618 25%, #050606e0); }
 .lp-event-meta { display: flex; justify-content: space-between; gap: 20px; font-size: 12px; color: #f2f3f5; }
@@ -22,7 +22,7 @@
 .lp-label { display: block; color: var(--text-secondary); font-size: 12px; margin-bottom: 10px; }
 .lp-focus .lp-label { color: #d7d9de; }
 .lp-event-caption { display: flex; justify-content: space-between; gap: 24px; margin-top: 18px; color: var(--text-tertiary); font-size: 12px; line-height: 1.6; }
-.lp-connection { display: grid; grid-template-columns: 1fr 1.12fr; align-items: center; gap: 80px; margin-top: 136px; scroll-margin-top: 48px; }
+.lp-connection { display: grid; grid-template-columns: 1fr 1.12fr; align-items: center; gap: 80px; margin: 0; }
 .lp-connection-copy h2 span { color: var(--text-secondary); }
 .lp-connection-copy > p { margin-top: 24px; }
 .lp-memory { display: flex; gap: 12px; align-items: center; margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 13px; line-height: 1.65; }
@@ -48,9 +48,9 @@
 .lp-details > .ds-disclosure-body { padding: 16px; font-size: var(--type-body); line-height: 1.7; color: var(--text-secondary); }
 .lp-details .ds-disclosure-body span { display: block; font-size: var(--type-metadata); margin-top: 14px; color: var(--text-tertiary); }
 @media (max-width: 950px) {
-  .lp-product { padding: 80px 6%; }
+  .lp-event, .lp-connection { padding-inline: 6%; }
   .lp-section-heading { gap: 32px; }
-  .lp-connection { gap: 32px; margin-top: 88px; }
+  .lp-connection { gap: 32px; }
   .lp-complement { gap: 10px; }
 }
 @media (max-width: 700px) {
@@ -64,4 +64,29 @@
   .lp-profile { padding: 20px; }
   .lp-saved { font-size: 0; }
   .lp-connection { gap: 28px; }
+}
+
+.lp-event, .lp-connection { min-height: 100svh; padding: 56px max(6%, calc((100% - 1240px) / 2)); box-sizing: border-box; }
+.lp-event { display: flex; flex-direction: column; justify-content: center; }
+@media (max-width: 700px) { .lp-event, .lp-connection { min-height: auto; padding: 64px 6%; } }
+
+/* Use the Events page card anatomy and shared surfaces in the landing preview. */
+.lp-event-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.lp-event-grid .event-card { background: var(--surface-panel); border: 1px solid var(--border-subtle); border-radius: var(--radius-panel); }
+.lp-event-grid .event-cover { height: clamp(160px, 23svh, 240px); }
+.lp-event-grid .event-preview-photo { width: 100%; height: 100%; object-fit: cover; }
+.lp-event-grid .glass-label { font-size: 11px; }
+.lp-event-grid .event-date { color: var(--text-secondary); font-size: var(--type-metadata); }
+.lp-event-grid .event-date span { margin-left: 0; font-size: inherit; color: inherit; }
+.lp-event-grid h3 { margin-top: 18px; font: 500 clamp(21px, 2vw, 26px)/1.2 var(--font-display); letter-spacing: -.025em; }
+.lp-event-grid p { font-size: var(--type-supporting); line-height: 1.65; color: var(--text-secondary); margin-top: 12px; margin-bottom: 24px; }
+.lp-event-grid .event-location { font-size: var(--type-metadata); color: var(--text-secondary); margin: auto 0 8px; }
+.lp-event-time { font-size: var(--type-metadata); color: var(--text-secondary); padding-left: 21px; }
+.lp-event-caption { align-items: center; margin-top: 28px; }
+.lp-event-caption small { display: block; margin-top: 5px; font-size: 11px; }
+.lp-event-caption .button { flex-shrink: 0; }
+@media (max-width: 700px) {
+  .lp-event-grid { grid-template-columns: 1fr; }
+  .lp-event-grid .event-cover { height: 200px; }
+  .lp-event-caption { align-items: flex-start; gap: 20px; }
 }

@@ -1,10 +1,18 @@
 import type { Profile } from "./types";
 
+// The illustrative photo has a fixed cast. Other attendees remain in People;
+// an absent or private profile must never donate its photographed head to someone else.
+export const spatialSceneHeads: Record<string, { x: number; y: number }> = {
+  jordan: { x: 24.5, y: 38 },
+  leo: { x: 47.5, y: 52.4 },
+  maya: { x: 74.7, y: 44.4 },
+};
+
 export function selectSpatialCards(profiles: Profile[]) {
-  // A match changes the label's material, never which photographed person owns it.
-  const sceneIds = ["jordan", "leo", "maya"];
-  const rank = (id: string) => sceneIds.includes(id) ? sceneIds.indexOf(id) : sceneIds.length;
-  return [...profiles].sort((a, b) => rank(a.id) - rank(b.id) || a.id.localeCompare(b.id)).slice(0, 3);
+  return Object.keys(spatialSceneHeads).flatMap(id => {
+    const profile = profiles.find(person => person.id === id);
+    return profile ? [profile] : [];
+  });
 }
 
 export type AmbientPanel = "people" | "recovery" | null;
@@ -13,12 +21,15 @@ export type ReliabilityKind = "offline" | "alignment-lost";
 export type RoomState =
   | { kind: "ambient"; panel: AmbientPanel }
   | { kind: "profile"; profileId: string }
+  | { kind: "conversation"; profileId: string }
   | { kind: ReliabilityKind; recoveryOpen: boolean }
   | { kind: "outside-boundary" };
 
 export type RoomAction =
   | { type: "OPEN_PANEL"; panel: Exclude<AmbientPanel, null> }
   | { type: "OPEN_PROFILE"; profileId: string }
+  | { type: "START_CONVERSATION" }
+  | { type: "FINISH_CONVERSATION" }
   | { type: "CLOSE_LAYER" }
   | { type: "SIMULATE_RELIABILITY"; kind: ReliabilityKind }
   | { type: "SIMULATE_BOUNDARY" }
@@ -87,7 +98,12 @@ export function roomReducer(
       return state.kind === "ambient"
         ? { kind: "profile", profileId: action.profileId }
         : state;
+    case "START_CONVERSATION":
+      return state.kind === "profile" && spatialSceneHeads[state.profileId] ? { kind: "conversation", profileId: state.profileId } : state;
+    case "FINISH_CONVERSATION":
+      return state.kind === "conversation" ? { kind: "profile", profileId: state.profileId } : state;
     case "CLOSE_LAYER":
+      if (state.kind === "conversation") return { kind: "profile", profileId: state.profileId };
       if (state.kind === "profile" || state.kind === "ambient") {
         return initialRoomState;
       }

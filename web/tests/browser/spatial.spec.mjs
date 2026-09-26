@@ -18,6 +18,11 @@ async function openMaya(page) {
   await people.getByRole('button').filter({ hasText: 'Maya Chen' }).click();
   const drawer = page.locator('.qmv2-person-panel');
   await expect(drawer.getByRole('heading', { name: 'Maya Chen', exact: true })).toBeVisible();
+  await expect(drawer.getByRole('button', { name: 'Save connection', exact: true })).toHaveCount(0);
+  await drawer.getByRole('button', { name: 'Start conversation', exact: true }).click();
+  await page.getByRole('button', { name: 'Finish conversation', exact: true }).click();
+  await expect(drawer.getByRole('heading', { name: 'Maya Chen', exact: true })).toBeVisible();
+  await expect(drawer.getByRole('button', { name: 'Save connection', exact: true })).toBeVisible();
   return drawer;
 }
 
@@ -172,7 +177,7 @@ test('a partial match result keeps its compatible person highlighted', async ({ 
     await enterJoinedPreview(page);
     await expect(page.locator('.qmv2-room-status')).toContainText('Green means a reason to meet');
     await expect(page.getByText('Matching unavailable. You can still explore people.', { exact: true })).toHaveCount(0);
-    const maya = page.getByRole('button', { name: /^Open Maya Chen, reason to meet/ });
+    const maya = page.getByRole('button', { name: 'Open Maya Chen', exact: true });
     await expect(maya).toBeVisible();
     await expect(maya).toHaveClass(/is-matched/);
     await maya.click();

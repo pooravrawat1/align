@@ -65,7 +65,7 @@ function adapt(assessment, fingerprint, profiles) {
 export function createAssessmentService({ fetchImpl = globalThis.fetch, env = process.env } = {}) {
   const matcher = createMatcher({
     mode: env.MATCH_MODE || 'auto', apiKey: env.GEMINI_API_KEY || '', model: env.GEMINI_MODEL || 'gemini-3.8-flash',
-    timeoutMs: Math.max(1, Math.min(3000, Number(env.GEMINI_TIMEOUT_MS) || 3000)),
+    timeoutMs: Math.max(1, Math.min(15000, Number(env.GEMINI_TIMEOUT_MS) || 15000)),
     geminiEvaluator: (first, second, options) => requestGemini(first, second, { ...options, fetchImpl }),
   });
   const fixtureMatcher = createMatcher({ mode: 'fixture' });

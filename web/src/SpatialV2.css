@@ -29,27 +29,29 @@
 .qmv2-room-viewport::-webkit-scrollbar { display: none; }
 .qmv2-card-field { position: relative; isolation: isolate; width: 100%; min-width: 1120px; aspect-ratio: 1659 / 948; transition: opacity 180ms ease; }
 .qmv2-card-field .qmv2-scene { object-fit: fill; user-select: none; }
-.qmv2-person-anchor { position: absolute; top: var(--head-y); left: var(--head-x); width: 280px; padding-bottom: 24px; transform: translate(-50%, -100%); display: flex; justify-content: center; }
+.qmv2-person-anchor { position: absolute; top: var(--head-y); left: var(--head-x); width: clamp(260px, calc(100vw - 52px), 356px); padding-bottom: 24px; transform: translate(-50%, -100%); display: flex; justify-content: center; }
 .qmv2-look-controls { position: absolute; bottom: 92px; right: 24px; z-index: 3; display: flex; align-items: center; gap: 8px; padding: 4px; border: 1px solid var(--spatial-glass-edge); border-radius: 999px; background: var(--spatial-glass); backdrop-filter: var(--spatial-glass-filter); color: #fff; font-size: var(--type-metadata); }
 .qmv2-look-controls button { display: grid; place-items: center; width: 44px; height: 44px; background: transparent; border: 0; border-radius: 50%; color: inherit; }
 .qmv2-look-controls button:hover:not(:disabled) { background: #ffffff20; }
 .qmv2.has-panel .qmv2-card-field, .qmv2-stage.has-panel .qmv2-card-field { opacity: .32; }
-.qmv2-card { position: relative; width: 100%; padding: 18px; text-align: left; color: #fff; border: 1px solid var(--spatial-glass-edge); border-radius: 20px; background: var(--spatial-glass); box-shadow: var(--spatial-glass-shadow); backdrop-filter: var(--spatial-glass-filter); -webkit-backdrop-filter: var(--spatial-glass-filter); transition: background 400ms ease, border-color 400ms ease, box-shadow 400ms ease, transform 200ms ease; }
-.qmv2-card:hover { border-color: #ffffff90; }
-.qmv2-card.is-matched { background: var(--spatial-match-glass); border-color: var(--spatial-match-edge); box-shadow: var(--spatial-match-shadow); animation: spatial-match-reveal 600ms ease-out both; }
+.qmv2-card { position: relative; width: 100%; padding: 12px 14px; text-align: left; color: #fff; border: 1px solid var(--spatial-glass-edge); border-radius: 14px; background: var(--spatial-glass); box-shadow: var(--spatial-glass-shadow); backdrop-filter: var(--spatial-glass-filter); -webkit-backdrop-filter: var(--spatial-glass-filter); transition: border-color 400ms ease, box-shadow 400ms ease; }
+button.qmv2-card:hover { border-color: #ffffff90; }
+.qmv2-card.is-matched { border-color: var(--spatial-match-edge); box-shadow: var(--spatial-match-shadow); animation: spatial-match-reveal 600ms ease-out both; }
 @keyframes spatial-match-reveal { from { border-color: var(--spatial-glass-edge); box-shadow: var(--spatial-glass-shadow); } to { border-color: var(--spatial-match-edge); box-shadow: var(--spatial-match-shadow); } }
-.qmv2-card--far { width: max-content; min-width: 140px; max-width: 100%; padding: 16px 20px; }
-.qmv2-card--far > strong { font-size: var(--type-section-title); font-weight: var(--weight-medium); }
-.qmv2-card-person { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.qmv2-card-person .avatar { width: 48px; height: 48px; flex: 0 0 48px; }
-.qmv2-card-person > span { display: grid; min-width: 0; gap: 3px; }
-.qmv2-card-person strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--type-card-title); line-height: 1.2; font-weight: var(--weight-medium); }
-.qmv2-card-person small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: var(--type-body); line-height: 1.4; overflow-wrap: anywhere; }
-.qmv2-card .tags { gap: 6px; margin-top: 14px; max-height: 64px; overflow: hidden; }
-.qmv2-card .chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.qmv2-card .chip { color: #fff; border-color: #ffffff42; background: linear-gradient(135deg, #ffffff2b, #ffffff13); box-shadow: inset 0 1px 0 #ffffff24, 0 4px 14px #0000001f; backdrop-filter: blur(14px) saturate(115%); -webkit-backdrop-filter: blur(14px) saturate(115%); }
-.qmv2-card-meta { display: flex; align-items: center; gap: 6px; margin-top: 14px; color: #f2f3f5; font-size: var(--type-metadata); }
-.qmv2-card.is-matched .qmv2-card-meta { color: #e2fce8; }
+.qmv2-card--compact { width: max-content; max-width: 100%; min-height: 44px; padding: 8px 12px; }
+.qmv2-card-person { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.qmv2-card-person .avatar { width: 32px; height: 32px; flex: 0 0 32px; }
+.qmv2-card-person > span:not(.qmv2-card-talking) { display: grid; min-width: 0; gap: 1px; }
+.qmv2-card-person strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; line-height: 19px; font-weight: var(--weight-medium); }
+.qmv2-card-person small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 17px; color: #ffffffd9; }
+.qmv2-card-indicator { margin-left: auto; flex-shrink: 0; color: #e2fce8; }
+.qmv2-card--compact .avatar { width: 24px; height: 24px; flex-basis: 24px; }
+.qmv2-card--compact .qmv2-card-person { gap: 8px; }
+.qmv2-card--compact .qmv2-card-indicator { margin-left: 4px; }
+.qmv2-card-reason { margin: 10px 0 0; padding-top: 9px; border-top: 1px solid #ffffff30; font-size: 12px; line-height: 18px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qmv2-card-talking { margin-left: 4px; padding-left: 12px; border-left: 1px solid #ffffff30; font-size: 12px; line-height: 20px; color: #ffffffd9; white-space: nowrap; }
+.qmv2-room-footer.is-conversation { justify-content: center; flex-wrap: wrap; gap: 16px; }
+.qmv2-conversation-caption { display: inline-flex; align-items: center; gap: 8px; color: #fff; font-size: var(--type-supporting); text-shadow: 0 2px 8px #000b; }
 .qmv2-card-tether { position: absolute; top: 100%; left: 50%; height: 24px; width: 1px; background: linear-gradient(#ffffff80, transparent); pointer-events: none; }
 .qmv2-card-tether::after { content: ''; position: absolute; left: -2px; bottom: -3px; width: 5px; height: 5px; border-radius: 50%; background: #ffffff99; }
 .qmv2-room-footer { position: absolute; left: 24px; right: 24px; bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; z-index: 3; }
@@ -128,8 +130,6 @@
   .qmv2-stage.is-setup { padding: 20px 12px; min-height: calc(100svh - 210px); }
   .qmv2-room-guide { padding: 14px 20px; align-items: flex-start; flex-direction: column; gap: 4px; }
   .qmv2-look-controls { bottom: 108px; right: 20px; }
-  .qmv2-card-person strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 18px; }
-  .qmv2-card-person small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: var(--type-supporting); }
   .qmv2-panel { position: absolute; top: 16px; left: 12px; right: 12px; bottom: auto; width: auto; height: min(620px, calc(100svh - 200px)); min-height: 360px; padding: 22px; }
   .qmv2-room-footer { left: 20px; right: 20px; bottom: 20px; flex-direction: column; align-items: flex-start; gap: 14px; }
   .qmv2-room-status { flex-wrap: wrap; }
@@ -137,11 +137,9 @@
 }
 .solid-surfaces .qmv2-card, .solid-surfaces .qmv2-people-button { background: #34363a; backdrop-filter: none; -webkit-backdrop-filter: none; }
 .solid-surfaces .qmv2-card.is-matched { background: #3f5a48; }
-.solid-surfaces .qmv2-card .chip { background: #555852; backdrop-filter: none; -webkit-backdrop-filter: none; }
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   .qmv2-card, .qmv2-people-button { background: #34363a; backdrop-filter: none; -webkit-backdrop-filter: none; }
   .qmv2-card.is-matched { background: #3f5a48; }
-  .qmv2-card .chip { background: #555852; backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .qmv2 *, .qmv2 *::before, .qmv2 *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

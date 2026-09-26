@@ -8,7 +8,7 @@ async function enterPreview(page) {
   await expect(page.locator('.qmv2-card-field[aria-label="People nearby"]')).toBeVisible();
 }
 
-async function expectSceneGeometry(page) {
+async function expectSceneGeometry(page, expectedIds = ['jordan', 'leo', 'maya']) {
   const geometry = await page.locator('.qmv2-card-field').evaluate((world) => {
     const worldRect = world.getBoundingClientRect();
     const image = world.querySelector('.qmv2-scene');
@@ -39,7 +39,7 @@ async function expectSceneGeometry(page) {
 
   expect(geometry.ratio).toBeCloseTo(1659 / 948, 2);
   for (const delta of Object.values(geometry.imageDelta)) expect(Math.abs(delta)).toBeLessThan(1);
-  expect(geometry.people.map(({ id }) => id)).toEqual(['jordan', 'leo', 'maya']);
+  expect(geometry.people.map(({ id }) => id)).toEqual(expectedIds);
   const expected = { jordan: [24.5, 38], leo: [47.5, 52.4], maya: [74.7, 44.4] };
   for (const person of geometry.people) {
     expect(Math.abs(person.headX - expected[person.id][0])).toBeLessThan(0.25);
@@ -88,7 +88,7 @@ test('changed match ranking changes material without moving a person to another 
   await page.route('**/api/matches', async route => {
     const state = await env.api('matches', route.request().postDataJSON());
     const jordan = state.matches.find(match => (match.userA === 'alex' && match.userB === 'jordan') || (match.userB === 'alex' && match.userA === 'jordan'));
-    Object.assign(jordan, { compatible: true, score: 0.99, reason: 'Changed ranking result.', source: 'demo' });
+    Object.assign(jordan, { compatible: true, score: 0.99, reason: 'Changed ranking result.', source: 'fixture' });
     state.matches = [jordan, ...state.matches.filter(match => match !== jordan).reverse()];
     await route.fulfill({ status: 200, json: state });
   });
@@ -97,7 +97,7 @@ test('changed match ranking changes material without moving a person to another 
     await expectSceneGeometry(page);
     const jordan = page.locator('[data-person-id="jordan"] .qmv2-card');
     await expect(jordan).toHaveClass(/is-matched/);
-    const material = await jordan.evaluate(node => getComputedStyle(node).backgroundImage);
+    const material = await jordan.evaluate(node => getComputedStyle(node).borderColor);
     const channels = material.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)?.slice(1).map(Number);
     expect(channels).toBeTruthy();
     expect(channels[1]).toBeGreaterThan(channels[0]);
@@ -105,16 +105,46 @@ test('changed match ranking changes material without moving a person to another 
   } finally { await env.close(); }
 });
 
-test('a non-DEMO room requests real matching mode on initial entry', async ({ page }) => {
+test('a non-DEMO rules match is green without being labelled as a sample', async ({ page }) => {
   const env = await workspace(page, { code: 'SPATIAL' });
   const matchBodies = [];
   page.on('request', request => {
     if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/matches') matchBodies.push(request.postDataJSON());
   });
+  await page.route('**/api/matches', async route => {
+    const state = await env.api('matches', route.request().postDataJSON());
+    const jordan = state.matches.find(match => (match.userA === 'alex' && match.userB === 'jordan') || (match.userB === 'alex' && match.userA === 'jordan'));
+    Object.assign(jordan, { compatible: true, score: 0.91, reason: 'Both interested in accessible products.', source: 'rules' });
+    await route.fulfill({ status: 200, json: state });
+  });
   try {
     await enterPreview(page);
     await expect.poll(() => matchBodies.length).toBe(1);
     expect(matchBodies[0]).toEqual({ demo: false });
+    const jordan = page.locator('[data-person-id="jordan"] .qmv2-card');
+    await expect(jordan).toHaveClass(/is-matched/);
+    await expect(page.locator('.qmv2-room-status')).not.toContainText('Sample match');
+    await jordan.click();
+    const drawer = page.locator('.qmv2-person-panel');
+    await expect(drawer).toContainText('Both interested in accessible products.');
+    await expect(drawer).not.toContainText('Sample match');
+  } finally { await env.close(); }
+});
+
+test('missing cast identities leave holes and other attendees do not inherit a photographed head', async ({ page }) => {
+  const env = await workspace(page);
+  const limitRoster = state => {
+    state.events = state.events.map(event => event.code === 'DEMO' ? { ...event, participantIds: ['alex', 'jordan', 'maya', 'sam'] } : event);
+    return state;
+  };
+  await page.route('**/api/bootstrap', async route => route.fulfill({ status: 200, json: limitRoster(await env.api('bootstrap')) }));
+  await page.route('**/api/matches', async route => route.fulfill({ status: 200, json: limitRoster(await env.api('matches', route.request().postDataJSON())) }));
+  try {
+    await enterPreview(page);
+    await expect(page.locator('.qmv2-person-anchor')).toHaveCount(2);
+    await expect(page.locator('[data-person-id="leo"], [data-person-id="sam"]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^People/ })).toContainText('3');
+    await expectSceneGeometry(page, ['jordan', 'maya']);
   } finally { await env.close(); }
 });
 

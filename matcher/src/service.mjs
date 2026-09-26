@@ -50,8 +50,8 @@ export function createMatcher({
   logger = () => {},
 } = {}) {
   if (mode !== 'auto' && mode !== 'fixture') throw new Error('MATCH_MODE must be auto or fixture');
-  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 3000) {
-    throw new Error('Gemini timeout must be between 1 and 3000 milliseconds');
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 15000) {
+    throw new Error('Gemini timeout must be between 1 and 15000 milliseconds');
   }
   const cache = new Map();
   const pending = new Map();
