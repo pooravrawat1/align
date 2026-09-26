@@ -12,8 +12,8 @@ colors:
   hairline: "#FFFFFF14"
   control-subtle: "#FFFFFF06"
   control-border: "#FFFFFF20"
-  chip-ink: "#090A0B"
-  chip-border: "#FFFFFF1C"
+  chip-surface: "transparent"
+  chip-border: "#FFFFFF12"
   jade: "#69E6A6"
   jade-ink: "#103622"
   spatial-glass-highlight: "#72756B72"
@@ -79,8 +79,8 @@ components:
     rounded: "{rounded.control}"
     height: "44px"
   tag:
-    backgroundColor: "{colors.chip-ink}"
-    textColor: "#D7D9DE"
+    backgroundColor: "{colors.chip-surface}"
+    textColor: "#B8BBC2"
     typography: "{typography.body}"
     rounded: "{rounded.pill}"
 ---
@@ -226,12 +226,12 @@ The compact nearby preview sits beside About and Focus only when space permits. 
 
 Inputs are opaque charcoal, at least 44px tall, with 14px text and 9–10px corners. Room codes use uppercase tracking. Focus changes the border to jade with a restrained outer ring.
 
-### Ink chips
+### Quiet chips
 
-- Skills, interests, looking-for topics, shared interests, and profile topics use one pill-shaped Ink Chip. Section labels carry the semantic distinction; chip geometry does not change by topic type.
-- The base chip uses a near-black surface, a fine translucent border, and a soft inset highlight so it stays legible on graphite panels and spatial glass.
-- Removable chips keep the same surface with a circular 32px remove affordance. Suggestion and overflow chips use the interactive variant: they brighten, lift by 1px, and gain a soft shadow on hover or keyboard focus. Reduced motion removes the lift.
-- Status badges, filters, segmented controls, counts, and navigation tabs are separate component families and do not inherit Ink Chip styling.
+- Skills, interests, looking-for topics, shared interests, and profile topics use one compact pill-shaped chip. Section labels carry the semantic distinction; chip geometry does not change by topic type.
+- The base chip is transparent with a faint hairline and muted 11px text. It organizes metadata without competing with names, project descriptions, or actions.
+- Removable chips keep the same surface with a compact circular remove affordance. Suggestion and overflow chips gain only a soft neutral fill and brighter edge on hover or keyboard focus; they do not lift or cast a shadow.
+- Status badges, filters, segmented controls, counts, and navigation tabs are separate component families and do not inherit quiet-chip styling.
 
 ### Navigation
 

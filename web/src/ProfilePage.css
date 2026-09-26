@@ -64,13 +64,13 @@
 .pe-topic-control:focus-within { border-color: var(--text); }
 .pe-topic-tags { display: flex; flex-wrap: wrap; gap: 7px; }
 .pe-topic-tags:not(:empty) { padding: 5px 0; }
-.pe-topic-tag { gap: 5px; font-size: 13px; }
+.pe-topic-tag { gap: 4px; }
 .pe-topic-entry { display: flex; align-items: center; gap: 6px; }
 .pe-topic-entry input { border: 0 !important; background: transparent !important; padding-left: 2px !important; }
 .pe-topic-entry input:focus-visible { outline-offset: -2px; }
 .pe-add-topic { display: inline-flex; align-items: center; gap: 5px; background: none; border: 0; color: var(--text); min-height: 44px; padding: 8px 4px; font-size: 13px; }
 .pe-suggestions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; color: var(--muted); font-size: 12px; }
-.pe-suggestions button { gap: 5px; min-height: 32px; font-size: 12px; text-align: left; }
+.pe-suggestions button { gap: 4px; min-height: 24px; font-size: 11px; text-align: left; }
 .pe-contact-group { margin-bottom: 26px; }
 .pe-contact-group .pe-field { margin-bottom: 7px; }
 .pe-other-contact { margin: 8px 0 24px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
