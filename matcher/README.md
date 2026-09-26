@@ -104,3 +104,11 @@ text or credentials. The six networking categories score 0–100; professional
 and personal experience routes are scored separately. The highest route is the
 final percentage, with a 70% match threshold. Details and point rules are in
 the rubric document.
+
+## Web integration
+
+The companion imports this engine server-side through `web/server/assessment.mjs`; it does not send browser requests directly to the unauthenticated Quest endpoint. The adapter retains session/event authorization and projects only shared matching fields. `createMatcher().assess()` exposes route scores, networking criteria, availability and winning provenance for web presentation. `match()` keeps the frozen Quest response unchanged. Both entry points share evaluation, bounded caching and request deduplication.
+
+The threshold is owned by `assets/matching-policy.json`. Cached assessments retain their original `gemini`, `fixture`, or `rules` provenance even when the HTTP diagnostic source reads `cache`. The web may show a rich profile and score; the Quest attendee view remains name and matched reason only. No profile or connection state is synchronized to Photon by this integration.
+
+From `web/`, `npm run dev:quest` starts web 4320, session API 4321 and this matcher 4323. It uses `web/.env` if present. Standalone startup above remains supported with its own local environment.

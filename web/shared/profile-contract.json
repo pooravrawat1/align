@@ -11,6 +11,8 @@
   },
   "topicLimit": 20,
   "topicItemLimit": 80,
+  "experienceLimit": 20,
+  "experienceYearMin": 1900,
   "photo": {
     "maxSourceBytes": 10485760,
     "maxBytes": 262144,
@@ -22,6 +24,9 @@
     "interests": true,
     "skills": true,
     "lookingFor": true,
+    "goals": true,
+    "domains": true,
+    "experiences": true,
     "contact": false,
     "linkedin": false,
     "website": false,

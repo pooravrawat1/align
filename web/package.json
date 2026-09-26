@@ -7,7 +7,8 @@
     "dev": "node scripts/dev.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4320",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "dev:quest": "node scripts/dev.mjs --quest"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",

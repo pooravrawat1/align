@@ -1,0 +1,17 @@
+.spatial-surface {
+  background: var(--spatial-glass);
+  border: 1px solid var(--spatial-glass-edge);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--spatial-glass-shadow);
+  backdrop-filter: var(--spatial-glass-filter);
+  -webkit-backdrop-filter: var(--spatial-glass-filter);
+  color: var(--text-primary);
+}
+.spatial-surface--matched {
+  background: var(--spatial-match-glass);
+  border-color: var(--spatial-match-edge);
+  box-shadow: var(--spatial-match-shadow);
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .spatial-surface { background: var(--surface-panel); backdrop-filter: none; -webkit-backdrop-filter: none; }
+}

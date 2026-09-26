@@ -4,26 +4,31 @@ import type { Action, Profile } from "./types";
 
 export const profileSections = ["about", "focus", "contact", "settings"] as const;
 export type ProfileSection = typeof profileSections[number];
-export type TopicField = "interests" | "skills" | "lookingFor";
+export type TopicField = "interests" | "skills" | "lookingFor" | "domains";
 export type VisibilityField = keyof typeof contract.defaultVisibility;
-export type EditableField = keyof typeof contract.stringLimits | TopicField | "avatar";
+export type EditableField = keyof typeof contract.stringLimits | TopicField | "avatar" | "goals" | "experiences";
 export type ProfilePatch = Partial<Pick<Profile, EditableField>> & { visibility?: Partial<Record<VisibilityField, boolean>> };
 export type FieldErrors = Partial<Record<EditableField, string>>;
 export const sectionFields: Record<ProfileSection, EditableField[]> = {
   about: ["name", "role", "location", "avatar"],
-  focus: ["bio", "interests", "skills", "lookingFor"],
+  focus: ["bio", "interests", "skills", "lookingFor", "goals", "domains", "experiences"],
   contact: ["linkedin", "website", "email", "contact"],
   settings: [],
 };
 const sectionVisibility: Record<ProfileSection, VisibilityField[]> = {
-  about: [], focus: ["bio", "interests", "skills", "lookingFor"],
+  about: [], focus: ["bio", "interests", "skills", "lookingFor", "goals", "domains", "experiences"],
   contact: ["linkedin", "website", "email", "contact"],
   settings: ["activeInEvent", "previousConnections"],
 };
-export const topicFields: TopicField[] = ["interests", "skills", "lookingFor"];
+export const topicFields: TopicField[] = ["interests", "skills", "lookingFor", "domains"];
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 export const visibilityOf = (profile: Profile) => ({ ...contract.defaultVisibility, ...profile.visibility });
-const normalize = (profile: Profile): Profile => ({ ...profile, linkedin: profile.linkedin ?? "", website: profile.website ?? "", email: profile.email ?? "", contact: profile.contact ?? "", visibility: visibilityOf(profile) });
+const normalize = (profile: Profile): Profile => ({ ...profile, goals: profile.goals ?? [], domains: profile.domains ?? [], experiences: profile.experiences ?? [], linkedin: profile.linkedin ?? "", website: profile.website ?? "", email: profile.email ?? "", contact: profile.contact ?? "", visibility: visibilityOf(profile) });
+const isRecoverableExperience = (value: unknown): value is NonNullable<Profile["experiences"]>[number] => {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Record<string, unknown>;
+  return (item.category === "professional" || item.category === "personal") && typeof item.kind === "string" && typeof item.label === "string" && (item.year === undefined || typeof item.year === "number");
+};
 
 export function profileSectionFromHash(hash: string): ProfileSection {
   if (hash.split("?")[0] === "#/settings") return "settings";
@@ -51,8 +56,20 @@ export function validateSection(profile: Profile, section: ProfileSection): Fiel
   const errors: FieldErrors = {};
   for (const field of sectionFields[section]) {
     if (field === "avatar") continue;
+    if (field === "goals") {
+      const goals = profile.goals ?? [];
+      if (goals.length > 3 || goals.some(value => !value.trim() || value.length > contract.topicItemLimit)) errors.goals = "Choose up to three goals.";
+      continue;
+    }
+    if (field === "experiences") {
+      const experiences = profile.experiences ?? [];
+      const currentYear = new Date().getFullYear();
+      if (experiences.length > contract.experienceLimit) errors.experiences = `Add up to ${contract.experienceLimit} experiences.`;
+      else if (experiences.some(item => !isRecoverableExperience(item) || !item.kind.trim() || item.kind.length > contract.topicItemLimit || !item.label.trim() || item.label.length > contract.topicItemLimit || (item.year !== undefined && (!Number.isInteger(item.year) || item.year < contract.experienceYearMin || item.year > currentYear)))) errors.experiences = `Complete each experience with a kind and label of 1–${contract.topicItemLimit} characters and a year from ${contract.experienceYearMin}–${currentYear}.`;
+      continue;
+    }
     if (topicFields.includes(field as TopicField)) {
-      const values = profile[field as TopicField];
+      const values = profile[field as TopicField] ?? [];
       if (values.length > contract.topicLimit) errors[field] = `Use up to ${contract.topicLimit} topics.`;
       else if (values.some(value => !value.trim() || value.length > contract.topicItemLimit)) errors[field] = `Each topic needs 1–${contract.topicItemLimit} characters.`;
     } else {
@@ -102,7 +119,7 @@ export class ProfileEditor {
     this.storage = storage;
     const baseline = normalize(profile);
     this.key = sessionId ? `align-profile-draft:v1:${sessionId}:${profile.id}` : null;
-    this.snapshot = { baseline, draft: baseline, topicText: { interests: "", skills: "", lookingFor: "" }, errors: {}, saving: null, saved: null, failure: null, storageAvailable: !!storage };
+    this.snapshot = { baseline, draft: baseline, topicText: { interests: "", skills: "", lookingFor: "", domains: "" }, errors: {}, saving: null, saved: null, failure: null, storageAvailable: !!storage };
     try {
       const raw = this.key && storage?.getItem(this.key);
       if (raw) {
@@ -110,7 +127,7 @@ export class ProfileEditor {
         const patch: ProfilePatch = {};
         for (const field of Object.values(sectionFields).flat()) {
           const value = stored.patch?.[field];
-          if (topicFields.includes(field as TopicField) ? Array.isArray(value) && value.every(v => typeof v === "string") : typeof value === "string") Object.assign(patch, { [field]: value });
+          if (field === "experiences" ? Array.isArray(value) && value.every(isRecoverableExperience) : (field === "goals" || topicFields.includes(field as TopicField)) ? Array.isArray(value) && value.every(v => typeof v === "string") : typeof value === "string") Object.assign(patch, { [field]: value });
         }
         for (const field of Object.keys(contract.defaultVisibility) as VisibilityField[]) {
           if (typeof stored.patch?.visibility?.[field] === "boolean") patch.visibility = { ...patch.visibility, [field]: stored.patch.visibility[field] };
@@ -154,7 +171,7 @@ export class ProfileEditor {
     this.emit({ topicText: { ...this.snapshot.topicText, [field]: value }, errors: { ...this.snapshot.errors, [field]: undefined }, saved: null, failure: null });
   }
   commitTopic(field: TopicField, value = this.snapshot.topicText[field]) {
-    const result = addTopic(this.snapshot.draft[field], value);
+    const result = addTopic(this.snapshot.draft[field] ?? [], value);
     this.emit({ draft: { ...this.snapshot.draft, [field]: result.values }, topicText: { ...this.snapshot.topicText, [field]: result.error ? value : "" }, errors: { ...this.snapshot.errors, [field]: result.error }, saved: null });
     return !result.error;
   }
@@ -165,7 +182,7 @@ export class ProfileEditor {
     for (const field of sectionVisibility[section]) patch.visibility = { ...patch.visibility, [field]: visibilityOf(this.snapshot.baseline)[field] };
     const errors = { ...this.snapshot.errors };
     sectionFields[section].forEach(field => delete errors[field]);
-    this.emit({ draft: mergePatch(this.snapshot.draft, patch), errors, topicText: section === "focus" ? { interests: "", skills: "", lookingFor: "" } : this.snapshot.topicText, saved: null, failure: null });
+    this.emit({ draft: mergePatch(this.snapshot.draft, patch), errors, topicText: section === "focus" ? { interests: "", skills: "", lookingFor: "", domains: "" } : this.snapshot.topicText, saved: null, failure: null });
   }
   rebase(profile: Profile) {
     if (same(normalize(profile), this.snapshot.baseline)) return;

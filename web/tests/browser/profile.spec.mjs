@@ -235,10 +235,20 @@ for (const width of [1440, 390]) {
     await page.goto(`${origin}/#/profile`);
     await page.getByRole('button', { name: 'Preview full profile', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Profile preview' });
+    const roomChip = dialog.locator('.pe-room-card .chip').first();
+    await expect(roomChip).toBeVisible();
+    const roomChipMaterial = await roomChip.evaluate(element => ({
+      background: getComputedStyle(element).backgroundImage,
+      backdrop: getComputedStyle(element).backdropFilter,
+    }));
+    expect(roomChipMaterial.background).toContain('linear-gradient');
+    expect(roomChipMaterial.backdrop).toContain('blur(14px)');
     await expect(dialog.locator('details')).toHaveCount(0);
     const distance = dialog.getByRole('group', { name: 'Spatial distance' });
     await expect(distance).toBeVisible();
     await expect(dialog.locator('.pe-preview-section .ds-panel-header').first()).toContainText('In the room');
+    await expect(dialog.locator('.pe-preview-section').first()).toHaveCSS('background-color', 'rgb(34, 36, 40)');
+    await expect(dialog.locator('.pe-preview-section').first()).not.toHaveCSS('box-shadow', 'none');
     await expect(distance.getByRole('button', { name: 'Nearby', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await page.screenshot({ path: `.impeccable/review/drawer-room-${width}.png` });
     await distance.getByRole('button', { name: 'Distant', exact: true }).click();

@@ -1,0 +1,34 @@
+import type { Action, Profile, State } from './types';
+export type EventRecapProps = { state: State; user: Profile; connected: string[]; act: Action; busy: boolean; notify: (message: string) => void; eventId: string };
+import { ConferenceReport } from './ConferenceReport';
+import { ConnectionInbox } from './ConnectionInbox';
+import { pendingRequests } from './connectionRequests';
+import { eventRecap } from './eventRecapModel';
+import { networkPerson } from './networkModel';
+import { openPersonProfile } from './PeopleDirectory';
+import { TextAction } from './ui';
+import { requestFollowUp } from './requestFollowUp';
+
+
+
+export function EventRecap({ state, user, eventId, act, busy, notify }: EventRecapProps) {
+  const recap = eventRecap(state, user, eventId);
+  const event = state.events.find(item => item.id === eventId);
+  const pending = pendingRequests(state, user.id, eventId);
+  const requests = state.connectionRequests ?? [];
+  const people = recap.people.map(({ connection, profile, withdrawn, sharedInterests }) => ({
+    id: profile.id, profile, withdrawn, sharedInterests,
+    relationship: requests.some(request => request.status === 'accepted' && ((request.senderId === user.id && request.recipientId === profile.id) || (request.recipientId === user.id && request.senderId === profile.id))) ? 'connected' as const : 'saved' as const,
+    notes: connection.notes ?? '', contacted: connection.followUp === 'contacted',
+    contacts: networkPerson(state, user, profile).contacts,
+  }));
+  return <div className="event-recap">
+    <ConferenceReport key={`${state.session?.id}:${user.id}:${eventId}`} people={people} eventId={eventId} eventName={event?.name ?? 'this event'} senderName={user.name}
+      ownerKey={`${state.session?.id ?? 'session'}:${user.id}`} pendingCount={pending.length} notify={notify}
+      onProfile={id => openPersonProfile(id, eventId, 'network')}
+      onSave={async (id, patch) => { await act(`connections/${encodeURIComponent(id)}`, { ...('notes' in patch ? { notes: patch.notes } : {}), ...('contacted' in patch ? { followUp: patch.contacted ? 'contacted' : 'needed' } : {}) }, 'PATCH'); }}
+      onGenerate={(id, notes, style, signal) => requestFollowUp('follow-up', { participantId: id, eventId, notes, style }, signal, state.session?.id)} />
+    {recap.people.length === 0 && <TextAction href={`#/events?event=${encodeURIComponent(eventId)}`}>View event details</TextAction>}
+    {pending.length > 0 && <ConnectionInbox state={state} user={user} act={act} busy={busy} notify={notify} eventId={eventId} />}
+  </div>;
+}

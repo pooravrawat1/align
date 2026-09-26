@@ -9,6 +9,9 @@
   --surface-panel: #191a1d;
   --surface-subtle: #202125;
   --surface-raised: #222428;
+  --surface-nested: #222428;
+  --border-nested: #ffffff22;
+  --shadow-nested: inset 0 1px 0 #ffffff0d, 0 6px 16px #00000024;
   --surface-recessed: #101113;
   --surface-hover: #27282e;
   --surface-selected: #2b2d32;
@@ -46,6 +49,8 @@
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
+  --text-placeholder: var(--text-secondary);
+  --weight-placeholder: var(--weight-regular);
   --leading-body: 1.6;
   --tracking-display: -0.035em;
   --tracking-title: -0.025em;
@@ -66,6 +71,13 @@
   --chip-text: #d7d9de;
   --jade: #69e6a6;
   --jade-ink: #103622;
+  --accent: var(--jade);
+  --accent-ink: var(--jade-ink);
+  --accent-surface: color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-border: color-mix(in srgb, var(--accent) 36%, transparent);
+  --accent-border-strong: color-mix(in srgb, var(--accent) 60%, transparent);
+  --accent-glow: color-mix(in srgb, var(--accent) 15%, transparent);
+  --accent-hover: color-mix(in srgb, var(--accent) 78%, white);
   --spatial-glass: linear-gradient(135deg, #72756b72, #343b3499);
   --spatial-setup-glass: linear-gradient(135deg, #5a6157b8, #2d372ede);
   --spatial-match-glass: linear-gradient(120deg, #89a78caa, #436b50c7);
@@ -117,6 +129,16 @@ h2,
   justify-content: space-between;
   gap: var(--space-6);
   margin-bottom: var(--space-8);
+}
+/* Entry hints keep the control's size, including mobile input sizing. */
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-placeholder);
+  font-family: inherit;
+  font-size: inherit;
+  font-style: normal;
+  font-weight: var(--weight-placeholder);
+  opacity: 1;
 }
 .ds-page-header-copy { min-width: 0; }
 .ds-page-header h1 {
@@ -172,9 +194,10 @@ h2,
 .ds-panel-header-action { flex-shrink: 0; }
 .ds-disclosure {
   overflow: hidden;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-nested);
   border-radius: var(--radius-panel);
-  background: #ffffff02;
+  background: var(--surface-nested);
+  box-shadow: var(--shadow-nested);
 }
 .ds-disclosure > summary {
   min-height: 58px;
@@ -248,9 +271,9 @@ h2,
   color: #111214;
   box-shadow: inset 0 0 0 1.5px #fff;
 }
-.button.green {
-  background: #69e6a6;
-  color: #103622;
+.button.accent {
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 .button.secondary {
   background: #ffffff06;
@@ -279,9 +302,9 @@ h2,
   background: #fff;
   color: #080909;
 }
-.button.green:focus-visible {
+.button.accent:focus-visible {
   background: #080909;
-  color: var(--jade);
+  color: var(--accent);
 }
 @media (hover: hover) and (pointer: fine) {
   .button:hover:not(:disabled)::before {
@@ -302,9 +325,9 @@ h2,
     background: #fff;
     color: #080909;
   }
-  .button.green:hover:not(:disabled) {
+  .button.accent:hover:not(:disabled) {
     background: #080909;
-    color: var(--jade);
+    color: var(--accent);
   }
 }
 .button:active:not(:disabled) {
@@ -407,8 +430,8 @@ summary:focus-visible {
   border-color: var(--line);
 }
 .status-dot {
-  background: var(--jade);
-  box-shadow: 0 0 10px #69e6a626;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 .chip {
   display: inline-flex;
@@ -707,12 +730,12 @@ summary:focus-visible {
 }
 @media (prefers-reduced-motion: reduce) { .chip--interactive { transition: none; } }
 .connection-reason {
-  background: #284d331c;
-  border-color: #69e6a62e;
+  background: var(--accent-surface);
+  border-color: var(--accent-border);
 }
 .connection-reason p {
   font-size: 13px;
-  color: #d1e3d5;
+  color: var(--text-secondary);
   line-height: 1.7;
 }
 .graph-person strong {
@@ -722,13 +745,13 @@ summary:focus-visible {
   font-size: var(--type-label);
 }
 .graph-person.selected .graph-avatar {
-  border-color: #69e6a696;
+  border-color: var(--accent-border-strong);
   box-shadow:
-    0 0 0 7px #69e6a60a,
-    0 0 40px #69e6a60c;
+    0 0 0 7px var(--accent-surface),
+    0 0 40px var(--accent-glow);
 }
 .connection-graph .selected-edge {
-  stroke: #69e6a666;
+  stroke: var(--accent-border-strong);
 }
 .connection-extra label {
   font-size: 12px;
@@ -932,10 +955,10 @@ summary:focus-visible {
   font-size: 10px;
 }
 .network-product .graph-person.selected .graph-avatar {
-  background: #294c38;
+  background: color-mix(in srgb, var(--surface-panel) 82%, var(--accent));
   box-shadow:
-    0 0 0 7px #69e6a60a,
-    0 0 40px #69e6a60c;
+    0 0 0 7px var(--accent-surface),
+    0 0 40px var(--accent-glow);
 }
 .network-product .connection-expand,
 .connection-extra small,
@@ -953,7 +976,7 @@ summary:focus-visible {
   color: #c7cbd3;
 }
 .network-product .connection-graph .selected-edge {
-  stroke: #69e6a699;
+  stroke: var(--accent-border-strong);
 }
 @media (prefers-reduced-motion: reduce) {
   *,

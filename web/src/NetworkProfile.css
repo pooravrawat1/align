@@ -127,7 +127,7 @@
   letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
 }
-.np-score--high .np-score-value { color: #9be0ba; }
+.np-score--high .np-score-value { color: var(--accent); }
 
 .np-score-value small {
   margin-left: 3px;
@@ -153,6 +153,13 @@
 
 .np-save-connection { width: 100%; padding-inline: 13px; }
 .np-save-connection:disabled { opacity: 1; cursor: default; }
+
+.np-relationship-actions { display: grid; width: min(100%, 196px); gap: 8px; }
+.np-relationship-actions > .button,
+.np-request-actions > .button { width: 100%; padding-inline: 12px; white-space: nowrap; }
+.np-request-actions { display: grid; gap: 7px; }
+.np-request-text-action { min-height: 30px; border: 0; background: transparent; color: var(--muted, #a8abb2); font-size: var(--type-label); }
+.np-request-text-action:hover:not(:disabled) { color: var(--text, #f2f3f5); }
 
 .np-private-notice {
   margin-top: 24px;
@@ -246,17 +253,20 @@
 .np-rail { min-width: 0; }
 .np-rail > * + * { margin-top: 16px; }
 
-.np-compatibility {
-  padding: 18px;
-  border: 1px solid var(--np-line);
-  border-radius: 14px;
-  background: #ffffff03;
+.np-compatibility,
+.np-profile .np-follow-up,
+.np-profile .np-more-profile {
+  border: 1px solid var(--border-nested);
+  border-radius: var(--radius-panel, 14px);
+  background: var(--surface-nested);
+  box-shadow: var(--shadow-nested);
 }
+.np-compatibility { padding: 18px; }
 
 .np-compatibility-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 
 .np-rail-title { display: flex; align-items: center; gap: 8px; }
-.np-rail-title svg { color: var(--jade, #69e6a6); }
+.np-rail-title svg { color: var(--accent); }
 .np-rail-title h2 { font-size: 15px; font-weight: 600; white-space: nowrap; }
 .np-compatibility .np-score { flex-shrink: 0; gap: 7px; }
 .np-compatibility .np-score-value { min-width: 0; font-size: 26px; }
@@ -268,6 +278,12 @@
   font-size: 13px;
   line-height: 1.65;
 }
+.np-retry,
+.np-conversation-starter button { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; border: 0; padding: 6px 0; background: transparent; color: var(--accent); font-size: var(--type-metadata); font-weight: var(--weight-semibold); }
+.np-retry { margin-top: 10px; }
+.np-conversation-starter { margin-top: 0; padding: 17px 0 2px; border-top: 1px solid var(--np-line); }
+.np-conversation-starter > span { color: var(--text-tertiary); font-size: var(--type-label); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: .07em; }
+.np-conversation-starter blockquote { margin: 10px 0 0; padding-left: 13px; border-left: 1px solid var(--accent); color: var(--text-primary); font-size: var(--type-supporting); line-height: 1.6; }
 
 .np-disclosure,
 .np-message { border-top: 1px solid var(--np-line); }
@@ -309,23 +325,23 @@
   background: #ffffff12;
 }
 
-.np-category-track > span { height: 100%; display: block; background: var(--jade, #69e6a6); }
+.np-category-track > span { height: 100%; display: block; background: var(--accent); }
 .np-category p { margin-top: 7px; color: var(--quiet, #93979f); font-size: var(--type-metadata); line-height: 1.5; }
 
 .np-insight-body { padding: 2px 0 20px; }
 .np-insight-body > p { color: #d5d7db; font-size: 13px; }
-.np-insight-body blockquote { margin: 15px 0 0; padding: 0 0 0 13px; border-left: 1px solid var(--jade, #69e6a6); color: var(--text, #f2f3f5); font-size: 13px; line-height: 1.6; }
+.np-insight-body blockquote { margin: 15px 0 0; padding: 0 0 0 13px; border-left: 1px solid var(--accent); color: var(--text, #f2f3f5); font-size: 13px; line-height: 1.6; }
 
 .np-insight-body button {
   min-height: 34px;
   margin-top: 12px;
   padding: 6px 0;
-  color: #a9e9c5;
+  color: var(--accent);
   font-size: 12px;
   font-weight: 600;
 }
 
-.np-insight-body button:hover { color: #d1f8e2; }
+.np-insight-body button:hover { color: var(--accent-hover); }
 .np-insight-body > small { display: block; margin-top: 12px; color: var(--quiet, #93979f); font-size: var(--type-caption); line-height: 1.45; }
 
 .np-follow-up .ds-disclosure-body,
@@ -413,7 +429,7 @@
   .np-name-line h1 { font-size: 28px; }
   .np-identity-copy > p { font-size: 13px; }
   .np-identity-meta { display: grid; gap: 5px; }
-  .np-identity > .np-save-connection { grid-column: 1 / -1; }
+  .np-identity > .np-relationship-actions { width: 100%; grid-column: 1 / -1; }
   .np-project { grid-template-columns: 1fr; gap: 16px; }
   .np-bring,
   .np-split-section { grid-template-columns: 1fr; gap: 24px; }

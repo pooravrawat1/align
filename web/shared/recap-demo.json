@@ -1,0 +1,11 @@
+{
+  "eventId": "demo",
+  "ownerId": "alex",
+  "people": [
+    { "id": "maya", "relationship": "connected", "notes": "Discussed testing her detection model on my wearable prototype. I offered to send a demo before we plan a testing session.", "contacted": false },
+    { "id": "leo", "relationship": "connected", "notes": "Compared navigation challenges in crowded spaces. I want to share my sensor setup and ask about his robotics experiments.", "contacted": false },
+    { "id": "jordan", "relationship": "connected", "notes": "Talked about making spatial directions easier to understand. We wanted to swap early interface sketches.", "contacted": false },
+    { "id": "priya", "relationship": "saved", "notes": "", "contacted": false },
+    { "id": "nina", "relationship": "connected", "notes": "Discussed open-source tools and community projects. Sent a link to my prototype after the event.", "contacted": true }
+  ]
+}

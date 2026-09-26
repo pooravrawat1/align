@@ -200,9 +200,10 @@
 .home-collaborators-reason {
   margin-top: 20px;
   padding: 14px 16px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border-nested);
   border-radius: var(--radius-panel);
-  background: #ffffff04;
+  background: var(--surface-nested);
+  box-shadow: var(--shadow-nested);
   color: #d9dce1;
   font-size: 14px;
   line-height: 1.55;

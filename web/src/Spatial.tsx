@@ -1,1770 +1,288 @@
 import { type ReactNode, useEffect, useReducer, useRef, useState } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
-  ArrowUpRight,
-  Check,
-  ChevronRight,
-  Compass,
-  Crosshair,
-  Expand,
-  Glasses,
-  Info,
-  LoaderCircle,
-  LogOut,
-  MessageCircle,
-  RefreshCw,
-  RotateCcw,
-  Settings2,
-  Sparkles,
-  Users,
-  Volume2,
-  VolumeX,
-  WifiOff,
-  X,
-} from "lucide-react";
-import { Avatar, Button, Mark, Tags, TextAction, Toggle } from "./ui";
+import { ArrowLeft, ArrowRight, Bookmark, Check, ChevronRight, Compass, Crosshair, Expand, Glasses, LoaderCircle, Minimize, RefreshCw, RotateCcw, Settings2, Sparkles, Users, Volume2, VolumeX, WifiOff, X } from "lucide-react";
+import { Avatar, Button, Tags, TextAction, Toggle } from "./ui";
 import type { Action, Match, Profile, State } from "./types";
-import {
-  initialRoomState,
-  roomReducer,
-  connectionIdsForEvent,
-  createReplayableRequest,
-  selectActiveRemoteProfiles,
-  type AmbientPanel,
-  type ReliabilityKind,
-  type RoomState,
-  type SaveStatus,
-} from "./SpatialState";
+import { initialRoomState, roomReducer, createReplayableRequest, selectActiveRemoteProfiles, selectSpatialCards, type ReliabilityKind, type RoomState } from "./SpatialState";
+import { networkPerson, ownedConnection } from "./networkModel";
 import { go } from "./App";
+import { activeEvent, eventPhoto } from "./eventModel";
+import { SpatialScene } from "./SpatialScene";
 import "./SpatialV2.css";
 
-type Step = "join" | "profile" | "calibrate" | "ready" | "room";
+type Props = { state: State; user: Profile; act: Action; busy: boolean; connected: string[]; onConnect: (id: string) => Promise<void>; notify: (message: string) => void };
 
-type Props = {
-  state: State;
-  user: Profile;
-  act: Action;
-  busy: boolean;
-  connected: string[];
-  onConnect: (id: string) => Promise<void>;
-  notify: (message: string) => void;
-};
-
-type DistanceBand = "far" | "medium" | "near";
-type CardTone = "neutral" | "matched" | "saved";
-
-function distanceBand(distance: number): DistanceBand {
-  if (distance <= 2.25) return "near";
-  if (distance <= 4.75) return "medium";
-  return "far";
-}
-
-function canShow(
-  profile: Profile,
-  field: "bio" | "interests" | "skills" | "lookingFor",
-) {
-  return profile.visibility?.[field] !== false;
-}
-
-function firstName(profile: Profile) {
-  return profile.name.split(" ")[0];
-}
-
-export function Spatial({
-  state,
-  user,
-  act,
-  busy,
-  connected,
-  onConnect,
-  notify,
-}: Props) {
-  const [step, setStep] = useState<Step>(
-    state.session?.calibrated
-      ? "room"
-      : state.session?.code
-        ? "profile"
-        : "join",
-  );
+export function Spatial({ state, user, act, busy, connected, onConnect, notify }: Props) {
+  const [entered, setEntered] = useState(false);
   const [room, dispatch] = useReducer(roomReducer, initialRoomState);
-  const [code, setCode] = useState(state.session?.code || "DEMO");
+  const [code, setCode] = useState(activeEvent(state)?.code ?? "");
   const [monochrome, setMonochrome] = useState(false);
-  const [sound, setSound] = useState(() => {
-    try {
-      return localStorage.getItem("questmatch-sounds") === "true";
-    } catch {
-      return false;
-    }
-  });
+  const [fullscreen, setFullscreen] = useState(false);
+  const [sound, setSound] = useState(() => { try { return localStorage.getItem("questmatch-sounds") === "true"; } catch { return false; } });
   const [matching, setMatching] = useState(false);
-  const [displayedMatches, setDisplayedMatches] = useState<Match[]>(
-    state.matches,
-  );
-  const [distanceOverrides, setDistanceOverrides] = useState<
-    Record<string, number>
-  >({});
+  const [displayedMatches, setDisplayedMatches] = useState<Match[]>([]);
+  const [matchError, setMatchError] = useState(false);
+  const [distanceOverrides, setDistanceOverrides] = useState<Record<string, number>>({});
   const [distanceTargetId, setDistanceTargetId] = useState<string | null>(null);
-  const [mutedReasons, setMutedReasons] = useState<Set<string>>(new Set());
-  const [completedConversationIds, setCompletedConversationIds] = useState<
-    Set<string>
-  >(new Set());
-  const [savedDuringSession, setSavedDuringSession] = useState<Set<string>>(
-    new Set(),
-  );
   const [savingProfileId, setSavingProfileId] = useState<string | null>(null);
-  const [returnAfterCalibration, setReturnAfterCalibration] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const peopleButtonRef = useRef<HTMLButtonElement>(null);
   const roomRef = useRef<RoomState>(room);
-  const stepRef = useRef<Step>(step);
-  const soundRef = useRef(sound);
   const activeRef = useRef(true);
   const matchRunRef = useRef(0);
-  const automaticMatchRequestRef = useRef(createReplayableRequest<State>());
-  const matchNoticeTimerRef = useRef<number | null>(null);
+  const requestRef = useRef(createReplayableRequest<State>());
   const audioRef = useRef<AudioContext | null>(null);
-
+  const soundRef = useRef(sound);
+  const actionPendingRef = useRef(false);
+  const savePendingRef = useRef(false);
   roomRef.current = room;
-  stepRef.current = step;
   soundRef.current = sound;
 
-  const participants = selectActiveRemoteProfiles(state.profiles, user);
-  const cardParticipants = participants.slice(0, 3);
-  const distanceTarget =
-    participants.find((profile) => profile.id === distanceTargetId) ||
-    participants[0];
-  const distanceFor = (profile: Profile) =>
-    distanceOverrides[profile.id] ?? Math.max(0.8, profile.distance || 3.2);
-  const ownedMatches = displayedMatches.filter(
-    (match) =>
-      match.compatible && (match.userA === user.id || match.userB === user.id),
-  );
-  const matchFor = (id: string) => {
-    if (mutedReasons.has(id)) return undefined;
-    return ownedMatches.find(
-      (match) => match.userA === id || match.userB === id,
-    );
-  };
-  const focusedId =
-    room.kind === "profile" || room.kind === "conversation"
-      ? room.profileId
-      : null;
-  const focused = participants.find((profile) => profile.id === focusedId);
-  const event = state.events.find((candidate) =>
-    state.session?.code
-      ? candidate.code.toUpperCase() === state.session.code.toUpperCase()
-      : false,
-  );
-  const eventName =
-    event?.name ||
-    (state.session?.code ? `Room ${state.session.code}` : "The Builders Room");
-  const savedIds = new Set([...connected, ...savedDuringSession]);
-  const currentEventId = event?.id || state.session?.code || null;
-  const currentEventConnectionIds = connectionIdsForEvent(
-    state.connections,
-    user.id,
-    currentEventId,
-  );
-  const recapSavedIds = new Set([
-    ...currentEventConnectionIds,
-    ...savedDuringSession,
-  ]);
-  const savedProfiles = participants.filter((profile) =>
-    recapSavedIds.has(profile.id),
-  );
+  const event = state.events.find(item => item.code.toUpperCase() === state.session?.code?.toUpperCase());
+  const selectedEvent = activeEvent(state);
+  const previewEvent = event ?? state.events.find(item => item.code.toUpperCase() === code.toUpperCase()) ?? selectedEvent;
+  const participants = selectActiveRemoteProfiles(state.profiles.filter(person => event?.participantIds?.includes(person.id)), user);
+  const cards = selectSpatialCards(participants);
+  const sampleDemo = state.demo && event?.code.toUpperCase() === "DEMO";
+  const hasSampleMatches = displayedMatches.some(match => match.compatible && match.source !== "gemini" && match.source !== "unavailable");
+  const savedIds = new Set(connected.filter(id => ownedConnection(state, user.id, id)?.saved !== false));
+  const focused = room.kind === "profile" ? participants.find(person => person.id === room.profileId) : undefined;
+  const distanceTarget = participants.find(person => person.id === distanceTargetId) ?? participants[0];
+  const distanceFor = (person: Profile) => distanceOverrides[person.id] ?? Math.max(0.8, person.distance || 3.2);
+  const matchFor = (id: string) => displayedMatches.find(match => match.compatible && ((match.userA === user.id && match.userB === id) || (match.userB === user.id && match.userA === id)));
+  const recoveryOpen = (room.kind === "ambient" && room.panel === "recovery") || ((room.kind === "offline" || room.kind === "alignment-lost") && room.recoveryOpen);
+  const panelOpen = room.kind === "profile" || (room.kind === "ambient" && room.panel !== null) || recoveryOpen;
+  const socialVisible = room.kind === "ambient" || room.kind === "profile";
 
   useEffect(() => {
     activeRef.current = true;
-    return () => {
-      activeRef.current = false;
-      if (matchNoticeTimerRef.current !== null) {
-        window.clearTimeout(matchNoticeTimerRef.current);
-        matchNoticeTimerRef.current = null;
-      }
-      const audio = audioRef.current;
-      audioRef.current = null;
-      if (audio && audio.state !== "closed") void audio.close();
-    };
+    return () => { activeRef.current = false; const audio = audioRef.current; audioRef.current = null; if (audio && audio.state !== "closed") void audio.close(); };
   }, []);
 
   useEffect(() => {
-    const onEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      if (roomRef.current.kind === "conversation") {
-        dispatch({ type: "DISMISS_PROMPT" });
-      } else {
-        dispatch({ type: "CLOSE_LAYER" });
-      }
-    };
-    addEventListener("keydown", onEscape);
-    return () => removeEventListener("keydown", onEscape);
+    const update = () => setFullscreen(document.fullscreenElement === stageRef.current);
+    document.addEventListener("fullscreenchange", update);
+    return () => document.removeEventListener("fullscreenchange", update);
   }, []);
 
+  function closePanel() {
+    dispatch({ type: "CLOSE_LAYER" });
+    requestAnimationFrame(() => {
+      const trigger = triggerRef.current;
+      if (trigger?.isConnected && !trigger.closest("[inert]")) trigger.focus();
+      else peopleButtonRef.current?.focus();
+    });
+  }
+  useEffect(() => {
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") closePanel(); };
+    addEventListener("keydown", escape);
+    return () => removeEventListener("keydown", escape);
+  }, []);
+
+  function openPerson(id: string) {
+    triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setSaveError(null);
+    setDistanceTargetId(id);
+    dispatch({ type: "OPEN_PROFILE", profileId: id });
+  }
+  function openControls() {
+    triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (room.kind === "profile") dispatch({ type: "CLOSE_LAYER" });
+    dispatch({ type: "OPEN_PANEL", panel: "recovery" });
+  }
   function chime() {
     if (!soundRef.current || roomRef.current.kind !== "ambient") return;
     try {
-      const context = audioRef.current || new AudioContext();
-      audioRef.current = context;
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-      oscillator.connect(gain);
-      gain.connect(context.destination);
+      const context = audioRef.current ?? new AudioContext(); audioRef.current = context;
+      const oscillator = context.createOscillator(); const gain = context.createGain();
+      oscillator.connect(gain); gain.connect(context.destination);
       oscillator.frequency.setValueAtTime(590, context.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(
-        720,
-        context.currentTime + 0.18,
-      );
+      oscillator.frequency.exponentialRampToValueAtTime(720, context.currentTime + 0.18);
       gain.gain.setValueAtTime(0.026, context.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.48);
-      oscillator.start();
-      oscillator.stop(context.currentTime + 0.5);
-    } catch {
-      // The visual reveal remains available when browser audio is blocked.
-    }
+      oscillator.start(); oscillator.stop(context.currentTime + 0.5);
+    } catch { /* Sound is optional. */ }
   }
-
-  const showTransientMatchCount = (count: number) => {
-    if (matchNoticeTimerRef.current !== null) {
-      window.clearTimeout(matchNoticeTimerRef.current);
-    }
-    dispatch({ type: "SHOW_MATCH_NOTICE", count });
-    matchNoticeTimerRef.current = window.setTimeout(() => {
-      dispatch({ type: "CLEAR_MATCH_NOTICE" });
-      matchNoticeTimerRef.current = null;
-    }, 3400);
-  };
-
-  const revealMatchResult = (result: State) => {
-    if (stepRef.current !== "room" || roomRef.current.kind !== "ambient") {
-      return;
-    }
-    const visibleParticipantIds = new Set(
-      cardParticipants.map((profile) => profile.id),
-    );
-    const visibleMatches = result.matches.filter(
-      (match) =>
-        match.compatible &&
-        (match.userA === user.id || match.userB === user.id) &&
-        visibleParticipantIds.has(
-          match.userA === user.id ? match.userB : match.userA,
-        ),
-    );
+  function receiveMatches(result: State) {
+    if (roomRef.current.kind !== "ambient" && roomRef.current.kind !== "profile") return;
     setDisplayedMatches(result.matches);
-    if (visibleMatches.length > 0) {
-      showTransientMatchCount(visibleMatches.length);
-      chime();
-    }
-  };
-
-  const runMatches = async (demo: boolean) => {
-    const runId = ++matchRunRef.current;
-    setMatching(true);
-    setMutedReasons(new Set());
-    setDisplayedMatches([]);
+    setMatchError(result.matches.length > 0 && result.matches.every(match => match.source === "unavailable"));
+    if (result.matches.some(match => match.compatible && (match.userA === user.id || match.userB === user.id))) chime();
+  }
+  async function runMatches(demo = sampleDemo) {
+    const run = ++matchRunRef.current;
+    setMatching(true); setMatchError(false);
     try {
       const result = await act("matches", { force: true, demo });
-      if (!activeRef.current || runId !== matchRunRef.current) return;
-      revealMatchResult(result);
-    } catch {
-      // App owns the recoverable API error banner.
-    } finally {
-      if (activeRef.current && runId === matchRunRef.current) {
-        setMatching(false);
-      }
-    }
-  };
-
+      if (activeRef.current && run === matchRunRef.current) receiveMatches(result);
+    } catch { if (activeRef.current && run === matchRunRef.current) setMatchError(true); }
+    finally { if (activeRef.current && run === matchRunRef.current) setMatching(false); }
+  }
   useEffect(() => {
-    if (step !== "room") return;
-
+    if (!entered) return;
     let cancelled = false;
-    const runId = ++matchRunRef.current;
-    setMatching(true);
-    setMutedReasons(new Set());
-    setDisplayedMatches([]);
-    const request = automaticMatchRequestRef.current.acquire(() =>
-      act("matches", { force: true, demo: true }),
-    );
+    const run = ++matchRunRef.current;
+    setMatching(true); setMatchError(false);
+    void requestRef.current.acquire(() => act("matches", { demo: sampleDemo })).then(result => {
+      if (!cancelled && activeRef.current && run === matchRunRef.current) receiveMatches(result);
+    }).catch(() => { if (!cancelled && run === matchRunRef.current) setMatchError(true); }).finally(() => {
+      if (!cancelled && activeRef.current && run === matchRunRef.current) setMatching(false);
+    });
+    return () => { cancelled = true; if (run === matchRunRef.current) matchRunRef.current += 1; };
+  }, [entered]);
 
-    void request
-      .then((result) => {
-        if (cancelled || !activeRef.current || runId !== matchRunRef.current) {
-          return;
-        }
-        revealMatchResult(result);
-      })
-      .catch(() => {
-        // App owns the recoverable API error banner.
-      })
-      .finally(() => {
-        if (!cancelled && activeRef.current && runId === matchRunRef.current) {
-          setMatching(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-      if (matchRunRef.current === runId) {
-        matchRunRef.current += 1;
-        setMatching(false);
-      }
-    };
-  }, [step]);
-
-  const join = async () => {
+  async function enterPreview() {
+    if (busy || actionPendingRef.current) return;
+    actionPendingRef.current = true;
     try {
-      await act("room", { code });
-      dispatch({ type: "RETURN_AMBIENT" });
-      setStep("profile");
-    } catch {
-      // App owns the recoverable API error banner.
-    }
-  };
-
-  const calibrate = async () => {
-    try {
-      await act("calibrate", {});
-      if (returnAfterCalibration) {
-        dispatch({ type: "CALIBRATION_SUCCEEDED" });
-        setStep("room");
-        setReturnAfterCalibration(false);
-        notify("Demo alignment restored.");
-      } else {
-        setStep("ready");
-      }
-    } catch {
-      // App owns the recoverable API error banner.
-    }
-  };
-
-  const startRecalibration = () => {
-    matchRunRef.current += 1;
-    setMatching(false);
-    setReturnAfterCalibration(true);
-    setStep("calibrate");
-  };
-
-  const reconnect = async () => {
-    try {
-      matchRunRef.current += 1;
-      await act("room", { code: state.session?.code || code });
-      setDisplayedMatches([]);
-      setMatching(false);
-      setReturnAfterCalibration(true);
-      dispatch({ type: "SIMULATE_RELIABILITY", kind: "alignment-lost" });
-      setStep("calibrate");
-      notify("Demo connection restored. Recalibrate the shared origin.");
-    } catch {
-      // App owns the recoverable API error banner.
-    }
-  };
-
-  const reset = async () => {
-    try {
-      matchRunRef.current += 1;
-      await act("reset", {});
-      setStep("join");
-      setCode("DEMO");
-      setDisplayedMatches([]);
-      setMutedReasons(new Set());
-      setCompletedConversationIds(new Set());
-      setSavedDuringSession(new Set());
-      setDistanceOverrides({});
-      setDistanceTargetId(null);
-      setReturnAfterCalibration(false);
-      setMatching(false);
-      dispatch({ type: "RETURN_AMBIENT" });
-      notify("Demo session reset to its starting profiles.");
-    } catch {
-      // App owns the recoverable API error banner.
-    }
-  };
-
-  const openPerson = (profileId: string) => {
-    setDistanceTargetId(profileId);
-    dispatch({ type: "OPEN_PROFILE", profileId });
-  };
-
-  const saveConnection = async (profileId: string, inConversation = false) => {
-    if (savedIds.has(profileId)) {
-      if (inConversation) dispatch({ type: "SAVE_SUCCESS" });
-      return;
-    }
-    if (inConversation) dispatch({ type: "SAVE_PENDING" });
-    setSavingProfileId(profileId);
-    try {
-      await onConnect(profileId);
+      if (!state.session?.code) await act("room", { code: code.trim().toUpperCase() });
       if (!activeRef.current) return;
-      setSavedDuringSession((current) => new Set(current).add(profileId));
-      if (inConversation) dispatch({ type: "SAVE_SUCCESS" });
-    } catch {
-      if (inConversation) {
-        dispatch({ type: "SAVE_FAILED" });
-      }
-      // App owns the error banner and the callback is expected to reject.
-    } finally {
-      if (activeRef.current) setSavingProfileId(null);
-    }
-  };
-
-  const finishConversation = () => {
-    if (room.kind !== "conversation") return;
-    const profileId = room.profileId;
-    setCompletedConversationIds((current) => new Set(current).add(profileId));
-    setMutedReasons((current) => new Set(current).add(profileId));
-    dispatch({ type: "FINISH_CONVERSATION" });
-  };
-
-  const completeLeave = async (destination: "home" | "network") => {
+      dispatch({ type: "RETURN_AMBIENT" }); setEntered(true);
+    } catch { /* App displays the join error; keep the entered code. */ }
+    finally { actionPendingRef.current = false; }
+  }
+  async function leavePreview() {
+    if (busy || actionPendingRef.current || savePendingRef.current) return;
+    actionPendingRef.current = true;
     try {
       await act("leave", {});
-      go(destination);
-    } catch {
-      // Keep the truthful local recap visible while App shows the API error.
+      matchRunRef.current += 1;
+      if (activeRef.current) go("home");
+    } catch { /* Keep the preview available for a retry. */ }
+    finally { actionPendingRef.current = false; }
+  }
+  async function saveConnection(id: string) {
+    if (savedIds.has(id) || busy || savePendingRef.current) return;
+    savePendingRef.current = true; setSavingProfileId(id); setSaveError(null);
+    try { await onConnect(id); }
+    catch { if (activeRef.current) setSaveError(id); }
+    finally { savePendingRef.current = false; if (activeRef.current) setSavingProfileId(null); }
+  }
+  function simulate(kind: ReliabilityKind | "outside-boundary") {
+    matchRunRef.current += 1; setMatching(false);
+    dispatch(kind === "outside-boundary" ? { type: "SIMULATE_BOUNDARY" } : { type: "SIMULATE_RELIABILITY", kind });
+  }
+  async function restorePreview() {
+    if (busy || actionPendingRef.current) return;
+    actionPendingRef.current = true;
+    try {
+      if (room.kind === "offline") await act("room", { code: state.session?.code || code });
+      if (!activeRef.current) return;
+      dispatch({ type: "RESTORE_PREVIEW" });
+      notify("Preview restored.");
+      requestAnimationFrame(() => { if (activeRef.current) void runMatches(); });
+    } catch { /* Recovery stays visible until the request succeeds. */ }
+    finally { actionPendingRef.current = false; }
+  }
+  async function resetPreview() {
+    if (busy || actionPendingRef.current) return;
+    actionPendingRef.current = true;
+    try {
+      const result = await act("reset", {});
+      if (!activeRef.current) return;
+      matchRunRef.current += 1; setEntered(false); setCode(activeEvent(result)?.code ?? "");
+      setDisplayedMatches([]); setDistanceOverrides({}); setDistanceTargetId(null); setMatching(false); setMatchError(false);
+      dispatch({ type: "RETURN_AMBIENT" }); notify("Demo reset.");
+    } catch { /* App displays the failure. */ }
+    finally { actionPendingRef.current = false; }
+  }
+
+  return <div ref={stageRef} className="qmv2 spatial-content">
+    <header className="qmv2-page-heading">
+      <div><TextAction icon={<ArrowLeft size={16} />} iconPosition="start" disabled={busy || savingProfileId !== null} onClick={() => entered ? void leavePreview() : go("home")}>Back to event</TextAction><h1>Spatial preview</h1></div>
+      <div className="qmv2-page-actions">
+        {entered && <button className="qmv2-icon-button" aria-label="Preview controls" aria-expanded={recoveryOpen} onClick={openControls}><Settings2 size={19} /></button>}
+        <button className="qmv2-icon-button" aria-label={fullscreen ? "Exit fullscreen" : "Expand spatial preview"} onClick={() => { const request = fullscreen ? document.exitFullscreen() : stageRef.current?.requestFullscreen(); void request?.catch(() => notify("Fullscreen is unavailable in this browser.")); }}>{fullscreen ? <Minimize size={19} /> : <Expand size={19} />}</button>
+      </div>
+    </header>
+    <div className={`qmv2-stage ${entered ? "is-room" : "is-setup"} ${monochrome ? "is-monochrome" : ""} ${panelOpen ? "has-panel" : ""}`}>
+      {!entered && previewEvent && <img className="qmv2-scene" src={eventPhoto(previewEvent)} alt="" />}
+      {!entered && <div className="qmv2-atmosphere" />}
+      {!entered ? <section className="qmv2-entry" aria-labelledby="spatial-entry-title">
+        <Glasses size={32} aria-hidden="true" />
+        <h2 id="spatial-entry-title">{state.session?.code ? "Meet beyond the screen" : "Join your event"}</h2>
+        <p>{state.session?.code ? "Explore the people in your event. Find a reason to say hello, then save the people you want to keep in touch with." : "Enter your event code to explore the people in the room."}</p>
+        <form onSubmit={event => { event.preventDefault(); void enterPreview(); }}>
+          {!state.session?.code && <label className="qmv2-code-label">Event code<input value={code} onChange={event => setCode(event.target.value.toUpperCase())} placeholder="DEMO" required pattern="[A-Z0-9]{3,8}" minLength={3} maxLength={8} autoComplete="off" spellCheck={false} /></label>}
+          <Button busy={busy} type="submit">{state.session?.code ? "Enter preview" : "Join and enter"}<ArrowRight size={17} /></Button>
+        </form>
+        <p className="qmv2-entry-note">{state.session?.code ? "Browser preview · simulated people and distances" : "Try DEMO for a sample event. No headset needed."}</p>
+      </section> : <>
+        <div className="qmv2-room-guide"><span><Glasses size={16} />Illustrative room · browser preview</span><p>Select a person’s label to say hello.</p></div>
+        {socialVisible && participants.length > 0 && <SpatialScene people={cards} hidden={panelOpen} renderCard={profile => <ParticipantCard profile={profile} match={matchFor(profile.id)} saved={savedIds.has(profile.id)} distance={distanceFor(profile)} onOpen={() => openPerson(profile.id)} />} />}
+        {socialVisible && participants.length === 0 && <div className="qmv2-empty"><Users size={28} /><h2>No one nearby yet</h2><p>People who share their profile at this event will appear here.</p></div>}
+        {!socialVisible && !recoveryOpen && <section className="qmv2-reliability" aria-live="polite">
+          {room.kind === "offline" ? <WifiOff size={28} /> : room.kind === "alignment-lost" ? <Crosshair size={28} /> : <Compass size={28} />}
+          <h2>{room.kind === "offline" ? "Connection paused" : room.kind === "alignment-lost" ? "Alignment interrupted" : "Outside the preview area"}</h2>
+          <p>This is a simulated interruption. People stay hidden until you restore the preview.</p>
+          <Button busy={busy} onClick={() => void restorePreview()}>Restore preview<RefreshCw size={16} /></Button>
+        </section>}
+        {room.kind === "profile" && focused && <ProfileDrawer state={state} user={user} profile={focused} match={matchFor(focused.id)} saved={savedIds.has(focused.id)} saving={savingProfileId === focused.id} disabled={busy || savingProfileId !== null} error={saveError === focused.id} onClose={closePanel} onSave={() => void saveConnection(focused.id)} />}
+        {room.kind === "ambient" && room.panel === "people" && <PreviewPanel title="People in this room" onClose={closePanel}>
+          <p className="qmv2-panel-intro">Choose a person to see what you have in common.</p>
+          <div className="qmv2-people-list">{participants.map(profile => <button key={profile.id} onClick={() => openPerson(profile.id)}><Avatar profile={profile} /><span><strong>{profile.name}</strong><small>{profile.role}</small></span>{savedIds.has(profile.id) ? <Check size={17} aria-label="Saved" /> : matchFor(profile.id) ? <Sparkles size={17} aria-label="Reason to meet" /> : <ChevronRight size={17} />}</button>)}</div>
+          {participants.length === 0 && <p>No shared profiles are available in this event.</p>}
+        </PreviewPanel>}
+        {recoveryOpen && <PreviewPanel title="Preview controls" onClose={closePanel}>
+          <p className="qmv2-panel-intro">Try different distances and states. These controls simulate the headset experience.</p>
+          {distanceTarget && <section className="qmv2-control-section"><h3>Distance</h3><label>Person<select value={distanceTarget.id} onChange={event => setDistanceTargetId(event.target.value)}>{participants.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}</select></label><label><span>Distance <output>{distanceFor(distanceTarget).toFixed(1)} m</output></span><input type="range" min="0.8" max="7" step="0.1" value={distanceFor(distanceTarget)} onChange={event => setDistanceOverrides(current => ({ ...current, [distanceTarget.id]: Number(event.target.value) }))} /></label><p>Far: a name. Nearby: an introduction. Close: a reason to meet.</p></section>}
+          <section className="qmv2-control-section"><h3>Matching</h3><Button variant="secondary" busy={matching} disabled={busy || !socialVisible} onClick={() => void runMatches()}>Refresh matches<RefreshCw size={16} /></Button><TextAction disabled={busy || matching || !socialVisible} onClick={() => void runMatches(true)}>Show sample match<Sparkles size={16} /></TextAction><p>The sample match uses a prepared demo pairing.</p></section>
+          <section className="qmv2-control-section"><h3>Appearance</h3><div className="qmv2-toggle-row"><span>Monochrome room</span><Toggle checked={monochrome} onChange={() => setMonochrome(value => !value)} label="Monochrome room" /></div><div className="qmv2-toggle-row"><span>{sound ? <Volume2 size={16} /> : <VolumeX size={16} />}Match sound</span><Toggle checked={sound} onChange={() => { const next = !sound; setSound(next); try { localStorage.setItem("questmatch-sounds", String(next)); } catch { /* Keep in memory. */ } }} label="Match sound" /></div></section>
+          <section className="qmv2-control-section"><h3>Simulate an interruption</h3><div className="qmv2-simulation-controls"><button disabled={busy} onClick={() => simulate("offline")}>Connection loss</button><button disabled={busy} onClick={() => simulate("alignment-lost")}>Alignment loss</button><button disabled={busy} onClick={() => simulate("outside-boundary")}>Outside area</button></div>{!socialVisible && <Button busy={busy} onClick={() => void restorePreview()}>Restore preview</Button>}</section>
+          <TextAction disabled={busy} onClick={() => void resetPreview()}><RotateCcw size={16} />Reset demo</TextAction>
+        </PreviewPanel>}
+        <div className="qmv2-room-footer">
+          <button ref={peopleButtonRef} className="qmv2-people-button" aria-expanded={room.kind === "ambient" && room.panel === "people"} disabled={!socialVisible} onClick={() => { triggerRef.current = peopleButtonRef.current; if (room.kind === "profile") dispatch({ type: "CLOSE_LAYER" }); dispatch({ type: "OPEN_PANEL", panel: "people" }); }}><Users size={18} />People<span>{participants.length}</span></button>
+          <div className="qmv2-room-status" role="status">{matching ? <><LoaderCircle size={15} className="spin" />Finding common ground…</> : matchError ? <><span>Matching unavailable. You can still explore people.</span><button disabled={busy} onClick={() => void runMatches()}>Retry</button></> : <><span className="qmv2-match-dot" />{hasSampleMatches && "Sample match · "}Green means a reason to meet</>}</div>
+        </div>
+      </>}
+    </div>
+  </div>;
+}
+
+function ParticipantCard({ profile, match, saved, distance, onOpen }: { profile: Profile; match?: Match; saved: boolean; distance: number; onOpen: () => void }) {
+  const band = distance <= 2.25 ? "near" : distance <= 4.75 ? "medium" : "far";
+  return <button className={`qmv2-card qmv2-card--${band}${match ? " is-matched" : ""}${saved ? " is-saved" : ""}`} aria-label={`Open ${profile.name}${match ? ", reason to meet" : ""}${saved ? ", saved" : ""}`} onClick={onOpen}>
+    {band === "far" ? <strong>{profile.name.split(" ")[0]}</strong> : <><div className="qmv2-card-person"><Avatar profile={profile} /><span><strong>{profile.name.split(" ")[0]}</strong><small>{profile.role}</small></span></div>{profile.visibility?.interests !== false && profile.interests.length > 0 && <Tags items={profile.interests} limit={3} />}</>}
+    <span className="qmv2-card-meta">{saved ? <><Check size={14} />Saved</> : match ? <><Sparkles size={14} />Reason to meet</> : <>{distance.toFixed(1)} m away</>}</span>
+    <span className="qmv2-card-tether" aria-hidden="true" />
+  </button>;
+}
+
+function PreviewPanel({ title, onClose, children, footer, className = "" }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; className?: string }) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => { closeRef.current?.focus(); }, []);
+  return <aside className={`qmv2-panel ${className}`} aria-label={title}>
+    <header><h2>{title}</h2><button ref={closeRef} className="qmv2-icon-button" aria-label={`Close ${title}`} onClick={onClose}><X size={18} /></button></header>
+    <div className="qmv2-panel-body">{children}</div>
+    {footer}
+  </aside>;
+}
+
+function ProfileDrawer({ state, user, profile, match, saved, saving, disabled, error, onClose, onSave }: { state: State; user: Profile; profile: Profile; match?: Match; saved: boolean; saving: boolean; disabled: boolean; error: boolean; onClose: () => void; onSave: () => void }) {
+  const confirmationRef = useRef<HTMLDivElement>(null);
+  const previouslySaved = useRef(saved);
+  useEffect(() => {
+    if (saved && !previouslySaved.current && (document.activeElement === document.body || confirmationRef.current?.contains(document.activeElement))) {
+      confirmationRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
     }
-  };
-
-  const simulateReliability = (kind: ReliabilityKind) => {
-    matchRunRef.current += 1;
-    setMatching(false);
-    dispatch({ type: "SIMULATE_RELIABILITY", kind });
-  };
-
-  const simulateBoundary = () => {
-    matchRunRef.current += 1;
-    setMatching(false);
-    dispatch({ type: "SIMULATE_BOUNDARY" });
-  };
-
-  const openRecoveryForProfile = (profileId: string) => {
-    setDistanceTargetId(profileId);
-    dispatch({ type: "CLOSE_LAYER" });
-    requestAnimationFrame(() =>
-      dispatch({ type: "OPEN_PANEL", panel: "recovery" }),
-    );
-  };
-
-  const inRoom = step === "room";
-  const showSocialCards =
-    inRoom &&
-    (room.kind === "ambient" || room.kind === "profile") &&
-    participants.length > 0;
-  const roomClass = `qmv2-room--${room.kind}`;
-
-  return (
-    <div className="qmv2 spatial-content">
-      <header className="qmv2-page-heading">
-        <div>
-          <h1>Be here. Find your people.</h1>
-          <p>A browser preview of the interface designed for the headset.</p>
-        </div>
-        <div className="qmv2-page-actions">
-          <button
-            type="button"
-            className="qmv2-quiet-button"
-            aria-pressed={monochrome}
-            onClick={() => setMonochrome((current) => !current)}
-          >
-            <Glasses size={18} />
-            {monochrome ? "Color room" : "Monochrome"}
-          </button>
-          <button
-            type="button"
-            className="qmv2-icon-button"
-            aria-label="Expand Spatial Salon preview"
-            onClick={() => {
-              void stageRef.current
-                ?.requestFullscreen()
-                .catch(() =>
-                  notify("Fullscreen is unavailable in this browser."),
-                );
-            }}
-          >
-            <Expand size={19} />
-          </button>
-        </div>
-      </header>
-
-      <div
-        ref={stageRef}
-        className={`qmv2-stage ${roomClass} ${monochrome ? "is-monochrome" : ""} ${step !== "room" ? "is-setup" : ""}`}
-      >
-        <div className="scene-photo qmv2-scene" />
-        <div className="qmv2-atmosphere" />
-
-        <div className="qmv2-topline">
-          <button
-            type="button"
-            className="qmv2-event-button"
-            aria-label="Open event information"
-            aria-expanded={room.kind === "ambient" && room.panel === "event"}
-            disabled={step !== "room" || room.kind !== "ambient"}
-            onClick={() => dispatch({ type: "OPEN_PANEL", panel: "event" })}
-          >
-            <span className="qmv2-status-dot" />
-            <span>{eventName}</span>
-            <strong>{state.session?.code || code}</strong>
-            <Info size={16} />
-          </button>
-          <span className="qmv2-simulation-label">
-            Browser simulation · no headset tracking
-          </span>
-        </div>
-
-        {step !== "room" && (
-          <SetupFlow
-            step={step}
-            code={code}
-            setCode={setCode}
-            user={user}
-            participants={participants}
-            busy={busy}
-            returning={returnAfterCalibration}
-            onJoin={() => void join()}
-            onCalibrate={() => void calibrate()}
-            onContinue={() => setStep("calibrate")}
-            onEnter={() => setStep("room")}
-            onBack={() => {
-              if (returnAfterCalibration) {
-                setReturnAfterCalibration(false);
-                setStep("room");
-                dispatch({ type: "CALIBRATION_CANCELLED" });
-                return;
-              }
-              setStep(
-                step === "ready"
-                  ? "calibrate"
-                  : step === "calibrate"
-                    ? "profile"
-                    : "join",
-              );
-            }}
-          />
-        )}
-
-        {showSocialCards && (
-          <div className="qmv2-card-field" aria-label="Nearby demo profiles">
-            {cardParticipants.map((profile, index) => {
-              const match = matchFor(profile.id);
-              const tone: CardTone = savedIds.has(profile.id)
-                ? "saved"
-                : match
-                  ? "matched"
-                  : "neutral";
-              return (
-                <ParticipantCard
-                  key={profile.id}
-                  profile={profile}
-                  match={match}
-                  tone={tone}
-                  distance={distanceFor(profile)}
-                  position={index}
-                  selected={
-                    room.kind === "profile" && room.profileId === profile.id
-                  }
-                  onOpen={() => openPerson(profile.id)}
-                />
-              );
-            })}
-          </div>
-        )}
-
-        {inRoom && room.kind === "ambient" && room.matchNotice !== null && (
-          <div className="qmv2-match-notice" role="status">
-            <Sparkles size={17} />
-            <span>
-              {room.matchNotice === 1
-                ? "1 nearby reason to meet"
-                : `${room.matchNotice} nearby reasons to meet`}
-            </span>
-          </div>
-        )}
-
-        {inRoom && room.kind === "profile" && focused && (
-          <ProfileDrawer
-            profile={focused}
-            match={matchFor(focused.id)}
-            saved={savedIds.has(focused.id)}
-            saving={savingProfileId === focused.id}
-            onClose={() => dispatch({ type: "CLOSE_LAYER" })}
-            onConversation={() =>
-              dispatch({
-                type: "START_CONVERSATION",
-                profileId: focused.id,
-                saved: savedIds.has(focused.id),
-              })
-            }
-            onSave={() => void saveConnection(focused.id)}
-            onTestDistance={() => openRecoveryForProfile(focused.id)}
-          />
-        )}
-
-        {inRoom && room.kind === "conversation" && focused && (
-          <ConversationView
-            profile={focused}
-            promptOpen={room.promptOpen}
-            saveStatus={savedIds.has(focused.id) ? "saved" : room.saveStatus}
-            onDismissPrompt={() => dispatch({ type: "DISMISS_PROMPT" })}
-          />
-        )}
-
-        {inRoom && room.kind === "offline" && (
-          <ReliabilityState
-            icon={<WifiOff size={30} />}
-            title="Demo connection paused"
-            description="Remote sample cards are hidden until this browser simulation reconnects."
-            action="Open recovery"
-            onAction={() => dispatch({ type: "OPEN_PANEL", panel: "recovery" })}
-          />
-        )}
-
-        {inRoom && room.kind === "alignment-lost" && (
-          <ReliabilityState
-            icon={<Crosshair size={30} />}
-            title="Demo alignment lost"
-            description="Spatial cards stay hidden until the shared simulated origin is calibrated again."
-            action="Recalibrate"
-            onAction={startRecalibration}
-          />
-        )}
-
-        {inRoom && room.kind === "outside-boundary" && (
-          <section className="qmv2-boundary-simulation" aria-live="polite">
-            <span>Developer simulation</span>
-            <Compass size={34} />
-            <h2>Outside the demo area</h2>
-            <p>
-              Social cards and match audio are paused in this test state. This
-              is not a real boundary system.
-            </p>
-            <Button onClick={() => dispatch({ type: "RETURN_AMBIENT" })}>
-              Return inside demo area
-              <ArrowRight size={17} />
-            </Button>
-          </section>
-        )}
-
-        {inRoom && room.kind === "recap" && (
-          <Recap
-            savedProfiles={savedProfiles}
-            conversationCount={completedConversationIds.size}
-            busy={busy}
-            onBack={() => dispatch({ type: "RETURN_AMBIENT" })}
-            onLeaveHome={() => void completeLeave("home")}
-            onLeaveNetwork={() => void completeLeave("network")}
-          />
-        )}
-
-        {inRoom && room.kind === "ambient" && room.panel === "event" && (
-          <EventDrawer
-            eventName={eventName}
-            code={state.session?.code || code}
-            joined={Boolean(state.session?.code)}
-            calibrated={Boolean(state.session?.calibrated)}
-            profileName={user.name}
-            participantCount={participants.length}
-            onClose={() => dispatch({ type: "CLOSE_LAYER" })}
-          />
-        )}
-
-        {inRoom && room.kind === "ambient" && room.panel === "people" && (
-          <PeopleDrawer
-            participants={participants}
-            matchFor={matchFor}
-            savedIds={savedIds}
-            onOpen={openPerson}
-            onClose={() => dispatch({ type: "CLOSE_LAYER" })}
-          />
-        )}
-
-        {inRoom &&
-          ((room.kind === "ambient" && room.panel === "recovery") ||
-            ((room.kind === "offline" || room.kind === "alignment-lost") &&
-              room.recoveryOpen)) && (
-            <RecoveryDrawer
-              participants={participants}
-              distanceTarget={distanceTarget}
-              distance={distanceTarget ? distanceFor(distanceTarget) : 0}
-              monochrome={monochrome}
-              sound={sound}
-              busy={busy || matching}
-              reliability={
-                room.kind === "offline" || room.kind === "alignment-lost"
-                  ? room.kind
-                  : "online"
-              }
-              onClose={() => dispatch({ type: "CLOSE_LAYER" })}
-              onDistanceTarget={setDistanceTargetId}
-              onDistance={(value) => {
-                if (!distanceTarget) return;
-                setDistanceOverrides((current) => ({
-                  ...current,
-                  [distanceTarget.id]: value,
-                }));
-              }}
-              onReconnect={() => void reconnect()}
-              onRecalibrate={startRecalibration}
-              onRun={() => {
-                dispatch({ type: "CLOSE_LAYER" });
-                void runMatches(false);
-              }}
-              onKnownDemo={() => {
-                dispatch({ type: "CLOSE_LAYER" });
-                void runMatches(true);
-              }}
-              onMonochrome={() => setMonochrome((current) => !current)}
-              onSound={() => {
-                const nextSound = !soundRef.current;
-                setSound(nextSound);
-                try {
-                  localStorage.setItem("questmatch-sounds", String(nextSound));
-                } catch {
-                  // Preference remains available for this mounted preview.
-                }
-                if (nextSound) {
-                  try {
-                    audioRef.current = new AudioContext();
-                  } catch {
-                    // Sound stays optional in the browser preview.
-                  }
-                }
-              }}
-              onSimulateConnection={() => simulateReliability("offline")}
-              onSimulateAlignment={() => simulateReliability("alignment-lost")}
-              onSimulateBoundary={simulateBoundary}
-              onChangeProfile={() => go("profile")}
-              onReset={() => void reset()}
-              onLeave={() => {
-                dispatch({ type: "CLOSE_LAYER" });
-                requestAnimationFrame(() => dispatch({ type: "SHOW_RECAP" }));
-              }}
-            />
-          )}
-
-        {inRoom && (room.kind === "ambient" || room.kind === "profile") && (
-          <AmbientDock
-            activePanel={room.kind === "ambient" ? room.panel : null}
-            matching={matching}
-            onPanel={(panel) => {
-              if (room.kind === "profile") dispatch({ type: "CLOSE_LAYER" });
-              dispatch({ type: "OPEN_PANEL", panel });
-            }}
-            onMatch={() => {
-              if (room.kind === "profile") dispatch({ type: "CLOSE_LAYER" });
-              void runMatches(false);
-            }}
-          />
-        )}
-
-        {inRoom && room.kind === "conversation" && focused && (
-          <ConversationDock
-            name={firstName(focused)}
-            saveStatus={savedIds.has(focused.id) ? "saved" : room.saveStatus}
-            onSave={() => void saveConnection(focused.id, true)}
-            onFinish={finishConversation}
-          />
-        )}
-
-        <div className="qmv2-stage-caption">
-          <span>
-            <Glasses size={15} />
-            Simulated spatial interface
-          </span>
-          <span>
-            {step === "room"
-              ? "Distances and reliability states are developer controls."
-              : "Setup is illustrative; no tracking is collected."}
-          </span>
-        </div>
-      </div>
-
-      <footer className="qmv2-underbar">
-        <span>
-          <span className="qmv2-status-dot" />
-          {step === "room"
-            ? `${participants.length} sample participants · viewing as ${user.name}`
-            : "Guided browser setup"}
-        </span>
-        <TextAction icon={<ArrowUpRight size={16} />} onClick={() => go("network")}>
-          View saved connections
-        </TextAction>
-      </footer>
+    previouslySaved.current = saved;
+  }, [saved]);
+  const person = networkPerson(state, user, profile, undefined, "event");
+  const shared = person.sharedInterests;
+  const hasCommonGround = shared.length > 0 || person.theyOffer.length > 0 || person.youOffer.length > 0;
+  return <PreviewPanel title="Meet someone new" onClose={onClose} className="qmv2-person-panel" footer={
+    <div ref={confirmationRef} className={`qmv2-connect${saved ? " is-saved" : ""}`}>
+      {saved ? <><div className="qmv2-save-confirmation" role="status"><Check size={20} /><div><strong>Saved to your network</strong><p>Keep notes and follow up from Network.</p></div></div><Button onClick={onClose}>Back to the room<ArrowRight size={17} /></Button></> : <><h3>Keep the conversation going</h3><p>Save {profile.name.split(" ")[0]} to your Network so you can find them after the event.</p><Button busy={saving} disabled={disabled} onClick={onSave}><Bookmark size={17} />{error ? "Try saving again" : "Save connection"}</Button><small>Only saved to your network. No request is sent.</small></>}
+      {error && !saved && <p className="qmv2-save-error" role="alert">Couldn’t save this connection. Try again.</p>}
     </div>
-  );
-}
+    }>
+    <div className="qmv2-person-identity"><Avatar profile={profile} size="large" /><div><h3>{profile.name}</h3><p>{profile.role}</p></div></div>
+    {person.profile.bio && <p className="qmv2-person-bio">{person.profile.bio}</p>}
+    {(match || hasCommonGround) && <section className="qmv2-common-ground"><h3><Sparkles size={16} />A reason to say hello</h3><p>{match?.reason ?? person.reason}</p>{match && match.source !== "gemini" && <small>Sample match · prepared demo</small>}{shared.length > 0 && <Tags items={shared} />}</section>}
+    {(person.theyOffer.length > 0 || person.youOffer.length > 0) && <div className="qmv2-exchange">{person.theyOffer.length > 0 && <section><h3>They can help you with</h3><Tags items={person.theyOffer} /></section>}{person.youOffer.length > 0 && <section><h3>You can help them with</h3><Tags items={person.youOffer} /></section>}</div>}
+    <details className="qmv2-more"><summary>More about {profile.name.split(" ")[0]}</summary>{([["Interests", person.profile.interests], ["Skills", person.profile.skills], ["Looking for", person.profile.lookingFor]] as const).map(([label, items]) => items.length > 0 && <section key={label}><h3>{label}</h3><Tags items={items} /></section>)}</details>
 
-function SetupFlow({
-  step,
-  code,
-  setCode,
-  user,
-  participants,
-  busy,
-  returning,
-  onJoin,
-  onCalibrate,
-  onContinue,
-  onEnter,
-  onBack,
-}: {
-  step: Exclude<Step, "room">;
-  code: string;
-  setCode: (value: string) => void;
-  user: Profile;
-  participants: Profile[];
-  busy: boolean;
-  returning: boolean;
-  onJoin: () => void;
-  onCalibrate: () => void;
-  onContinue: () => void;
-  onEnter: () => void;
-  onBack: () => void;
-}) {
-  const steps: Array<Exclude<Step, "room">> = [
-    "join",
-    "profile",
-    "calibrate",
-    "ready",
-  ];
-  return (
-    <div className="qmv2-setup-wrap">
-      <section className="qmv2-setup-panel" aria-label="Spatial Salon setup">
-        <div className="qmv2-progress" aria-label={`Setup: ${step}`}>
-          {steps.map((item, index) => (
-            <span
-              key={item}
-              className={steps.indexOf(step) >= index ? "is-complete" : ""}
-            />
-          ))}
-        </div>
-
-        {step === "join" && (
-          <>
-            <div className="qmv2-setup-symbol">
-              <Mark />
-            </div>
-            <h2>Enter the Salon</h2>
-            <p>
-              Join a sample event room before the simulated headset setup
-              begins.
-            </p>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                onJoin();
-              }}
-            >
-              <label className="qmv2-code-label">
-                Event code
-                <input
-                  required
-                  pattern="[A-Z0-9]{3,8}"
-                  minLength={3}
-                  maxLength={8}
-                  value={code}
-                  onChange={(event) =>
-                    setCode(event.target.value.toUpperCase())
-                  }
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-              </label>
-              <Button className="qmv2-full" busy={busy} type="submit">
-                Join with {code || "code"}
-                <ArrowRight size={18} />
-              </Button>
-            </form>
-            <span className="qmv2-helper">
-              Use DEMO for the known browser simulation.
-            </span>
-          </>
-        )}
-
-        {step === "profile" && (
-          <>
-            <div className="qmv2-setup-symbol">
-              <Users size={28} />
-            </div>
-            <h2>Go as yourself.</h2>
-            <p>Here’s the introduction people in your room will see.</p>
-            <div className="setup-profile">
-              <Avatar profile={user} size="large" />
-              <h3>{user.name}</h3>
-              <p>{user.role}</p>
-              {canShow(user, "interests") && (
-                <Tags items={user.interests} limit={3} />
-              )}
-            </div>
-            <div className="profile-visibility">
-              <Info size={14} />
-              <span>
-                Only the profile fields you allow are shared in this room.
-              </span>
-            </div>
-            <Button className="qmv2-full" onClick={onContinue}>
-              That’s me. Continue
-              <ArrowRight size={18} />
-            </Button>
-            <TextAction
-              className="qmv2-text-button"
-              icon={<ArrowUpRight size={16} />}
-              onClick={() => go("profile")}
-            >
-              Edit my introduction
-            </TextAction>
-          </>
-        )}
-
-        {step === "calibrate" && (
-          <>
-            <div className="qmv2-calibration-visual" aria-hidden="true">
-              <div className="qmv2-calibration-ring qmv2-calibration-ring--outer" />
-              <div className="qmv2-calibration-ring qmv2-calibration-ring--inner" />
-              <ArrowUp size={44} />
-              <span />
-            </div>
-            <h2>{returning ? "Restore alignment" : "Share a point of view"}</h2>
-            <p>
-              In this browser demo, calibration only advances the simulated
-              shared origin.
-            </p>
-            <ol className="qmv2-calibration-list">
-              <li>
-                <Check size={17} /> Stand on the event’s demo marker.
-              </li>
-              <li>
-                <Check size={17} /> Face the printed directional arrow.
-              </li>
-              <li>
-                <Check size={17} /> Select calibrate to continue.
-              </li>
-            </ol>
-            <Button className="qmv2-full" busy={busy} onClick={onCalibrate}>
-              <Crosshair size={18} />
-              Calibrate simulation
-            </Button>
-            <span className="qmv2-helper">
-              No camera, room map, or headset tracking is used.
-            </span>
-          </>
-        )}
-
-        {step === "ready" && (
-          <>
-            <div className="qmv2-ready-symbol">
-              <Check size={34} />
-            </div>
-            <h2>Ready for the room</h2>
-            <p>One last check before sample participant cards appear.</p>
-            <ul className="qmv2-ready-list">
-              <li>
-                <Check size={17} /> Event code joined
-              </li>
-              <li>
-                <Check size={17} /> Profile confirmed
-              </li>
-              <li>
-                <Check size={17} /> Demo origin calibrated
-              </li>
-            </ul>
-            <div className="qmv2-demo-area-reminder">
-              <Compass size={19} />
-              <span>
-                Stay inside the marked demo area while exploring the simulated
-                room.
-              </span>
-            </div>
-            <div className="qmv2-ready-attendance">
-              <div className="qmv2-ready-people" aria-hidden="true">
-                {participants.slice(0, 4).map((profile) => (
-                  <Avatar profile={profile} key={profile.id} />
-                ))}
-              </div>
-              <span className="qmv2-helper">
-                {participants.length} sample participants available
-              </span>
-            </div>
-            <Button className="qmv2-full" onClick={onEnter}>
-              Enter Spatial Salon
-              <ArrowRight size={18} />
-            </Button>
-          </>
-        )}
-
-        {step !== "join" && (
-          <TextAction className="qmv2-back" icon={<ArrowLeft size={16} />} iconPosition="start" onClick={onBack}>
-            Back
-          </TextAction>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function ParticipantCard({
-  profile,
-  match,
-  tone,
-  distance,
-  position,
-  selected,
-  onOpen,
-}: {
-  profile: Profile;
-  match?: Match;
-  tone: CardTone;
-  distance: number;
-  position: number;
-  selected: boolean;
-  onOpen: () => void;
-}) {
-  const band = distanceBand(distance);
-  const label =
-    tone === "saved" ? "Saved" : tone === "matched" ? "Reason to meet" : null;
-  return (
-    <button
-      type="button"
-      className={`qmv2-card qmv2-card--${band} qmv2-card--${tone} qmv2-card--position-${position} ${selected ? "is-selected" : ""}`}
-      aria-label={`Open ${profile.name}. ${distance.toFixed(1)} simulated meters away.${label ? ` ${label}.` : ""}`}
-      onClick={onOpen}
-    >
-      {label && (
-        <span className="qmv2-card-label">
-          {tone === "saved" ? <Check size={15} /> : <Sparkles size={15} />}
-          {label}
-        </span>
-      )}
-      {band === "far" ? (
-        <div className="qmv2-card-far-name">
-          <strong>{firstName(profile)}</strong>
-          <span>{distance.toFixed(1)} m · simulated</span>
-        </div>
-      ) : (
-        <>
-          <div className="qmv2-card-person">
-            <Avatar profile={profile} />
-            <div>
-              <strong>{firstName(profile)}</strong>
-              <span>{profile.role}</span>
-            </div>
-            <ArrowUpRight size={18} />
-          </div>
-          {band === "near" && (
-            <div className="qmv2-card-detail">
-              {match ? (
-                <p>{match.reason}</p>
-              ) : canShow(profile, "interests") ? (
-                <Tags items={profile.interests} limit={2} />
-              ) : (
-                <p>Open this profile to learn more.</p>
-              )}
-            </div>
-          )}
-          <span className="qmv2-distance">
-            {distance.toFixed(1)} m · simulated
-          </span>
-        </>
-      )}
-      <span className="qmv2-card-tether" aria-hidden="true" />
-    </button>
-  );
-}
-
-function DrawerHeader({
-  title,
-  label,
-  onClose,
-}: {
-  title: string;
-  label?: string;
-  onClose: () => void;
-}) {
-  return (
-    <div className="qmv2-drawer-header">
-      <div>
-        {label && <span>{label}</span>}
-        <h2>{title}</h2>
-      </div>
-      <button
-        type="button"
-        className="qmv2-icon-button"
-        aria-label={`Close ${title}`}
-        onClick={onClose}
-      >
-        <X size={19} />
-      </button>
-    </div>
-  );
-}
-
-function ProfileDrawer({
-  profile,
-  match,
-  saved,
-  saving,
-  onClose,
-  onConversation,
-  onSave,
-  onTestDistance,
-}: {
-  profile: Profile;
-  match?: Match;
-  saved: boolean;
-  saving: boolean;
-  onClose: () => void;
-  onConversation: () => void;
-  onSave: () => void;
-  onTestDistance: () => void;
-}) {
-  return (
-    <aside
-      className="qmv2-drawer qmv2-profile-drawer"
-      aria-label={`${profile.name} profile`}
-    >
-      <div className="qmv2-drawer-header">
-        <span>
-          <Sparkles size={16} />
-          {match
-            ? "A reason to meet"
-            : saved
-              ? "Saved profile"
-              : "Nearby profile"}
-        </span>
-        <button
-          type="button"
-          className="qmv2-icon-button"
-          aria-label={`Close ${profile.name}`}
-          onClick={onClose}
-        >
-          <X size={19} />
-        </button>
-      </div>
-      <div className="qmv2-profile-lead">
-        <Avatar profile={profile} size="large" />
-        <div>
-          <h2>{profile.name}</h2>
-          <p>{profile.role}</p>
-        </div>
-      </div>
-      {canShow(profile, "bio") && profile.bio && (
-        <p className="qmv2-profile-bio">{profile.bio}</p>
-      )}
-      {match && (
-        <div className="qmv2-reason">
-          <Sparkles size={19} />
-          <div>
-            <p>{match.reason}</p>
-          </div>
-        </div>
-      )}
-      {canShow(profile, "interests") && profile.interests.length > 0 && (
-        <section className="qmv2-profile-section">
-          <h3>Curious about</h3>
-          <Tags items={profile.interests} />
-        </section>
-      )}
-      {canShow(profile, "skills") && profile.skills.length > 0 && (
-        <section className="qmv2-profile-section">
-          <h3>Can help with</h3>
-          <Tags items={profile.skills} />
-        </section>
-      )}
-      {canShow(profile, "lookingFor") && profile.lookingFor.length > 0 && (
-        <section className="qmv2-profile-section">
-          <h3>Would like to meet</h3>
-          <p>{profile.lookingFor.join(" · ")}</p>
-        </section>
-      )}
-      <div className="qmv2-profile-actions">
-        <Button variant="green" onClick={onConversation}>
-          <MessageCircle size={18} />
-          Start conversation
-        </Button>
-        <Button
-          variant="secondary"
-          busy={saving}
-          disabled={saved}
-          onClick={onSave}
-        >
-          {saved ? <Check size={18} /> : <ArrowUpRight size={18} />}
-          {saved ? "Saved" : "Save connection"}
-        </Button>
-      </div>
-      {saved && (
-        <span className="qmv2-saved-note">
-          <Check size={15} /> Saved to your website network
-        </span>
-      )}
-      <small className="qmv2-source-note">
-        Sample profile · browser-simulated distance and matching
-      </small>
-      <button
-        type="button"
-        className="qmv2-profile-distance"
-        onClick={onTestDistance}
-      >
-        <Settings2 size={15} /> Test simulated distance
-      </button>
-    </aside>
-  );
-}
-
-function ConversationView({
-  profile,
-  promptOpen,
-  saveStatus,
-  onDismissPrompt,
-}: {
-  profile: Profile;
-  promptOpen: boolean;
-  saveStatus: SaveStatus;
-  onDismissPrompt: () => void;
-}) {
-  return (
-    <section
-      className="qmv2-conversation"
-      aria-label={`Conversation with ${profile.name}`}
-    >
-      <div className="qmv2-conversation-person">
-        <Avatar profile={profile} size="large" />
-        <div>
-          <h2>Talking with {firstName(profile)}</h2>
-          <p>The rest of the simulated room is quiet.</p>
-        </div>
-        {saveStatus === "saved" && (
-          <span className="qmv2-mini-saved">
-            <Check size={15} /> Saved
-          </span>
-        )}
-      </div>
-      {promptOpen && (
-        <div className="qmv2-conversation-prompt">
-          <button
-            type="button"
-            className="qmv2-icon-button"
-            aria-label="Dismiss conversation prompt"
-            onClick={onDismissPrompt}
-          >
-            <X size={18} />
-          </button>
-          <span>Optional opening</span>
-          <p>“What inspired what you’re building?”</p>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function ConversationDock({
-  name,
-  saveStatus,
-  onSave,
-  onFinish,
-}: {
-  name: string;
-  saveStatus: SaveStatus;
-  onSave: () => void;
-  onFinish: () => void;
-}) {
-  return (
-    <nav
-      className="qmv2-dock qmv2-conversation-dock"
-      aria-label="Conversation actions"
-    >
-      <button
-        type="button"
-        disabled={saveStatus === "saved" || saveStatus === "saving"}
-        onClick={onSave}
-      >
-        {saveStatus === "saving" ? (
-          <LoaderCircle className="spin" size={19} />
-        ) : saveStatus === "saved" ? (
-          <Check size={19} />
-        ) : (
-          <ArrowUpRight size={19} />
-        )}
-        <span>{saveStatus === "saved" ? "Saved" : `Save ${name}`}</span>
-      </button>
-      <button type="button" className="is-primary" onClick={onFinish}>
-        <Check size={19} />
-        <span>Finish</span>
-      </button>
-    </nav>
-  );
-}
-
-function AmbientDock({
-  activePanel,
-  matching,
-  onPanel,
-  onMatch,
-}: {
-  activePanel: AmbientPanel;
-  matching: boolean;
-  onPanel: (panel: Exclude<AmbientPanel, null>) => void;
-  onMatch: () => void;
-}) {
-  return (
-    <nav className="qmv2-dock" aria-label="Spatial Salon controls">
-      <button
-        type="button"
-        className={activePanel === "event" ? "is-active" : ""}
-        aria-pressed={activePanel === "event"}
-        onClick={() => onPanel("event")}
-      >
-        <Info size={19} />
-        <span>Event</span>
-      </button>
-      <button
-        type="button"
-        className={activePanel === "people" ? "is-active" : ""}
-        aria-pressed={activePanel === "people"}
-        onClick={() => onPanel("people")}
-      >
-        <Users size={19} />
-        <span>People</span>
-      </button>
-      <button
-        type="button"
-        className="is-primary"
-        disabled={matching}
-        onClick={onMatch}
-      >
-        {matching ? (
-          <LoaderCircle className="spin" size={19} />
-        ) : (
-          <Sparkles size={19} />
-        )}
-        <span>{matching ? "Matching" : "Find matches"}</span>
-      </button>
-      <button
-        type="button"
-        className={activePanel === "recovery" ? "is-active" : ""}
-        aria-pressed={activePanel === "recovery"}
-        onClick={() => onPanel("recovery")}
-      >
-        <Settings2 size={19} />
-        <span>Demo</span>
-      </button>
-    </nav>
-  );
-}
-
-function EventDrawer({
-  eventName,
-  code,
-  joined,
-  calibrated,
-  profileName,
-  participantCount,
-  onClose,
-}: {
-  eventName: string;
-  code: string;
-  joined: boolean;
-  calibrated: boolean;
-  profileName: string;
-  participantCount: number;
-  onClose: () => void;
-}) {
-  const rows = [
-    ["Session", joined ? `${eventName} · ${code}` : "Not joined"],
-    ["Joined", joined ? "Yes" : "No"],
-    ["Calibrated", calibrated ? "Yes" : "No"],
-    ["Profile", profileName],
-    ["Participants", `${participantCount} sample profiles`],
-  ];
-  return (
-    <aside
-      className="qmv2-drawer qmv2-event-drawer"
-      aria-label="Event information"
-    >
-      <DrawerHeader
-        title="Event status"
-        label="Actual mock session"
-        onClose={onClose}
-      />
-      <dl>
-        {rows.map(([term, value]) => (
-          <div key={term}>
-            <dt>{term}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
-      </dl>
-      <small className="qmv2-source-note">
-        This panel reflects only the current local mock session.
-      </small>
-    </aside>
-  );
-}
-
-function PeopleDrawer({
-  participants,
-  matchFor,
-  savedIds,
-  onOpen,
-  onClose,
-}: {
-  participants: Profile[];
-  matchFor: (id: string) => Match | undefined;
-  savedIds: Set<string>;
-  onOpen: (id: string) => void;
-  onClose: () => void;
-}) {
-  return (
-    <aside
-      className="qmv2-drawer qmv2-people-drawer"
-      aria-label="People in this room"
-    >
-      <DrawerHeader
-        title="People in this room"
-        label="Sample participants"
-        onClose={onClose}
-      />
-      <p>Only three profiles appear in the photo composition at once.</p>
-      <div className="qmv2-people-list">
-        {participants.map((profile) => (
-          <button
-            type="button"
-            key={profile.id}
-            onClick={() => onOpen(profile.id)}
-          >
-            <Avatar profile={profile} />
-            <span>
-              <strong>{profile.name}</strong>
-              <small>{profile.role}</small>
-            </span>
-            {savedIds.has(profile.id) ? (
-              <Check size={18} />
-            ) : matchFor(profile.id) ? (
-              <Sparkles size={18} />
-            ) : (
-              <ChevronRight size={18} />
-            )}
-          </button>
-        ))}
-      </div>
-      <small className="qmv2-source-note">
-        Fictional demo profiles · not live headset participants
-      </small>
-    </aside>
-  );
-}
-
-function RecoveryDrawer({
-  participants,
-  distanceTarget,
-  distance,
-  monochrome,
-  sound,
-  busy,
-  reliability,
-  onClose,
-  onDistanceTarget,
-  onDistance,
-  onReconnect,
-  onRecalibrate,
-  onRun,
-  onKnownDemo,
-  onMonochrome,
-  onSound,
-  onSimulateConnection,
-  onSimulateAlignment,
-  onSimulateBoundary,
-  onChangeProfile,
-  onReset,
-  onLeave,
-}: {
-  participants: Profile[];
-  distanceTarget?: Profile;
-  distance: number;
-  monochrome: boolean;
-  sound: boolean;
-  busy: boolean;
-  reliability: "online" | ReliabilityKind;
-  onClose: () => void;
-  onDistanceTarget: (id: string) => void;
-  onDistance: (value: number) => void;
-  onReconnect: () => void;
-  onRecalibrate: () => void;
-  onRun: () => void;
-  onKnownDemo: () => void;
-  onMonochrome: () => void;
-  onSound: () => void;
-  onSimulateConnection: () => void;
-  onSimulateAlignment: () => void;
-  onSimulateBoundary: () => void;
-  onChangeProfile: () => void;
-  onReset: () => void;
-  onLeave: () => void;
-}) {
-  return (
-    <aside
-      className="qmv2-drawer qmv2-recovery-drawer"
-      aria-label="Demo and recovery controls"
-    >
-      <DrawerHeader
-        title="Demo & recovery"
-        label="Browser test harness"
-        onClose={onClose}
-      />
-      <p className="qmv2-drawer-intro">
-        Replay setup, matching, distance, and interruption states without
-        implying real headset sensing.
-      </p>
-
-      <section className="qmv2-distance-lab">
-        <h3>Simulated distance</h3>
-        {distanceTarget ? (
-          <>
-            <label>
-              Participant
-              <select
-                value={distanceTarget.id}
-                onChange={(event) => onDistanceTarget(event.target.value)}
-              >
-                {participants.map((profile) => (
-                  <option value={profile.id} key={profile.id}>
-                    {profile.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>
-                Card distance
-                <output>{distance.toFixed(1)} m</output>
-              </span>
-              <input
-                type="range"
-                min="0.8"
-                max="7"
-                step="0.1"
-                value={distance}
-                onChange={(event) => onDistance(Number(event.target.value))}
-              />
-            </label>
-            <small>
-              Near shows context, medium shows identity, and far shows a name.
-            </small>
-          </>
-        ) : (
-          <p>No remote sample profiles are available.</p>
-        )}
-      </section>
-
-      <div className="qmv2-control-list">
-        <ControlRow
-          icon={<RefreshCw size={19} />}
-          title="Reconnect"
-          detail={
-            reliability === "offline"
-              ? "Restore the mock connection"
-              : "Replay connection recovery"
-          }
-          disabled={busy}
-          onClick={onReconnect}
-        />
-        <ControlRow
-          icon={<Crosshair size={19} />}
-          title="Recalibrate"
-          detail="Reset the simulated shared origin"
-          disabled={busy || reliability === "offline"}
-          onClick={onRecalibrate}
-        />
-        <ControlRow
-          icon={<RefreshCw size={19} />}
-          title="Re-run matching"
-          detail="Use the current visible profile fields"
-          disabled={busy || reliability !== "online"}
-          onClick={onRun}
-        />
-        <ControlRow
-          icon={<Sparkles size={19} />}
-          title="Known demo match"
-          detail="Use the deterministic demo pairing"
-          disabled={busy || reliability !== "online"}
-          onClick={onKnownDemo}
-        />
-        <ControlRow
-          icon={<Users size={19} />}
-          title="Change profile"
-          detail="Open the website profile editor"
-          onClick={onChangeProfile}
-        />
-      </div>
-
-      <div className="qmv2-toggle-row">
-        <span>
-          <strong>Match sound</strong>
-          <small>Optional browser cue</small>
-        </span>
-        <span className="qmv2-toggle-control">
-          {sound ? <Volume2 size={17} /> : <VolumeX size={17} />}
-          <Toggle checked={sound} onChange={onSound} label="Match sound" />
-        </span>
-      </div>
-      <div className="qmv2-toggle-row">
-        <span>
-          <strong>Monochrome room</strong>
-          <small>Contrast preview only</small>
-        </span>
-        <Toggle
-          checked={monochrome}
-          onChange={onMonochrome}
-          label="Monochrome room"
-        />
-      </div>
-
-      <section className="qmv2-simulation-controls">
-        <h3>Developer simulations</h3>
-        <p>These controls test UI behavior, not physical safety systems.</p>
-        <div>
-          <button type="button" onClick={onSimulateConnection}>
-            Connection loss
-          </button>
-          <button type="button" onClick={onSimulateAlignment}>
-            Alignment loss
-          </button>
-          <button type="button" onClick={onSimulateBoundary}>
-            Leave demo area
-          </button>
-        </div>
-      </section>
-
-      <div className="qmv2-control-list qmv2-control-list--closing">
-        <ControlRow
-          icon={<RotateCcw size={19} />}
-          title="Reset demo"
-          detail="Restore the seeded local session"
-          disabled={busy}
-          onClick={onReset}
-        />
-        <ControlRow
-          icon={<LogOut size={19} />}
-          title="Leave Spatial Salon"
-          detail="Review this local session first"
-          disabled={busy}
-          onClick={onLeave}
-        />
-      </div>
-    </aside>
-  );
-}
-
-function ControlRow({
-  icon,
-  title,
-  detail,
-  disabled,
-  onClick,
-}: {
-  icon: ReactNode;
-  title: string;
-  detail: string;
-  disabled?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button type="button" disabled={disabled} onClick={onClick}>
-      {icon}
-      <span>
-        <strong>{title}</strong>
-        <small>{detail}</small>
-      </span>
-      <ChevronRight size={17} />
-    </button>
-  );
-}
-
-function ReliabilityState({
-  icon,
-  title,
-  description,
-  action,
-  onAction,
-}: {
-  icon: ReactNode;
-  title: string;
-  description: string;
-  action: string;
-  onAction: () => void;
-}) {
-  return (
-    <section className="qmv2-reliability" aria-live="polite">
-      {icon}
-      <h2>{title}</h2>
-      <p>{description}</p>
-      <Button onClick={onAction}>
-        {action}
-        <ArrowRight size={17} />
-      </Button>
-      <small>Browser simulation</small>
-    </section>
-  );
-}
-
-function Recap({
-  savedProfiles,
-  conversationCount,
-  busy,
-  onBack,
-  onLeaveHome,
-  onLeaveNetwork,
-}: {
-  savedProfiles: Profile[];
-  conversationCount: number;
-  busy: boolean;
-  onBack: () => void;
-  onLeaveHome: () => void;
-  onLeaveNetwork: () => void;
-}) {
-  return (
-    <section className="qmv2-recap" aria-label="Session recap">
-      <TextAction className="qmv2-back" icon={<ArrowLeft size={16} />} iconPosition="start" onClick={onBack}>
-        Return to room
-      </TextAction>
-      <div className="qmv2-ready-symbol">
-        <Check size={34} />
-      </div>
-      <h2>Your Salon recap</h2>
-      <p>
-        {conversationCount === 1
-          ? "1 conversation completed in this browser session."
-          : `${conversationCount} conversations completed in this browser session.`}
-      </p>
-      <div className="qmv2-recap-saved">
-        <h3>Saved connections</h3>
-        {savedProfiles.length > 0 ? (
-          savedProfiles.map((profile) => (
-            <div key={profile.id}>
-              <Avatar profile={profile} />
-              <span>
-                <strong>{profile.name}</strong>
-                <small>{profile.role}</small>
-              </span>
-              <Check size={17} />
-            </div>
-          ))
-        ) : (
-          <p>No connections were saved in your current website network.</p>
-        )}
-      </div>
-      <div className="qmv2-recap-actions">
-        <Button busy={busy} onClick={onLeaveNetwork}>
-          View website network
-          <ArrowUpRight size={17} />
-        </Button>
-        <Button variant="secondary" busy={busy} onClick={onLeaveHome}>
-          Leave to overview
-        </Button>
-      </div>
-      <small className="qmv2-source-note">
-        Leaving ends the room session while preserving your profile and saved
-        connections.
-      </small>
-    </section>
-  );
+  </PreviewPanel>;
 }

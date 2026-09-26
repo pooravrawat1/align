@@ -27,7 +27,7 @@ const { createCheckpointScroll } = await import('../src/checkpointScroll.ts');
 const { jobs } = await import(clockUrl);
 hooks.deregister();
 
-function harness(resolveMotion) {
+function harness(resolveMotion, nativeAfter) {
   jobs.length = 0;
   const originals = new Map(['window', 'document', 'innerHeight', 'Node', 'Element', 'performance'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
   const listeners = new Map();
@@ -46,10 +46,11 @@ function harness(resolveMotion) {
   };
   const values = { window, document: { documentElement: { scrollHeight: 4800, clientWidth: 1200 } }, innerHeight: 800, Node: Element, Element, performance: { now: () => now } };
   for (const [key, value] of Object.entries(values)) Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
-  const controller = createCheckpointScroll(root, () => [0, 1000, 2000, 3000], resolveMotion);
+  const controller = createCheckpointScroll(root, () => [0, 1000, 2000, 3000], resolveMotion, nativeAfter);
   const emit = (type, details) => {
     const event = { target: root, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }, ...details };
     for (const fn of listeners.get(type) ?? []) fn(event);
+    return event;
   };
   const active = kind => jobs.findLast(job => !job.killed && job.kind === kind);
   const complete = kind => {
@@ -73,6 +74,42 @@ function harness(resolveMotion) {
     },
   };
 }
+
+test('product sections release native scrolling and returning to the boundary restores chapter travel', () => {
+  const h = harness(undefined, () => 3000);
+  try {
+    h.window.scrollY = 3000;
+    assert.equal(h.emit('wheel', { deltaY: 80, deltaX: 0, deltaMode: 0 }).defaultPrevented, false);
+    h.window.scrollY = 3500;
+    assert.equal(h.emit('keydown', { key: 'ArrowUp' }).defaultPrevented, false);
+    assert.equal(h.emit('wheel', { deltaY: -80, deltaX: 0, deltaMode: 0 }).defaultPrevented, false);
+    assert.equal(h.active('travel'), undefined);
+    h.window.scrollY = 3000;
+    h.wheel(-80, 500);
+    assert.equal(h.active('travel').vars.top, 2000);
+  } finally { h.close(); }
+});
+
+test('final cinematic landing releases the very next gesture without a hold', () => {
+  const h = harness(undefined, () => 3000);
+  try {
+    h.window.scrollY = 2000;
+    h.wheel(80, 0);
+    h.complete('travel');
+    assert.equal(h.active('hold'), undefined);
+    assert.equal(h.emit('wheel', { deltaY: 80, deltaX: 0, deltaMode: 0 }).defaultPrevented, false);
+  } finally { h.close(); }
+});
+
+test('End travels to the cinematic boundary before native document navigation', () => {
+  const h = harness(undefined, () => 3000);
+  try {
+    assert.equal(h.emit('keydown', { key: 'End' }).defaultPrevented, true);
+    assert.equal(h.active('travel').vars.top, 3000);
+    h.complete('travel');
+    assert.equal(h.emit('keydown', { key: 'End' }).defaultPrevented, false);
+  } finally { h.close(); }
+});
 
 test('fresh gestures queue at most one chapter and execute only after landing', () => {
   const h = harness();

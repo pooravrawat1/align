@@ -111,3 +111,73 @@ test('only name is required; optional fields may clear; routes preserve the sett
   assert.match(validateSection({ ...source, name: '  ' }, 'about').name, /name/);
   assert.equal(profileSectionFromHash('#/settings'), 'settings'); assert.equal(profileSectionFromHash('#/profile?section=focus'), 'focus'); assert.equal(profileSectionFromHash('#/profile?section=invalid'), 'about');
 });
+
+test('event goals restore, save with sharing, and discard through the existing focus draft', async () => {
+  const source = profile(), storage = memory(), service = api(source);
+  const editor = new ProfileEditor(source, 'goals', storage);
+  editor.change('goals', ['Collaboration', 'Feedback']);
+  editor.share('goals', false);
+  const restored = new ProfileEditor(source, 'goals', storage);
+  assert.deepEqual(restored.getSnapshot().draft.goals, ['Collaboration', 'Feedback']);
+  assert.equal(restored.getSnapshot().draft.visibility.goals, false);
+  assert.equal(await restored.save('focus', service.act), true);
+  assert.deepEqual(service.saved.goals, ['Collaboration', 'Feedback']);
+  assert.equal(service.saved.visibility.goals, false);
+  restored.change('goals', ['Learning']);
+  restored.discard('focus');
+  assert.deepEqual(restored.getSnapshot().draft.goals, ['Collaboration', 'Feedback']);
+  restored.change('goals', ['One', 'Two', 'Three', 'Four']);
+  assert.equal(await restored.save('focus', service.act), false);
+  assert.match(restored.getSnapshot().errors.goals, /three/);
+});
+
+test('domains and experiences recover, validate, save visibility, rebase, and discard with focus', async () => {
+  const source = profile(), storage = memory(), service = api(source);
+  const editor = new ProfileEditor(source, 'matching-fields', storage);
+  editor.typeTopic('domains', 'Accessibility');
+  editor.change('experiences', [{ category: 'professional', kind: 'conference', label: 'Inclusive Design Summit', year: 2024 }]);
+  editor.share('domains', false); editor.share('experiences', false);
+  const restored = new ProfileEditor(source, 'matching-fields', storage);
+  assert.equal(restored.getSnapshot().topicText.domains, 'Accessibility');
+  assert.deepEqual(restored.getSnapshot().draft.experiences, [{ category: 'professional', kind: 'conference', label: 'Inclusive Design Summit', year: 2024 }]);
+  assert.equal(await restored.save('focus', service.act), true);
+  assert.deepEqual(service.saved.domains, [...source.domains, 'Accessibility']);
+  assert.equal(service.saved.visibility.domains, false);
+  assert.equal(service.saved.visibility.experiences, false);
+  restored.change('experiences', [{ category: 'personal', kind: 'hiking', label: 'Local trails' }]);
+  restored.rebase({ ...service.saved, role: 'External headline' });
+  assert.equal(restored.getSnapshot().draft.role, 'External headline');
+  assert.equal(restored.getSnapshot().draft.experiences[0].label, 'Local trails');
+  restored.discard('focus');
+  assert.deepEqual(restored.getSnapshot().draft.experiences, service.saved.experiences);
+});
+
+test('experience validation enforces count, required text, lengths, categories, and year bounds', () => {
+  const source = profile(), currentYear = new Date().getFullYear();
+  assert.match(validateSection({ ...source, experiences: Array.from({ length: 21 }, () => ({ category: 'personal', kind: 'trip', label: 'Trip' })) }, 'focus').experiences, /20/);
+  for (const invalid of [
+    { category: 'work', kind: 'conference', label: 'Event' },
+    { category: 'professional', kind: '', label: 'Event' },
+    { category: 'personal', kind: 'trip', label: '' },
+    { category: 'personal', kind: 'x'.repeat(81), label: 'Trip' },
+    { category: 'personal', kind: 'trip', label: 'Trip', year: 1899 },
+    { category: 'personal', kind: 'trip', label: 'Trip', year: currentYear + 1 },
+  ]) assert.ok(validateSection({ ...source, experiences: [invalid] }, 'focus').experiences);
+  assert.deepEqual(validateSection({ ...source, experiences: [{ category: 'personal', kind: 'trip', label: 'Trip' }, { category: 'professional', kind: 'conference', label: 'Event', year: currentYear }] }, 'focus'), {});
+});
+
+test('malformed stored experiences are ignored safely while incomplete typed rows recover', () => {
+  const source = profile();
+  const malformedStorage = memory();
+  malformedStorage.setItem('align-profile-draft:v1:malformed:alex', JSON.stringify({ patch: { experiences: [{ category: 'professional', kind: null, label: 'Event' }] } }));
+  const malformed = new ProfileEditor(source, 'malformed', malformedStorage);
+  assert.deepEqual(malformed.getSnapshot().draft.experiences, source.experiences);
+  assert.doesNotThrow(() => validateSection({ ...source, experiences: [{ category: 'professional', kind: null, label: 'Event' }] }, 'focus'));
+  assert.ok(validateSection({ ...source, experiences: [{ category: 'professional', kind: null, label: 'Event' }] }, 'focus').experiences);
+
+  const partialStorage = memory();
+  partialStorage.setItem('align-profile-draft:v1:partial:alex', JSON.stringify({ patch: { experiences: [{ category: 'personal', kind: '', label: '', year: 2024 }] } }));
+  const partial = new ProfileEditor(source, 'partial', partialStorage);
+  assert.deepEqual(partial.getSnapshot().draft.experiences.at(-1), { category: 'personal', kind: '', label: '', year: 2024 });
+  assert.ok(validateSection(partial.getSnapshot().draft, 'focus').experiences);
+});

@@ -1,7 +1,15 @@
+import { readFileSync } from 'node:fs';
 import { normalize } from './profiles.mjs';
 
 export const RUBRIC_VERSION = 'experience-v1';
-export const MATCH_THRESHOLD = 70;
+const matchingPolicy = JSON.parse(
+  readFileSync(new URL('../../assets/matching-policy.json', import.meta.url), 'utf8'),
+);
+if (!Number.isInteger(matchingPolicy.matchThreshold)
+  || matchingPolicy.matchThreshold < 0 || matchingPolicy.matchThreshold > 100) {
+  throw new Error('matching-policy.json has an invalid matchThreshold');
+}
+export const MATCH_THRESHOLD = matchingPolicy.matchThreshold;
 export const NETWORKING_MAX = Object.freeze({
   skillToNeed: 30,
   networkingGoals: 25,
@@ -116,18 +124,25 @@ export function experienceRoutes(profileA, profileB) {
 }
 
 export function chooseResult(profileA, profileB, routes, networking = { score: 0, reason: '' }) {
+  return chooseRoute(profileA, profileB, routes, networking).result;
+}
+
+export function chooseRoute(profileA, profileB, routes, networking = { score: 0, reason: '' }) {
   const candidates = [
-    { ...routes.professional, priority: 0 },
-    { ...networking, priority: 1 },
-    { ...routes.personal, priority: 2 },
+    { ...routes.professional, route: 'professional', priority: 0 },
+    { ...networking, route: 'networking', priority: 1 },
+    { ...routes.personal, route: 'personal', priority: 2 },
   ];
   candidates.sort((left, right) => right.score - left.score || left.priority - right.priority);
   const winner = candidates[0];
   return {
-    userA: profileA.userId,
-    userB: profileB.userId,
-    compatible: winner.score >= MATCH_THRESHOLD,
-    score: winner.score,
-    reason: winner.score >= MATCH_THRESHOLD ? winner.reason : '',
+    route: winner.route,
+    result: {
+      userA: profileA.userId,
+      userB: profileB.userId,
+      compatible: winner.score >= MATCH_THRESHOLD,
+      score: winner.score,
+      reason: winner.score >= MATCH_THRESHOLD ? winner.reason : '',
+    },
   };
 }

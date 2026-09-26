@@ -15,25 +15,23 @@ test('the shared photo transform covers the viewport throughout the approach', (
   }
 });
 
-test('the quiet Maya marker remains anchored and expands into the saved card', () => {
+test('Maya expands directly from her identity into one combined connection card', () => {
   for (const [width, height] of sizes.filter(([width]) => width >= 900)) {
-    const quiet = journeyState(JOURNEY.quiet);
-    const image = roomLayout(width, height, 1672 / 941, quiet.camera);
-    const chip = matchLayout(width, height, image, quiet);
-    assert.equal(chip.width, 84);
-    assert.equal(chip.height, 28);
-    assert.equal(quiet.identityDetail, 0);
-    assert.equal(quiet.chip, 1);
-    assert.ok(Math.abs(chip.x - (image.left + image.width * .586)) <= 26.001);
+    const initial = journeyState(0);
+    const image = roomLayout(width, height, 1672 / 941, initial.camera);
+    const identity = matchLayout(width, height, image, initial);
+    assert.equal(identity.width, 218);
+    assert.equal(identity.height, 76);
     const saved = matchLayout(width, height, image, journeyState(JOURNEY.network));
-    assert.equal(saved.width, 340);
-    assert.equal(saved.height, 274);
+    assert.equal(saved.width, 380);
+    assert.equal(saved.height, 448);
     for (let i = 0; i <= 200; i++) {
       const p = i / 200;
       const state = journeyState(p);
       const rect = matchLayout(width, height, roomLayout(width, height, 1672 / 941, state.camera), state);
       assert.ok(Object.values(state).every(value => Number.isFinite(value) && value >= -1e-12 && value <= 1 + 1e-12));
-      assert.ok(rect.width >= 84 && rect.height >= 28);
+      assert.ok(rect.width >= 218 && rect.height >= 76);
+      assert.equal(state.chip, 0, 'the combined chapter never collapses to an intermediate marker');
       assert.ok(rect.x >= 0 && rect.x + rect.width <= width);
       assert.ok(rect.y >= 0 && rect.y + rect.height <= height);
       assert.deepEqual(journeyState(p), state, 'revisiting a frame does not depend on travel history');
@@ -41,8 +39,8 @@ test('the quiet Maya marker remains anchored and expands into the saved card', (
   }
 });
 
-test('optical travel finishes before reason text, and saved text follows the shell', () => {
-  assert.ok(JOURNEY_TRACKS.lens[1] <= JOURNEY_TRACKS.reasonIn[0]);
+test('optical travel and card expansion finish before combined details arrive', () => {
+  assert.ok(JOURNEY_TRACKS.lens[1] <= JOURNEY_TRACKS.savedIn[0]);
   assert.ok(JOURNEY_TRACKS.savedShell[1] <= JOURNEY_TRACKS.savedIn[0]);
   assert.equal(JOURNEY.network, 1, 'the next gesture releases the sticky stage immediately');
   assert.equal(journeyState(JOURNEY.discover).approach, 1);

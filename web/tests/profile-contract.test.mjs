@@ -73,6 +73,8 @@ test('shared profile contract has the approved bounded shape', () => {
     },
     topicLimit: 20,
     topicItemLimit: 80,
+    experienceLimit: 20,
+    experienceYearMin: 1900,
     photo: {
       maxSourceBytes: 10485760,
       maxBytes: 262144,
@@ -84,6 +86,9 @@ test('shared profile contract has the approved bounded shape', () => {
       interests: true,
       skills: true,
       lookingFor: true,
+      goals: true,
+      domains: true,
+      experiences: true,
       contact: false,
       linkedin: false,
       website: false,
@@ -187,7 +192,7 @@ test('avatar-only patches preserve matches and seed fixture matching', async () 
   });
   assert.equal(matched.status, 200);
   const fixture = matched.value.matches.find(match => match.userA === 'alex' && match.userB === 'maya');
-  assert.equal(fixture.source, 'precomputed');
+  assert.equal(fixture.source, 'rules');
 
   const avatarSaved = await api('/api/profile', {
     method: 'PATCH',
@@ -205,7 +210,7 @@ test('avatar-only patches preserve matches and seed fixture matching', async () 
   assert.equal(forced.status, 200);
   assert.equal(
     forced.value.matches.find(match => match.userA === 'alex' && match.userB === 'maya').source,
-    'precomputed',
+    'rules',
   );
 });
 
@@ -278,4 +283,29 @@ test('profile API enforces shared topic count and item limits', async () => {
   const unchanged = await api('/api/bootstrap', { sessionId });
   assert.deepEqual(currentProfile(unchanged.value).interests, topics);
   assert.deepEqual(currentProfile(unchanged.value).skills, [acceptedItem]);
+});
+
+test('profile API persists bounded domains and structured experiences atomically', async () => {
+  const login = await api('/api/login', { method: 'POST', body: {} });
+  const sessionId = login.value.session.id;
+  const domains = ['Assistive technology', 'Wearable computing'];
+  const experiences = [{ category: 'professional', kind: 'hackathon', label: 'Build Together', year: 2025 }, { category: 'personal', kind: 'hiking', label: 'Trail day' }];
+  const accepted = await api('/api/profile', { method: 'PATCH', sessionId, body: { domains, experiences, visibility: { domains: false, experiences: false } } });
+  assert.equal(accepted.status, 200, JSON.stringify(accepted.value));
+  assert.deepEqual(currentProfile(accepted.value).domains, domains);
+  assert.deepEqual(currentProfile(accepted.value).experiences, experiences);
+  assert.equal(currentProfile(accepted.value).visibility.domains, false);
+  for (const invalid of [
+    { experiences: Array.from({ length: contract.experienceLimit + 1 }, () => experiences[0]) },
+    { experiences: [{ category: 'other', kind: 'event', label: 'Event' }] },
+    { experiences: [{ category: 'personal', kind: '', label: 'Event' }] },
+    { experiences: [{ category: 'personal', kind: 'trip', label: 'Event', year: 1899 }] },
+    { experiences: [{ category: 'personal', kind: 'trip', label: 'Event', year: new Date().getFullYear() + 1 }] },
+  ]) {
+    const rejected = await api('/api/profile', { method: 'PATCH', sessionId, body: { ...invalid, bio: 'must not save' } });
+    assert.equal(rejected.status, 400, JSON.stringify(invalid));
+  }
+  const unchanged = await api('/api/bootstrap', { sessionId });
+  assert.deepEqual(currentProfile(unchanged.value).experiences, experiences);
+  assert.notEqual(currentProfile(unchanged.value).bio, 'must not save');
 });

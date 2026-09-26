@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { ArrowRight, Check, X } from "lucide-react";
+import { ArrowRight, X } from "lucide-react";
 import profileContract from "../shared/profile-contract.json";
 import { Brand, Button, Chip } from "./ui";
 import type { Profile } from "./types";
@@ -189,9 +189,9 @@ export function Onboarding({ profiles, initialProfileId, busy, onComplete, error
             <label>LinkedIn profile<input type="url" name="linkedin" maxLength={stringLimits.linkedin} placeholder="https://www.linkedin.com/in/you" value={draft.linkedin} onChange={(event) => update("linkedin", event.target.value)} /></label>
           </>}
           {step === 2 && <>
-            <Tags label="Interests" placeholder="Add an interest" values={draft.interests} onChange={(values) => update("interests", values)} input={draft.tagInputs.interests} onInputChange={(value) => update("tagInputs", { ...draft.tagInputs, interests: value })} />
-            <Tags label="I'm looking for help with" placeholder="Add what you need" values={draft.lookingFor} onChange={(values) => update("lookingFor", values)} input={draft.tagInputs.lookingFor} onInputChange={(value) => update("tagInputs", { ...draft.tagInputs, lookingFor: value })} />
-            <div className="entry-room"><span className="entry-room-mark" aria-hidden="true">B</span><div><strong>The Builders Room</strong><span>Demo room · Code DEMO</span></div><Check size={16} aria-label="Selected" /></div>
+            <Tags label="Interests" placeholder="Add interest…" values={draft.interests} onChange={(values) => update("interests", values)} input={draft.tagInputs.interests} onInputChange={(value) => update("tagInputs", { ...draft.tagInputs, interests: value })} />
+            <Tags label="I'm looking for help with" placeholder="Add a need…" values={draft.lookingFor} onChange={(values) => update("lookingFor", values)} input={draft.tagInputs.lookingFor} onInputChange={(value) => update("tagInputs", { ...draft.tagInputs, lookingFor: value })} />
+            <div className="entry-room"><div><strong>Your next step</strong><span>Your event and introduction are waiting on Home.</span></div><ArrowRight size={16} aria-hidden="true" /></div>
           </>}
         </fieldset>
         {(validationError || error) && <p className="field-error" role="alert">{validationError || error}</p>}

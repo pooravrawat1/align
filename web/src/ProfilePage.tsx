@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Check, ContactRound, Database, Download, Eye, EyeOff, Focus, Glasses, LogOut, Pencil, Plus, SlidersHorizontal, UserRound, X } from "lucide-react";
 import contract from "../shared/profile-contract.json";
-import type { Action, Profile, State } from "./types";
+import type { Action, Profile, ProfileExperience, State } from "./types";
 import { Avatar, Button, Chip, PageHeader, PanelHeader, TextAction, Toggle } from "./ui";
 import { NearbyProfile, ProfilePreview } from "./ProfilePreview";
 import { prepareProfilePhoto } from "./profilePhoto";
@@ -12,6 +12,7 @@ import "./ProfilePage.css";
 
 const labels = { about: "About", focus: "Focus", contact: "Contact", settings: "Settings" };
 const skills = ["Computer vision", "Interaction design", "Frontend development", "Prototyping", "Embedded systems", "Python", "Unity"];
+const domains = ["Assistive technology", "Climate tech", "Creative tools", "Education", "Healthcare", "Robotics"];
 interface Props {
   state: State; user: Profile; act: Action; busy: boolean; notify: (message: string) => void;
   solid: boolean; setSolid: (value: boolean) => void; logout: () => void;
@@ -134,7 +135,17 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
               <PanelHeading title="Your focus" icon={<Focus size={19} />} description="Help the right people find a reason to connect." />
               <div className="pe-field"><label htmlFor="pe-bio">Current focus<span className="pe-optional">Optional</span></label><textarea ref={focusRef} id="pe-bio" name="bio" rows={4} maxLength={contract.stringLimits.bio} value={draft.bio} placeholder="What are you working on or exploring?" aria-invalid={!!errors.bio} aria-describedby="pe-bio-help pe-bio-error" onChange={event => editor.change("bio", event.target.value)} /><div className="pe-field-meta"><span id="pe-bio-help">This also appears in Your focus on Home.</span><span>{draft.bio.length}/{contract.stringLimits.bio}</span></div><FieldError field="bio" message={errors.bio} />{share("bio", "Share current focus")}</div>
               {([ ["interests", "Interests", "Topics you’d enjoy talking about.", ["Robotics", "Design", "Open source", "Spatial computing"]], ["skills", "I can help with", "Skills or experience you can share.", skills], ["lookingFor", "I’m looking for help with", "Expertise you’d like to meet someone for.", skills] ] as const).map(([key, label, help, suggestions]) => <div className="pe-focus-group" key={key}><TopicInput field={key} label={label} help={help} suggestions={suggestions} editor={editor} snapshot={snapshot} />{share(key, `Share ${label}`)}</div>)}
-              <p className="pe-help">Only shared interests and skills are used for demo matching.</p>
+              <fieldset className="pe-goals"><legend>What would make this event useful?<span className="pe-optional">Optional</span></legend><p className="pe-help">Choose up to three goals.</p><div className="pe-goal-options">{[...new Set(["Collaboration", "Feedback", "Learning", "Exchanging expertise", "Finding a team", ...(draft.goals ?? [])])].map(goal => {
+                const goals = draft.goals ?? [];
+                const selected = goals.includes(goal);
+                return <button key={goal} type="button" className="chip chip--interactive" aria-pressed={selected} disabled={!selected && goals.length >= 3} onClick={() => editor.change("goals", selected ? goals.filter(value => value !== goal) : [...goals, goal])}>{goal}</button>;
+              })}</div><FieldError field="goals" message={errors.goals} />{share("goals", "Share event goals")}</fieldset>
+              <div className="pe-focus-group"><TopicInput field="domains" label="Domains" help="Fields or industries where you have context." suggestions={domains} editor={editor} snapshot={snapshot} />{share("domains", "Share domains")}</div>
+              <div className="pe-focus-group pe-experiences"><div className="pe-section-label"><div><h3>Past experiences<span className="pe-optional">Optional</span></h3><p className="pe-help">Add professional or personal experiences that may create common ground.</p></div><button type="button" className="pe-add-experience" disabled={(draft.experiences?.length ?? 0) >= contract.experienceLimit} onClick={() => editor.change("experiences", [...(draft.experiences ?? []), { category: "professional", kind: "", label: "" }])}><Plus size={16} />Add experience</button></div>
+                {(draft.experiences ?? []).map((experience, index) => <ExperienceRow key={index} experience={experience} index={index} onChange={next => editor.change("experiences", (draft.experiences ?? []).map((item, itemIndex) => itemIndex === index ? next : item))} onRemove={() => editor.change("experiences", (draft.experiences ?? []).filter((_, itemIndex) => itemIndex !== index))} invalid={!!errors.experiences} />)}
+                <FieldError field="experiences" message={errors.experiences} />{share("experiences", "Share past experiences")}
+              </div>
+              <p className="pe-help">Shared profile information is used to explain common ground and compatibility with Gemini. Contact details and private notes are excluded.</p>
             </>}
             {section === "contact" && <>
               <PanelHeading title="Contact details" icon={<ContactRound size={19} />} description="Choose how saved connections can reach you." />
@@ -163,7 +174,7 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
           </section>
           <section className="pe-panel pe-settings-panel"><PanelHeading title="Data and session" icon={<Database size={19} />} />
             <Setting title="Export your information" description="Download your saved profile and connections as JSON."><Button variant="secondary" onClick={exportData}><Download size={16} />Export</Button></Setting>
-            <Setting title="Clear event data" description="Remove saved demo connections and matches, and leave the room. Keep your profile."><Button variant="secondary" disabled={!state.session?.code} busy={busy} onClick={async () => { try { await act("event-data/clear"); notify("Event data cleared. Your profile is still here."); } catch { /* App reports the action error. */ } }}>Clear event data</Button></Setting>
+            <Setting title="Clear event data" description="Remove this event’s saved connections and matches, and leave the room. Keep your profile."><Button variant="secondary" disabled={!state.session?.activeEventId && !state.session?.code} busy={busy} onClick={async () => { try { await act("event-data/clear"); notify("Event data cleared. Your profile is still here."); } catch { /* App reports the action error. */ } }}>Clear event data</Button></Setting>
             <Setting title="Sign out" description="Leave your temporary demo session."><Button variant="secondary" busy={busy} onClick={logout}><LogOut size={16} />Sign out</Button></Setting>
           </section>
           <p className="pe-demo-note">Profiles and sharing choices belong to this local demo. They aren’t a permanent account.</p>
@@ -175,6 +186,17 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
   </div>;
 }
 
+function ExperienceRow({ experience, index, onChange, onRemove, invalid }: { experience: ProfileExperience; index: number; onChange: (experience: ProfileExperience) => void; onRemove: () => void; invalid: boolean }) {
+  return <div className="pe-experience-row">
+    <div className="pe-experience-heading"><strong>Experience {index + 1}</strong><button type="button" aria-label={`Remove experience ${index + 1}`} onClick={onRemove}><X size={16} />Remove</button></div>
+    <div className="pe-experience-grid">
+      <label>Category<select aria-label={`Experience ${index + 1} category`} value={experience.category} onChange={event => onChange({ ...experience, category: event.target.value as ProfileExperience["category"] })}><option value="professional">Professional</option><option value="personal">Personal</option></select></label>
+      <label>Kind<input aria-label={`Experience ${index + 1} kind`} value={experience.kind} maxLength={contract.topicItemLimit} placeholder="e.g. Hackathon" aria-invalid={invalid} onChange={event => onChange({ ...experience, kind: event.target.value })} /></label>
+      <label className="pe-experience-label">Label<input aria-label={`Experience ${index + 1} label`} value={experience.label} maxLength={contract.topicItemLimit} placeholder="Name or short description" aria-invalid={invalid} onChange={event => onChange({ ...experience, label: event.target.value })} /></label>
+      <label>Year<span className="pe-optional">Optional</span><input type="number" inputMode="numeric" aria-label={`Experience ${index + 1} year`} value={experience.year ?? ""} min={contract.experienceYearMin} max={new Date().getFullYear()} aria-invalid={invalid} onChange={event => onChange({ ...experience, year: event.target.value === "" ? undefined : Number(event.target.value) })} /></label>
+    </div>
+  </div>;
+}
 function PanelHeading({ title, description, icon }: { title: string; description?: string; icon: ReactNode }) {
   return <PanelHeader className="pe-panel-heading" title={title} description={description} icon={icon} />;
 }
@@ -185,7 +207,7 @@ function FieldError({ field, message }: { field: EditableField; message?: string
   return <span id={`pe-${field}-error`} className="pe-field-error" role={message ? "alert" : undefined}>{message}</span>;
 }
 function TopicInput({ field, label, help, suggestions, editor, snapshot }: { field: TopicField; label: string; help: string; suggestions: readonly string[]; editor: ProfileEditor; snapshot: EditorSnapshot }) {
-  const values = snapshot.draft[field];
+  const values = snapshot.draft[field] ?? [];
   const text = snapshot.topicText[field];
   return <div className="pe-field pe-topic-field"><label htmlFor={`pe-${field}`}>{label}</label><p className="pe-help" id={`pe-${field}-help`}>{help}</p>
     <div className="pe-topic-control"><div className="pe-topic-tags">{values.map((value, index) => <Chip key={`${value}-${index}`} className="chip--editable pe-topic-tag">{value}<button type="button" aria-label={`Remove ${value} from ${label}`} onClick={() => editor.change(field, values.filter((_, i) => i !== index))}><X size={14} /></button></Chip>)}</div>

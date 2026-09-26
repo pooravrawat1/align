@@ -21,6 +21,7 @@ export function DesignSystemPage({ user }: { user: Profile }) {
           <div><span>Body</span><p className="ds-type-body">A little context makes the first conversation easier.</p></div>
           <div><span>Supporting</span><p className="ds-type-supporting">People with something in common</p></div>
           <div><span>Metadata</span><p className="ds-type-metadata">September 26 · The Builders Room</p></div>
+          <div><span>Entry hint · inherits control size</span><input aria-label="Entry hint example" placeholder="Add interest…" /></div>
         </div>
       </section>
 
@@ -29,9 +30,25 @@ export function DesignSystemPage({ user }: { user: Profile }) {
         <div className="ds-surface-grid">
           <div className="ds-surface-swatch ds-surface-swatch--canvas"><strong>Canvas</strong><span>#101113</span></div>
           <div className="ds-surface-swatch ds-surface-swatch--panel"><strong>Panel</strong><span>#191A1D</span></div>
-          <div className="ds-surface-swatch ds-surface-swatch--subtle"><strong>Nested</strong><span>#202125</span></div>
+          <div className="ds-surface-swatch ds-surface-swatch--subtle"><strong>Nested</strong><span>Raised charcoal · luminous edge · soft shadow</span></div>
           <div className="ds-surface-swatch ds-surface-swatch--raised"><strong>Raised control</strong><span>#222428</span></div>
           <div className="ds-surface-swatch ds-surface-swatch--selected"><strong>Selected</strong><span>#2B2D32</span></div>
+        </div>
+      </section>
+
+      <section className="ds-reference-section" aria-labelledby="ds-accent-title">
+        <PanelHeader title="Accent color" description="One jade, reserved for meaningful positive state." headingId="ds-accent-title" />
+        <div className="ds-accent-role">
+          <span className="ds-accent-swatch" aria-hidden="true" />
+          <div>
+            <strong>State Jade</strong>
+            <code>--accent · #69E6A6</code>
+            <p>Use for live presence, readiness, connection, compatibility, focus, and completion. Primary actions remain white.</p>
+          </div>
+          <div className="ds-accent-examples" aria-label="State Jade examples">
+            <span><i aria-hidden="true" /> Live</span>
+            <span className="ds-accent-badge">Connected</span>
+          </div>
         </div>
       </section>
 
@@ -52,7 +69,7 @@ export function DesignSystemPage({ user }: { user: Profile }) {
             <Toggle checked={exampleVisible} onChange={() => setExampleVisible((visible) => !visible)} label="Example visibility" />
           </div>
           <Disclosure title="More about this system" description="Usage, hierarchy, and component guidance">
-            <p className="ds-reference-copy">Use the quietest surface that still communicates hierarchy. Reserve white for primary action and jade for meaningful positive state.</p>
+            <p className="ds-reference-copy">Use the quietest surface that still communicates hierarchy. Reserve white for primary action and State Jade for meaningful positive state.</p>
           </Disclosure>
         </div>
       </section>

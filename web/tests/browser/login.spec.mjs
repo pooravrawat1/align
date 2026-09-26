@@ -303,7 +303,7 @@ async function expectSharedProfilePill(page, groupName, value) {
     };
   });
   expect(style.radius).toBeGreaterThanOrEqual(999);
-  expect(style.height).toBe(32);
+  expect(style.height).toBeCloseTo(32, 2);
   expect(style.surfaceToken).toBe('#101113');
   expect(style.backgroundColor).toBe('rgb(16, 17, 19)');
   await expect(tag).toHaveClass(/chip--editable/);
@@ -469,11 +469,16 @@ for (const viewport of viewports) {
     await expectDesktopStepWithinViewport(page, 'Who would you love to meet?', 'Go to Home');
     await expectChips(page, 'Interests', ['Assistive technology', 'Robotics', 'Open source']);
     await expectSharedProfilePill(page, 'Interests', 'Assistive technology');
-    await expect(chipGroup(page, 'Interests').getByRole('textbox', { name: 'Add an interest', exact: true })).toBeVisible();
+    await expect(chipGroup(page, 'Interests').getByRole('textbox', { name: 'Add interest…', exact: true })).toBeVisible();
     await expectChips(page, "I'm looking for help with", ['Computer vision']);
     await expectSharedProfilePill(page, "I'm looking for help with", 'Computer vision');
-    await expect(chipGroup(page, "I'm looking for help with").getByRole('textbox', { name: 'Add what you need', exact: true })).toBeVisible();
-    const addedInterest = chipGroup(page, 'Interests').getByRole('textbox', { name: 'Add an interest', exact: true });
+    await expect(chipGroup(page, "I'm looking for help with").getByRole('textbox', { name: 'Add a need…', exact: true })).toBeVisible();
+    const addedInterest = chipGroup(page, 'Interests').getByRole('textbox', { name: 'Add interest…', exact: true });
+    const hintStyle = await addedInterest.evaluate(element => {
+      const hint = getComputedStyle(element, '::placeholder');
+      return { color: hint.color, weight: hint.fontWeight, style: hint.fontStyle, sameSize: hint.fontSize === getComputedStyle(element).fontSize };
+    });
+    expect(hintStyle).toEqual({ color: 'rgb(168, 171, 178)', weight: '400', style: 'normal', sameSize: true });
     await addedInterest.focus();
     expect(await addedInterest.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe('none');
     await addedInterest.fill('Human factors');
@@ -481,8 +486,8 @@ for (const viewport of viewports) {
     await expectSharedProfilePill(page, 'Interests', 'Human factors');
     await chipGroup(page, 'Interests').getByRole('button', { name: 'Remove Human factors', exact: true }).click();
     await expect(chipGroup(page, 'Interests').getByRole('button', { name: 'Remove Human factors', exact: true })).toHaveCount(0);
-    await expect(page.getByText('The Builders Room', { exact: true })).toBeVisible();
-    await expect(page.getByText(/Demo room · Code DEMO/)).toBeVisible();
+    await expect(page.getByText('Your next step', { exact: true })).toBeVisible();
+    await expect(page.getByText('Your event and introduction are waiting on Home.')).toBeVisible();
     await expect(page.getByText(/Demo mode · No account or password required\./)).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
@@ -513,7 +518,7 @@ for (const viewport of viewports) {
         linkedin: '',
       },
     });
-    expect(roomRequests).toEqual([{ path: '/api/room', method: 'POST', body: { code: 'DEMO' } }]);
+    expect(roomRequests).toEqual([]);
     expect(await page.evaluate((key) => sessionStorage.getItem(key), draftKey)).toBeNull();
   });
 }
@@ -530,8 +535,8 @@ test('edited details and chips survive step navigation and reload, then drive th
   await replaceChips(page, 'I can help with', 'Add a skill', ['Hardware']);
   await page.getByLabel('LinkedIn profile', { exact: true }).fill('https://www.linkedin.com/in/alexandra-morgan');
   await continueToMeet(page);
-  await replaceChips(page, 'Interests', 'Add an interest', ['Wearable computing']);
-  await replaceChips(page, "I'm looking for help with", 'Add what you need', ['Computer vision']);
+  await replaceChips(page, 'Interests', 'Add interest…', ['Wearable computing']);
+  await replaceChips(page, "I'm looking for help with", 'Add a need…', ['Computer vision']);
 
   await stepButton(page, 2).click();
   await expect(page.getByRole('heading', { name: 'What are you working on?' })).toBeVisible();
@@ -556,7 +561,7 @@ test('edited details and chips survive step navigation and reload, then drive th
   );
   await expectChips(page, 'I can help with', ['Hardware']);
   await continueToMeet(page);
-  const pendingNeed = chipGroup(page, "I'm looking for help with").getByRole('textbox', { name: 'Add what you need', exact: true });
+  const pendingNeed = chipGroup(page, "I'm looking for help with").getByRole('textbox', { name: 'Add a need…', exact: true });
   await pendingNeed.fill('Machine learning');
   await pendingNeed.press('Enter');
   await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
@@ -574,10 +579,11 @@ test('edited details and chips survive step navigation and reload, then drive th
     linkedin: 'https://www.linkedin.com/in/alexandra-morgan',
   });
 
+  await isolatedApi('/api/room', { method: 'POST', sessionId: traffic.sessionId, body: { code: 'DEMO' } });
   const matched = await isolatedApi('/api/matches', {
     method: 'POST',
     sessionId: traffic.sessionId,
-    body: { force: true },
+    body: { force: true, demo: true },
   });
   expect(matched.response.status).toBe(200);
   expect(matched.value.matches.find((match) => match.userA === 'alex' && match.userB === 'maya')).toMatchObject({
@@ -588,7 +594,7 @@ test('edited details and chips survive step navigation and reload, then drive th
   });
 
   await page.goto(`${origin}/#/home`);
-  const focus = page.getByRole('region', { name: 'Your focus', exact: true });
+  const focus = page.locator('.home-focus-panel');
   await expect(focus).toContainText('Prototyping accessible wearable tools.');
   await expect(focus.getByText('Computer vision', { exact: true })).toBeVisible();
   await expect(focus.getByText('Machine learning', { exact: true })).toBeVisible();
@@ -643,12 +649,12 @@ test('final submission redirects skipped invalid fields to their owning step wit
   expect(traffic.requests.filter((request) => request.method !== 'GET')).toHaveLength(0);
 });
 
-test('profile and room failures retry from step 3 without losing the created session or draft', async ({ page }) => {
+test('profile failures retry from step 3 without losing the created session or draft', async ({ page }) => {
   const traffic = await openEntry(page, 'spatial');
   await continueToWork(page);
   await bioField(page).fill('A retry-safe draft');
   await continueToMeet(page);
-  await chipGroup(page, "I'm looking for help with").getByRole('textbox', { name: 'Add what you need', exact: true }).fill('Machine learning');
+  await chipGroup(page, "I'm looking for help with").getByRole('textbox', { name: 'Add a need…', exact: true }).fill('Machine learning');
 
   traffic.failProfile = true;
   await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
@@ -662,19 +668,11 @@ test('profile and room failures retry from step 3 without losing the created ses
   expect(createdSession).toBeTruthy();
 
   traffic.failProfile = false;
-  traffic.failRoom = true;
-  await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
-  await expect(page.getByRole('alert')).toHaveText('Room join unavailable. Try again.');
-  await expect(page.getByRole('heading', { name: 'Who would you love to meet?' })).toBeVisible();
-  await expectChips(page, "I'm looking for help with", ['Computer vision', 'Machine learning']);
-  expect(traffic.sessionId).toBe(createdSession);
-
-  traffic.failRoom = false;
   await page.getByRole('button', { name: 'Go to Home', exact: true }).click();
   await expect(page).toHaveURL(/#\/home$/);
   expect(traffic.sessionId).toBe(createdSession);
   expect(traffic.requests.filter((request) => request.path === '/api/login')).toHaveLength(1);
-  expect(traffic.requests.filter((request) => request.path === '/api/room')).toHaveLength(2);
+  expect(traffic.requests.filter((request) => request.path === '/api/room')).toHaveLength(0);
   expect(await page.evaluate((key) => sessionStorage.getItem(key), draftKey)).toBeNull();
 });
 
@@ -786,7 +784,7 @@ test('live Vite and API create a fresh temporary entry session and clean it up',
 
     const response = await fetch(`${origin}/api/bootstrap`, { headers: { 'x-session-id': sessionId } });
     const state = await response.json();
-    expect(state.session).toMatchObject({ userId: 'maya', code: 'DEMO' });
+    expect(state.session).toMatchObject({ userId: 'maya', code: null });
     expect(state.profiles.find((profile) => profile.id === 'maya').role).toBe('Computer vision prototyper');
   } finally {
     if (sessionId) {

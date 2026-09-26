@@ -132,7 +132,7 @@ Reference fidelity is additive, not a license to redesign: retain the old Event 
 - Compact, readable 13–14px interface text and 11–12px metadata.
 - Opaque nested work surfaces; glass only where scene depth justifies it.
 - Photographic event rooms and spatial panels provide warmth without tinting the shell green.
-- Setup and readiness remain visible without requiring internal scrolling.
+- The browser preview keeps the room scene visible while person details remain readable in a focused panel.
 
 ## Colors
 
@@ -167,11 +167,17 @@ Keep the entry copy compact: “Create your profile” fits a single desktop lin
 
 **The State Color Rule.** Jade communicates readiness, live state, a compatible reason to meet, selection, or completion. It is never decorative and never implies public ranking.
 
+**Canonical accent tokens.** `--jade` (`#69E6A6`) is the color primitive. Product UI consumes it through `--accent`, `--accent-ink`, `--accent-surface`, `--accent-border`, `--accent-border-strong`, `--accent-glow`, and `--accent-hover`. Components must not define local jade or sage approximations for semantic states. White remains the primary-action color. Photographic atmosphere, entry artwork, and spatial glass keep their separate material palettes.
+
 **The Neutral Base Rule.** Opaque backgrounds remain graphite or neutral charcoal; do not turn the application shell olive or dark green.
 
 **Shared entry/dashboard hierarchy.** Both use a near-black outer canvas with the same charcoal panel background, hairline border, and rounded geometry. Login reuses the regular website surface classes, not Home's special image-overlay glass. Form inputs and the selected demo-person segment use the shared raised surface token. The white CTA and current journey step stay white. Translucency is limited to the artwork's inactive journey steps; the form stays opaque and neutral. On desktop the centered login frame keeps the same viewport-bounded height across all three steps. Only the right-hand form scrolls; the left artwork, journey cards, and close control stay in place. Each step opens at the top of its form. Mobile keeps the stacked layout with natural page scrolling. The separate Back control is removed in favor of the numbered journey cards. Spatial glass recipes and green match states are unchanged.
 
 ## Typography
+
+### Entry hints
+
+Input and textarea placeholders share one global typography role in `theme.css`: `--text-placeholder` (neutral secondary text), `--weight-placeholder` (regular), upright, full opacity, and inherited control font family and size. Do not add per-page placeholder overrides or shrink hints relative to entered text. Use short action phrases for tag entry, such as “Add interest…” and “Add a need…”. Labels remain visible; placeholder text is not a replacement for a label. Helper text and entered values are separate roles.
 
 **Display Font:** Geist Variable with Inter Variable fallback  
 **Body Font:** Inter Variable with system sans-serif fallback
@@ -205,7 +211,7 @@ Desktop uses a 230px sidebar, an 80px header, and a content canvas capped near 1
 - **Event browse:** room-code entry followed by the original two-column photographic event cards. Before / During / After controls are absent until an event is opened.
 - **Event detail:** compact title and phase control; Before uses a `1.45fr / 0.65fr` overview and readiness split; During keeps a 340px scene with its setup card fully visible; After uses a restrained recap plus two-column detail panels.
 - **Network and Profile:** preserve compact v1 nested-panel proportions while using the v2 type, preview, and control treatments.
-- **Spatial:** the scene leads. Setup is centered inside the stage and compresses at short heights so the complete card remains visible without internal scrolling.
+- **Spatial:** the scene leads. The browser path enters through the event code or existing session, opens the room, then opens a person in a common-ground panel. The person panel uses an opaque charcoal reading body with a fixed save footer; its body scrolls independently when profile details are long.
 
 At roughly 1050–1100px, major grids collapse or reduce columns. At 800–820px, the shell and event compositions stack. At 620px and below, page padding tightens and cinematic content becomes vertical; 44px touch targets remain intact.
 
@@ -215,9 +221,9 @@ The app shell is flat and tonal by default. Opaque surfaces separate through cha
 
 - **Cinematic ambient:** `0 22px 70px #070A071F` for image-led event frames.
 - **Spatial panel:** `0 18px 50px rgb(0 0 0 / 30%)` with inset light and dark edges.
-- **Spatial glass:** restore v1's `linear-gradient(135deg, #72756b72, #343b3499)`, `blur(30px) saturate(115%)`, `#ffffff38` border, and `inset 0 1px 0 #ffffff30, inset 1px 0 0 #ffffff10, 0 14px 38px #080e0b26` shadow. Landing identities, Profile preview, spatial identities, drawers, dock, and conversation/recovery panels share this recipe. Do not desaturate or darken the backdrop.
-- **Setup glass:** v1's denser `linear-gradient(135deg, #5a6157b8, #2d372ede)` supports reading and input. Preserve the hierarchy: progress, inset icon, heading, supporting copy, recessed field, white primary action, helper. Use 27px corners and compact spacing so actions fit the viewport.
-- **Matched glass:** when a reason to meet resolves, the whole card shifts to v1's sage material: `linear-gradient(120deg, #89a78caa, #436b50c7)`, a `#c8f7cb99` jade edge, and `inset 0 1px 0 #e1fce367, 0 8px 36px #203c3440` shadow. The jade label and explanation confirm why it changed.
+- **Spatial glass:** restore v1's `linear-gradient(135deg, #72756b72, #343b3499)`, `blur(30px) saturate(115%)`, `#ffffff38` border, and `inset 0 1px 0 #ffffff30, inset 1px 0 0 #ffffff10, 0 14px 38px #080e0b26` shadow. Landing identities, Profile preview, spatial identities, drawers, dock, and recovery panels share this recipe. Do not desaturate or darken the backdrop.
+- **Spatial entry:** the browser entry card is a compact opaque charcoal surface with an inset glasses icon, event-code field when needed, and a white enter action. It does not introduce setup steps, calibration, or readiness states.
+- **Matched glass:** when a reason to meet resolves, the whole card shifts to a shared green frosted material: `linear-gradient(120deg, #89a78caa, #436b50c7)`, a bright `#c8f7cb99` edge, and `inset 0 1px 0 #e1fce367, 0 8px 36px #203c3440` shadow. The jade label and explanation confirm why it changed. The neutral card keeps the silver frost edge; saved state does not add another outline.
 - **Card state edges:** neutral and saved cards inherit only the subtle silver material edge; saved state never adds another outline. Only `Reason to meet` cards use a jade outline and jade state label.
 
 **The Earned Glass Rule.** Use glass only over imagery, within the room stage, or for a short spatial overlay. Forms and long reading surfaces stay opaque.
@@ -240,6 +246,8 @@ Primary and secondary CTAs use the shared pill silhouette. Utility controls use 
 - Product panels use `#191A1D`, a 14px radius, a hairline border, and 20–24px padding.
 - Event browse retains two large photo cards with 22–24px titles and 12–13px supporting copy.
 - Nested Network/Profile surfaces remain compact and clearly subordinate to the page shell.
+
+Opaque nested content cards share `--surface-nested` (#222428), `--border-nested` (#ffffff22), and `--shadow-nested` (a faint inset top highlight plus a soft downward shadow). This material is used by shared disclosures, Network Discover and connection-detail cards, Home's collaborator-reason callout, the Event room-code panel, and Profile preview sections. The design-system page demonstrates it. Keep outer panels flat, input/row/control treatments distinct, and image-backed spatial glass unchanged; do not apply blur to opaque nested cards.
 
 ### Card headers and dividers
 
@@ -284,9 +292,11 @@ Home, Event, Network, and Profile are the primary destinations. Spatial preview 
 
 Before / During / After is a compact segmented control labeled “Preview event state.” It appears only inside an opened event and represents explicit simulated state, not real timing.
 
-### Spatial Setup Panel
+### Spatial Browser Preview
 
-The setup panel uses the original v1 frosted material, centered and no wider than 420px, with compact responsive variants for short viewports. Keep the inset icon, setup step, and primary action visible without an internal scrollbar.
+The entry card accepts an event code when no event session exists, or shows **Enter preview** for an existing session. The entry retains the event photograph. After entry, a populated illustrative room places frosted identity labels above photographed heads. Photo and anchors share one coordinate plane; matches change material without moving identities. Narrow screens pan the room with swipe or Look around arrows instead of stacking cards. DEMO starts with a visibly labeled sample match; other event codes retain live matching. Selecting a person opens the common-ground panel. The private footer offers **Save connection**, then confirms **Saved to your network** and returns with **Back to the room**. **Back to event** leaves the preview and routes home. The preview controls are secondary and expose distance, demo match, appearance, interruption/restore, and reset scenarios; they do not add calibration, readiness, conversation, or an extra spatial recap state.
+
+Long person/profile details use an opaque charcoal panel with a scrollable body and fixed save footer. The room's glass is reserved for the scene, cards, pills, people dock, and short overlays; the reading body stays opaque for contrast.
 
 ## Do's and Don'ts
 
@@ -296,7 +306,7 @@ The setup panel uses the original v1 frosted material, centered and no wider tha
 - **Do** keep room imagery prominent while maintaining readable contrast and honest demo labels.
 - **Do** use achromatic frosted glass for spatial context and neutral opaque surfaces for product work.
 - **Do** keep event browsing separate from the opened-event phase preview.
-- **Do** keep setup content fully visible at supported viewport heights.
+- **Do** keep the room path and save action clear at supported viewport sizes, with long person content scrolling above the fixed footer.
 
 ### Don't:
 
@@ -304,4 +314,4 @@ The setup panel uses the original v1 frosted material, centered and no wider tha
 - **Don't** expand compact product pages into analytics dashboards or oversized hero layouts.
 - **Don't** apply glass to forms, long reading panels, or every card.
 - **Don't** use jade as decoration, popularity, score, or public ranking.
-- **Don't** invent live timing, shareability, persistence, or non-demo product claims.
+- **Don't** add calibration, readiness, conversation, or spatial-recap states to the browser preview, or claim headset/device proof from it.

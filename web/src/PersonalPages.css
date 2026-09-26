@@ -64,7 +64,7 @@
   stroke: var(--line);
 }
 .network-product .connection-graph .selected-edge {
-  stroke: var(--jade);
+  stroke: var(--accent);
 }
 .network-product .graph-glow {
   background: radial-gradient(ellipse, var(--line), transparent 67%);
@@ -239,7 +239,7 @@
   font-size: 9px;
 }
 .app-header .shared-event-indicator .status-dot {
-  background: var(--jade);
+  background: var(--accent);
 }
 .sidebar .nav-purpose {
   display: block;

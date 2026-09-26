@@ -25,11 +25,16 @@ import { Landing } from "./Landing";
 import { HomeProduct, EventProduct } from "./ProductPages";
 import { NetworkProduct, ProfileProduct } from "./PersonalPages";
 import { clearSessionProfileDrafts, useProfileEditor } from "./useProfileEditor";
-import type { Action, State } from "./types";
+import type { Action, Profile, State } from "./types";
 import { Onboarding, entryDraftKey, type OnboardingDetails } from "./Onboarding";
 import { DesignSystemPage } from "./DesignSystemPage";
+import { CompatibilityProvider } from "./CompatibilityContext";
+import { homeEvent } from "./eventModel";
+import { PersonProfileDialog } from "./PersonProfileDialog";
+import { RecapDemo } from "./RecapDemo";
 
-const initial: State = { ...seed, matches: [], session: null, demo: true };
+const initial: State = { ...seed, profiles: seed.profiles as Profile[], matches: [], session: null, demo: true };
+
 const route = () => {
   const p = location.hash.replace("#/", "").split("?")[0] || "landing";
   return p === "events" ? "event" : p === "settings" ? "profile" : p;
@@ -198,6 +203,28 @@ export default function App() {
     };
   }, [bootstrapAttempt]);
   useEffect(() => {
+    if (!state.session || pending > 0) return;
+    let active = true;
+    let refreshing = false;
+    const expectedSession = state.session.id;
+    const refresh = () => {
+      if (document.visibilityState !== "visible" || refreshing) return;
+      refreshing = true;
+      const startRevision = revision.current;
+      void request("bootstrap", undefined, "GET").then(data => {
+        if (active && revision.current === startRevision && sessionId.current === expectedSession && "profiles" in data) putState(data);
+      }).catch(() => { /* Explicit Refresh requests exposes recoverable service errors. */ })
+        .finally(() => { refreshing = false; });
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [state.session?.id, pending]);
+  useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(""), 3800);
     return () => clearTimeout(timer);
@@ -228,9 +255,6 @@ export default function App() {
         await act("login", { profileId: id });
       }
       await act("profile", details, "PATCH");
-      if (stateRef.current.session?.code !== "DEMO") {
-        await act("room", { code: "DEMO" });
-      }
       if (location.hash === entryRoute) {
         setEntryActive(false);
         go("home");
@@ -273,8 +297,8 @@ export default function App() {
     setToast("Connection saved. Find them in your network.");
   };
   const sharedProps = { state, user, connected, act, busy, notify: setToast };
-  const event = state.events.find((e) => e.code === state.session?.code);
-  const isPublic = ["landing", "login"].includes(page);
+  const event = homeEvent(state);
+  const isPublic = ["landing", "login", "recap-demo"].includes(page);
   useEffect(() => {
     // Keep an unfinished entry refreshable even after a partial session creation.
     if (ready && !bootstrapError && !state.session && !isPublic) go("login");
@@ -282,7 +306,7 @@ export default function App() {
   const activePage = entryActive || (!isPublic && !state.session && ready) ? "login" : page;
   const nav = [
     { id: "home", name: "Home", icon: Home },
-    { id: "event", name: "Event", icon: CalendarDays },
+    { id: "event", name: "Events", icon: CalendarDays },
     { id: "network", name: "Network", icon: Network },
     { id: "profile", name: "Profile", icon: UserRound },
   ];
@@ -298,7 +322,7 @@ export default function App() {
       >
         Skip to content
       </a>
-      {!ready ? (
+      {page === "recap-demo" ? <RecapDemo /> : !ready ? (
         <main className="loading-screen" id="main-content" tabIndex={-1}>
           <Mark />
           <p role="status">Opening your space…</p>
@@ -353,10 +377,10 @@ export default function App() {
             <SidebarSelection page={page} />
             <Brand compact />
             <div className="workspace-label">
-              <span className="workspace-monogram">B</span>
+              <span className="workspace-monogram">{event?.name.replace(/^the\s+/i, "").charAt(0) || <CalendarDays size={17} />}</span>
               <span>
-                {event?.name || "The Builders Room"}
-                <small>Your shared space</small>
+                {event?.name || "Choose an event"}
+                <small>{event ? "Your shared space" : "Your next conversation"}</small>
               </span>
             </div>
             <nav aria-label="Main navigation">
@@ -410,6 +434,7 @@ export default function App() {
               onClick={() => setMenu(false)}
             />
           )}
+          <CompatibilityProvider state={state} user={user}>
           <main className="app-main" id="main-content" tabIndex={-1}>
             <button
               className="icon-button app-navigation-toggle"
@@ -472,7 +497,9 @@ export default function App() {
                 <a href="#/home">Back to your overview</a>
               </Empty>
             )}
+            {["home", "event", "network"].includes(page) && <PersonProfileDialog {...sharedProps} />}
           </main>
+          </CompatibilityProvider>
         </div>
       )}
       {toast && (
@@ -526,8 +553,8 @@ function ExperienceMap() {
       detail: "Let the room—and the people—lead.",
       steps: [
         {
-          name: "Get aligned",
-          body: "A guided spatial calibration.",
+          name: "Enter the preview",
+          body: "Explore your event without a headset.",
           route: "spatial",
           icon: Glasses,
         },
@@ -538,8 +565,8 @@ function ExperienceMap() {
           icon: Sparkles,
         },
         {
-          name: "Start a conversation",
-          body: "Quiet the room. Focus on a person.",
+          name: "Find common ground",
+          body: "See what you share and how you can help.",
           route: "spatial",
           icon: Users,
         },

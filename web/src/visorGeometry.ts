@@ -8,31 +8,27 @@ export const smooth = (from: number, to: number, value: number) => {
   return t * t * (3 - 2 * t);
 };
 
-export const JOURNEY = { discover: .4, quiet: .69, network: 1 } as const;
+export const JOURNEY = { discover: .4, network: 1 } as const;
 
 const leg = (start: number, end: number, from: number, to: number) => [start + (end - start) * from, start + (end - start) * to] as const;
 // Ranges are local to each leg; the same playhead drives geometry and typography.
 export const JOURNEY_TRACKS = {
   heroExit: leg(0, .4, 0, .18), jordanExit: leg(0, .4, .10, .26),
   lens: leg(0, .4, .04, .78), camera: leg(0, .4, .08, .78),
-  shadeIn: leg(0, .4, .55, .80), reasonShell: leg(0, .4, .60, .85),
-  discoverIn: leg(0, .4, .74, .93), reasonIn: leg(0, .4, .82, .97),
-  detailExit: leg(.4, .69, 0, .25), collapse: leg(.4, .69, .18, .64),
-  shadeOut: leg(.4, .69, .25, .70), conversationIn: leg(.4, .69, .64, .90),
-  conversationOut: leg(.69, 1, 0, .20), worldDim: leg(.69, 1, .06, .76),
-  savedShell: leg(.69, 1, .10, .75), networkIn: leg(.69, 1, .65, .90),
-  portrait: leg(.69, 1, .65, .80), savedIn: leg(.69, 1, .78, .96),
-  connectionIn: leg(.69, 1, .86, 1),
+  worldDim: [.26, .72],
+  savedShell: [.28, .72], networkIn: [.64, .88],
+  portrait: [.5, .7], savedIn: [.74, .94],
+  connectionIn: [.88, 1],
 } as const;
 
 export function journeyState(progress: number) {
   const p = clamp(progress);
   const at = (range: readonly [number, number]) => smooth(...range, p);
-  const collapse = at(JOURNEY_TRACKS.collapse);
+  const collapse = 0;
   const network = at(JOURNEY_TRACKS.savedShell);
   return {
     approach: at(JOURNEY_TRACKS.lens), camera: at(JOURNEY_TRACKS.camera),
-    reason: at(JOURNEY_TRACKS.reasonShell), collapse, network,
+    reason: network, collapse, network,
     chip: collapse * (1 - network),
     portrait: at(JOURNEY_TRACKS.portrait),
     identityDetail: clamp(1 - smooth(0, .3, collapse) + smooth(.68, .85, network)),
@@ -50,10 +46,10 @@ export function matchLayout(width: number, height: number, image: ReturnType<typ
   const initialY = width < 700 ? Math.max(128, headY - 150) : Math.max(height * .29, headY - 120);
   const mix = (a: number, b: number, t: number) => a + (b - a) * t;
   return {
-    x: mix(mix(initialX, clamp(headX + 26, 24, width - 108), collapse), Math.min(width * .64, width * .95 - 340), network),
-    y: mix(mix(initialY, clamp(headY - 22, 110, height - 52), collapse), height * .49 - 137, network),
-    width: mix(mix(cardWidth, 84, collapse), 340, network),
-    height: mix(mix(76 + reason * 198, 28, collapse), 274, network),
+    x: mix(mix(initialX, clamp(headX + 26, 24, width - 108), collapse), Math.min(width * .64, width * .95 - 380), network),
+    y: mix(mix(initialY, clamp(headY - 22, 110, height - 52), collapse), Math.max(104, height * .49 - 224), network),
+    width: mix(mix(cardWidth, 84, collapse), 380, network),
+    height: mix(mix(76 + reason * 198, 28, collapse), 448, network),
   };
 }
 

@@ -32,7 +32,7 @@ export function Button({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
-  variant?: "primary" | "secondary" | "ghost" | "green";
+  variant?: "primary" | "secondary" | "ghost" | "accent";
   busy?: boolean;
 }) {
   return (
@@ -184,6 +184,7 @@ export function TextAction({
   onClick,
   disabled,
   className = "",
+  "aria-label": ariaLabel,
 }: {
   children: ReactNode;
   icon?: ReactNode;
@@ -192,6 +193,7 @@ export function TextAction({
   onClick?: () => void;
   disabled?: boolean;
   className?: string;
+  "aria-label"?: string;
 }) {
   const content = (
     <>
@@ -206,6 +208,7 @@ export function TextAction({
         className={`text-action ${className}`}
         data-icon-position={iconPosition}
         href={href}
+        aria-label={ariaLabel}
         onClick={onClick}
       >
         {content}
@@ -218,6 +221,7 @@ export function TextAction({
       className={`text-action ${className}`}
       data-icon-position={iconPosition}
       disabled={disabled}
+      aria-label={ariaLabel}
       onClick={onClick}
     >
       {content}

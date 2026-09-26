@@ -159,6 +159,24 @@ test('simultaneous requests for one pair share a single Gemini evaluation', asyn
   assert.deepEqual(results.map((item) => item.source), ['gemini', 'cache']);
 });
 
+test('simultaneous rich assessments expose only the public contract', async () => {
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const matcher = createMatcher({
+    apiKey: 'test-key',
+    geminiEvaluator: async () => { await gate; return assessment(); },
+  });
+  const first = matcher.assess(request(alex, maya));
+  const second = matcher.assess(request(maya, alex));
+  release();
+  const results = await Promise.all([first, second]);
+  const expectedKeys = [
+    'available', 'criteria', 'provenance', 'result', 'route', 'routes', 'source',
+  ];
+  assert.deepEqual(Object.keys(results[0]).sort(), expectedKeys);
+  assert.deepEqual(Object.keys(results[1]).sort(), expectedKeys);
+});
+
 test('edited demo profiles cannot reuse the precomputed offline result', async () => {
   const edited = clone(alex);
   edited.bio += ' New detail.';
@@ -171,7 +189,10 @@ test('edited demo profiles cannot reuse the precomputed offline result', async (
 test('Gemini rubric scores are bounded, grounded, and added by the backend', () => {
   const result = validateGeminiAssessment(assessment(), alex, maya);
   assert.equal(result.score, 100);
-  assert.equal(result.criteria.skillToNeed, 30);
+  assert.deepEqual(result.criteria.skillToNeed, {
+    points: 30,
+    evidence: 'Embedded systems | Embedded systems',
+  });
   const tooHigh = assessment();
   tooHigh.criteria.skillToNeed.score = 31;
   assert.throws(() => validateGeminiAssessment(tooHigh, alex, maya), /score is invalid/u);
@@ -305,6 +326,45 @@ test('failed live calls are not cached, so a recovered Gemini call can retry', a
   assert.equal(calls, 2);
 });
 
+test('rich assessment is stable through cache and preserves winning provenance', async () => {
+  let calls = 0;
+  const matcher = createMatcher({
+    apiKey: 'test-key', fixtures: emptyFixtures,
+    geminiEvaluator: async () => { calls += 1; return assessment(); },
+  });
+  const first = await matcher.assess(request(alex, maya));
+  const cached = await matcher.assess(request(maya, alex));
+  assert.equal(first.source, 'gemini');
+  assert.equal(cached.source, 'cache');
+  assert.equal(first.provenance, 'rules');
+  assert.equal(cached.provenance, first.provenance);
+  assert.equal(first.route, 'professional');
+  assert.deepEqual(cached.result, first.result);
+  assert.deepEqual(cached.routes, first.routes);
+  assert.deepEqual(cached.criteria, first.criteria);
+  assert.equal(calls, 1);
+  matcher.clear();
+  assert.equal((await matcher.assess(request(alex, maya))).source, 'gemini');
+  assert.equal(calls, 2);
+});
+
+test('fixture assessments identify fixture provenance including known zero', async () => {
+  const assessed = await createMatcher({ mode: 'fixture' }).assess(request(alex, sam));
+  assert.equal(assessed.provenance, 'fixture');
+  assert.equal(assessed.available, true);
+  assert.equal(assessed.result.score, 0);
+  assert.equal(assessed.criteria, null);
+  assert.equal(assessed.routes.networking, null);
+});
+
+test('missing AI and no qualifying experience reports assessment unavailable', async () => {
+  const assessed = await createMatcher({ fixtures: emptyFixtures }).assess(request(alex, sam));
+  assert.equal(assessed.available, false);
+  assert.equal(assessed.provenance, 'rules');
+  assert.equal(assessed.criteria, null);
+  assert.deepEqual(assessed.routes, { networking: null, professional: 0, personal: 0 });
+});
+
 test('HTTP contract returns health, match JSON, source header, and safe errors', async () => {
   const base = await listen(createMatcher({ mode: 'fixture' }));
   const health = await (await fetch(`${base}/health`)).json();
@@ -316,7 +376,9 @@ test('HTTP contract returns health, match JSON, source header, and safe errors',
   });
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('x-align-match-source'), 'fallback');
-  assert.deepEqual(await response.json(), demoFixtures.offlineResults[0]);
+  const responseBody = await response.json();
+  assert.deepEqual(responseBody, demoFixtures.offlineResults[0]);
+  assert.deepEqual(Object.keys(responseBody), ['userA', 'userB', 'compatible', 'score', 'reason']);
   const invalid = await fetch(`${base}/match`, {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify(request({ ...alex, socialLinks: ['secret'] }, maya)),

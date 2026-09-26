@@ -36,6 +36,7 @@ export function createCheckpointScroll(
   root: HTMLElement,
   measure: () => number[],
   resolveMotion?: CheckpointMotionResolver,
+  nativeAfter?: () => number,
 ): CheckpointScroll {
   const gesture = new CheckpointGesture();
   let travel: gsap.core.Tween | null = null;
@@ -44,7 +45,9 @@ export function createCheckpointScroll(
   let pending = 0;
   let acceptsQueue = false;
 
-  const limit = () => Math.max(0, document.documentElement.scrollHeight - innerHeight);
+  const limit = () => Math.max(0, Math.min(document.documentElement.scrollHeight - innerHeight, nativeAfter?.() ?? Infinity));
+  const nativeScroll = (delta: number) => nativeAfter && !travel && !hold &&
+    (window.scrollY > limit() + STOP_EPSILON || (window.scrollY >= limit() - STOP_EPSILON && delta > 0));
   const stops = () => [...new Set([0, ...measure(), limit()].map(top => Math.round(Math.max(0, Math.min(limit(), top)))))].sort((a, b) => a - b);
   function cancel() {
     travel?.kill(); hold?.kill();
@@ -79,6 +82,11 @@ export function createCheckpointScroll(
         travel = null;
         window.scrollTo({ top: target, behavior: 'instant' });
         ScrollTrigger.update();
+        if (nativeAfter && target >= limit() - STOP_EPSILON) {
+          direction = 0; pending = 0; acceptsQueue = false;
+          gesture.reset();
+          return;
+        }
         hold = gsap.delayedCall(LANDING_HOLD_SECONDS, () => {
           hold = null;
           const onward = pending;
@@ -90,6 +98,7 @@ export function createCheckpointScroll(
   }
 
   function step(nextDirection: number) {
+    if (nativeScroll(nextDirection)) { clearIntent(); return; }
     if ((travel || hold) && nextDirection === direction) {
       if (acceptsQueue) pending = nextDirection;
       return;
@@ -117,6 +126,7 @@ export function createCheckpointScroll(
     if (event.defaultPrevented || event.ctrlKey || editable(event.target) || !(event.target instanceof Node) || !root.contains(event.target)) return;
     if (nestedScroll(event.target, event.deltaY)) return;
     if (event.deltaY === 0) return;
+    if (nativeScroll(event.deltaY)) { clearIntent(); return; }
     event.preventDefault();
     if (Math.abs(event.deltaY) < Math.abs(event.deltaX) * 1.15) return;
     const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1;
@@ -131,6 +141,7 @@ export function createCheckpointScroll(
     if (event.key === ' ' && event.target instanceof Element && event.target.closest('button, a, [role="button"]')) return;
     const nextDirection = event.key === ' ' ? (event.shiftKey ? -1 : 1) : ['ArrowDown', 'PageDown'].includes(event.key) ? 1 : ['ArrowUp', 'PageUp'].includes(event.key) ? -1 : 0;
     if (!nextDirection && !['Home', 'End'].includes(event.key)) return;
+    if ((nextDirection && nativeScroll(nextDirection)) || (nativeAfter && window.scrollY >= limit() - STOP_EPSILON && ['Home', 'End'].includes(event.key))) { cancel(); clearIntent(); return; }
     event.preventDefault();
     if (event.repeat) return;
     gesture.reset();

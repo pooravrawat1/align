@@ -1,45 +1,33 @@
-import type { Connection, Profile } from "./types";
+import type { Profile } from "./types";
 
-export type AmbientPanel = "event" | "people" | "recovery" | null;
-export type SaveStatus = "idle" | "saving" | "saved";
+export function selectSpatialCards(profiles: Profile[]) {
+  // A match changes the label's material, never which photographed person owns it.
+  const sceneIds = ["jordan", "leo", "maya"];
+  const rank = (id: string) => sceneIds.includes(id) ? sceneIds.indexOf(id) : sceneIds.length;
+  return [...profiles].sort((a, b) => rank(a.id) - rank(b.id) || a.id.localeCompare(b.id)).slice(0, 3);
+}
+
+export type AmbientPanel = "people" | "recovery" | null;
 export type ReliabilityKind = "offline" | "alignment-lost";
 
 export type RoomState =
-  | { kind: "ambient"; panel: AmbientPanel; matchNotice: number | null }
+  | { kind: "ambient"; panel: AmbientPanel }
   | { kind: "profile"; profileId: string }
-  | {
-      kind: "conversation";
-      profileId: string;
-      promptOpen: boolean;
-      saveStatus: SaveStatus;
-    }
   | { kind: ReliabilityKind; recoveryOpen: boolean }
-  | { kind: "outside-boundary" }
-  | { kind: "recap" };
+  | { kind: "outside-boundary" };
 
 export type RoomAction =
   | { type: "OPEN_PANEL"; panel: Exclude<AmbientPanel, null> }
   | { type: "OPEN_PROFILE"; profileId: string }
   | { type: "CLOSE_LAYER" }
-  | { type: "START_CONVERSATION"; profileId: string; saved: boolean }
-  | { type: "DISMISS_PROMPT" }
-  | { type: "SAVE_PENDING" }
-  | { type: "SAVE_SUCCESS" }
-  | { type: "SAVE_FAILED" }
-  | { type: "FINISH_CONVERSATION" }
-  | { type: "SHOW_MATCH_NOTICE"; count: number }
-  | { type: "CLEAR_MATCH_NOTICE" }
   | { type: "SIMULATE_RELIABILITY"; kind: ReliabilityKind }
   | { type: "SIMULATE_BOUNDARY" }
-  | { type: "CALIBRATION_CANCELLED" }
-  | { type: "CALIBRATION_SUCCEEDED" }
-  | { type: "RETURN_AMBIENT" }
-  | { type: "SHOW_RECAP" };
+  | { type: "RESTORE_PREVIEW" }
+  | { type: "RETURN_AMBIENT" };
 
 export const initialRoomState: RoomState = {
   kind: "ambient",
   panel: null,
-  matchNotice: null,
 };
 
 export function createReplayableRequest<T>() {
@@ -79,23 +67,6 @@ export function selectActiveRemoteProfiles(
     .sort((left, right) => left.id.localeCompare(right.id));
 }
 
-export function connectionIdsForEvent(
-  connections: Connection[],
-  userId: string,
-  eventId: string | null,
-) {
-  if (eventId === null) return [];
-  return connections
-    .filter((connection) => connection.eventId === eventId)
-    .filter(
-      (connection) =>
-        connection.userA === userId || connection.userB === userId,
-    )
-    .map((connection) =>
-      connection.userA === userId ? connection.userB : connection.userA,
-    );
-}
-
 export function roomReducer(
   state: RoomState,
   action: RoomAction,
@@ -106,7 +77,6 @@ export function roomReducer(
         return {
           kind: "ambient",
           panel: state.panel === action.panel ? null : action.panel,
-          matchNotice: null,
         };
       }
       if (state.kind === "offline" || state.kind === "alignment-lost") {
@@ -125,52 +95,12 @@ export function roomReducer(
         return { ...state, recoveryOpen: false };
       }
       return state;
-    case "START_CONVERSATION":
-      if (state.kind !== "profile") return state;
-      return {
-        kind: "conversation",
-        profileId: action.profileId,
-        promptOpen: true,
-        saveStatus: action.saved ? "saved" : "idle",
-      };
-    case "DISMISS_PROMPT":
-      return state.kind === "conversation"
-        ? { ...state, promptOpen: false }
-        : state;
-    case "SAVE_PENDING":
-      return state.kind === "conversation"
-        ? { ...state, saveStatus: "saving" }
-        : state;
-    case "SAVE_SUCCESS":
-      return state.kind === "conversation"
-        ? { ...state, saveStatus: "saved" }
-        : state;
-    case "SAVE_FAILED":
-      return state.kind === "conversation"
-        ? { ...state, saveStatus: "idle" }
-        : state;
-    case "FINISH_CONVERSATION":
-      return state.kind === "conversation" ? initialRoomState : state;
-    case "SHOW_MATCH_NOTICE":
-      return state.kind === "ambient"
-        ? { ...state, matchNotice: action.count }
-        : state;
-    case "CLEAR_MATCH_NOTICE":
-      return state.kind === "ambient"
-        ? { ...state, matchNotice: null }
-        : state;
     case "SIMULATE_RELIABILITY":
-      return { kind: action.kind, recoveryOpen: true };
+      return { kind: action.kind, recoveryOpen: false };
     case "SIMULATE_BOUNDARY":
       return { kind: "outside-boundary" };
-    case "CALIBRATION_CANCELLED":
-      return state;
-    case "CALIBRATION_SUCCEEDED":
+    case "RESTORE_PREVIEW":
     case "RETURN_AMBIENT":
       return initialRoomState;
-    case "SHOW_RECAP":
-      return state.kind === "conversation" || state.kind === "profile"
-        ? state
-        : { kind: "recap" };
   }
 }

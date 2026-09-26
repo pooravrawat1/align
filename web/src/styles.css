@@ -110,9 +110,6 @@ svg {
   color: var(--muted);
   font-size: 12px;
 }
-.jade-text {
-  color: #b9e7bf;
-}
 .brand {
   display: inline-flex;
   align-items: center;
@@ -239,7 +236,7 @@ svg {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #bcddbe;
+  background: var(--accent);
   flex-shrink: 0;
 }
 .status-dot.offline {
@@ -1504,13 +1501,9 @@ textarea {
   font-size: 12px;
   width: 100%;
 }
-input::placeholder,
-textarea::placeholder {
-  color: #929a88;
-}
 input:focus,
 textarea:focus {
-  border-color: #b1c79d80;
+  border-color: var(--accent-border-strong);
 }
 textarea {
   resize: vertical;
@@ -1531,10 +1524,12 @@ textarea {
 }
 .event-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
 }
 .event-card {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 .event-cover {
@@ -1556,6 +1551,9 @@ textarea {
   font-size: 9px;
 }
 .event-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   padding: 24px;
 }
 .event-date {
@@ -1590,6 +1588,7 @@ textarea {
 }
 .event-card .button {
   width: 100%;
+  margin-top: auto;
   justify-content: space-between;
   font-size: 10px;
 }
@@ -1617,7 +1616,7 @@ textarea {
   stroke-width: 0.22;
 }
 .connection-graph path.selected-edge {
-  stroke: #b6d99fb3;
+  stroke: var(--accent-border-strong);
   stroke-width: 0.35;
 }
 .graph-orbit {
@@ -1671,7 +1670,7 @@ textarea {
 }
 .graph-person:hover .graph-avatar,
 .graph-person.selected .graph-avatar {
-  border-color: #d8edc6;
+  border-color: var(--accent);
 }
 .graph-person strong {
   font-size: 11px;
@@ -1926,7 +1925,7 @@ textarea {
   transition: transform 0.22s var(--ease);
 }
 .toggle.on {
-  background: #9bc19d;
+  background: var(--accent);
   border-color: transparent;
 }
 .toggle.on > span {
@@ -2204,7 +2203,7 @@ textarea {
   border-radius: 2px;
 }
 .setup-progress > span.complete {
-  background: #d3e7c9;
+  background: var(--accent);
 }
 .setup-symbol {
   width: 60px;
@@ -2803,6 +2802,9 @@ textarea {
   }
 }
 @media (max-width: 1200px) {
+  .event-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .sidebar {
     width: 207px;
     padding-inline: 12px;
