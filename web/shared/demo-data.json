@@ -1,0 +1,15 @@
+{
+  "profiles": [
+    { "id": "alex", "name": "Alex Morgan", "role": "Hardware engineer", "bio": "Building a wearable navigation system that makes the world easier to explore.", "interests": ["Assistive technology", "Robotics", "Open source"], "skills": ["Embedded systems", "C++", "Electronics"], "lookingFor": ["Computer vision"], "avatar": "/assets/alex.jpg", "location": "Atlanta, GA", "distance": 0 },
+    { "id": "maya", "name": "Maya Chen", "role": "Computer vision engineer", "bio": "Building visual assistance software. Curious about bringing intelligence into everyday objects.", "interests": ["Assistive technology", "Robotics", "Startups"], "skills": ["Python", "Computer vision", "Machine learning"], "lookingFor": ["Embedded systems", "Hardware"], "avatar": "/assets/maya.jpg", "location": "Atlanta, GA", "distance": 1.8 },
+    { "id": "jordan", "name": "Jordan Lee", "role": "Creative technologist", "bio": "Exploring how spatial interfaces can make new ideas feel natural.", "interests": ["Spatial computing", "Design", "Open source"], "skills": ["Unity", "Interaction design", "Prototyping"], "lookingFor": ["Electronics"], "avatar": "/assets/jordan.jpg", "location": "Brooklyn, NY", "distance": 2.4 },
+    { "id": "sam", "name": "Sam Rivera", "role": "Product designer", "bio": "Making complex tools feel simple. Currently exploring creative collaboration.", "interests": ["Design", "Creative tools", "Communities"], "skills": ["Figma", "Research", "Prototyping"], "lookingFor": ["Frontend development"], "avatar": "/assets/sam.jpg", "location": "Austin, TX", "distance": 5.6 },
+    { "id": "nina", "name": "Nina Patel", "role": "Full-stack developer", "bio": "Building small tools for more connected communities.", "interests": ["Open source", "Communities", "Creative tools"], "skills": ["TypeScript", "Frontend development", "Python"], "lookingFor": ["Interaction design"], "avatar": "/assets/nina.jpg", "location": "Atlanta, GA", "distance": 4.2 },
+    { "id": "leo", "name": "Leo Park", "role": "Robotics researcher", "bio": "Teaching robots to navigate real spaces alongside people.", "interests": ["Robotics", "Open source", "Assistive technology"], "skills": ["Computer vision", "ROS", "Python"], "lookingFor": ["Electronics", "CAD"], "avatar": "/assets/leo.jpg", "location": "Boston, MA", "distance": 6.1 }
+  ],
+  "events": [
+    { "id": "demo", "code": "DEMO", "name": "The Builders Room", "description": "Good ideas start with a conversation.", "location": "Atlanta · Main hall", "date": "September 26", "time": "10:00 AM – 6:00 PM", "status": "Demo event" },
+    { "id": "spatial", "code": "SPATIAL", "name": "Spatial Sessions", "description": "An evening for people building beyond the screen.", "location": "Atlanta · Studio 02", "date": "October 08", "time": "6:00 PM – 9:00 PM", "status": "Sample event" }
+  ],
+  "connections": [{ "userA": "alex", "userB": "jordan", "eventId": "demo", "createdAt": "2026-09-26T10:30:00Z" }, { "userA": "alex", "userB": "nina", "eventId": "demo", "createdAt": "2026-09-26T11:00:00Z" }, { "userA": "alex", "userB": "leo", "eventId": "demo", "createdAt": "2026-09-26T11:30:00Z" }]
+}

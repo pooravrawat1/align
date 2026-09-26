@@ -59,6 +59,19 @@ Live AI, sound, and animation are secondary to a reliable two-user experience. T
 
 - [Product requirements](assets/match-prd.md)
 - [24-hour execution plan](assets/TASKS.md)
+- [Interactive companion prototype](web/README.md)
+
+## Web companion prototype
+
+The `web/` app is the complete Spatial Salon product mockup: landing and demo sign-in, Home, Event, Network, Profile, a browser-based spatial journey, and a deterministic local mock service.
+
+```sh
+cd web
+npm ci
+npm run dev
+```
+
+Open `http://127.0.0.1:4320`. Use the prepared Alex profile and room code `DEMO` for the shortest demonstration path.
 
 ## Safety and privacy
 

@@ -1,0 +1,550 @@
+.network-product .page-heading h1 {
+  max-width: 680px;
+}
+.network-filters {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: -2px 0 16px;
+  flex-wrap: wrap;
+}
+.network-filters select,
+.connection-extra select {
+  min-height: 42px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-size: 12px;
+}
+.network-filters > button {
+  background: transparent;
+  border: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.network-filters > button.active {
+  color: var(--jade);
+}
+.filter-check {
+  display: grid;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+.active .filter-check {
+  background: var(--jade);
+  color: var(--jade-ink);
+}
+.network-filters > span {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--quiet);
+}
+.network-product .network-workspace {
+  height: clamp(540px, 62vh, 620px);
+  min-height: 540px;
+}
+.network-product .connection-graph {
+  min-height: 0;
+}
+.network-product .network-canvas {
+  background-color: var(--surface);
+  background-image: radial-gradient(var(--line) 0.65px, transparent 0.65px);
+}
+.network-product .connection-graph path,
+.network-product .connection-graph .graph-orbit {
+  stroke: var(--line);
+}
+.network-product .connection-graph .selected-edge {
+  stroke: var(--jade);
+}
+.network-product .graph-glow {
+  background: radial-gradient(ellipse, var(--line), transparent 67%);
+}
+.network-product .graph-avatar {
+  background: var(--raised);
+  border-color: var(--line);
+}
+.network-product .graph-person.selected {
+  z-index: 3;
+}
+.network-product .graph-person.selected .graph-avatar {
+  padding: 7px;
+  background: var(--raised);
+  box-shadow: 0 10px 28px #00000024;
+}
+.network-product .graph-person strong {
+  font-size: 12px;
+}
+.network-product .graph-person small {
+  font-size: 11px;
+}
+.connection-why {
+  line-height: 1.55;
+  max-width: 270px;
+  margin-top: 7px !important;
+}
+.connection-reason {
+  display: flex;
+  gap: 9px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 15px 0;
+  margin-top: 17px;
+  color: var(--muted);
+}
+.connection-reason p {
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--text);
+}
+.network-product .connection-reason {
+  background: var(--raised);
+  border-color: var(--line);
+}
+.network-product .connection-reason p {
+  color: var(--text);
+}
+.connection-expand {
+  min-height: 42px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-top: 20px;
+  color: var(--text);
+  width: 100%;
+  font-size: 12px;
+}
+.connection-extra {
+  margin-top: 18px;
+}
+.connection-extra > p {
+  color: var(--muted);
+  font-size: 12px;
+}
+.connection-extra label {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: var(--text);
+  gap: 8px;
+  margin-top: 18px;
+}
+.connection-extra input,
+.connection-extra textarea {
+  background: var(--surface);
+  border-color: var(--line);
+  font-size: 13px;
+}
+.connection-extra small {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.connection-extra .button {
+  margin-top: 20px;
+  font-size: 12px;
+}
+.followup-status {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 15px;
+}
+.network-workspace.full-person {
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 390px);
+}
+.full-person .graph-person small {
+  display: none;
+}
+.full-person .connection-graph {
+  opacity: 0.72;
+}
+.network-product .network-canvas,
+.network-product .network-detail {
+  min-height: 0;
+}
+.network-product .network-detail {
+  background: var(--raised);
+  overflow-y: auto;
+  border-left: 1px solid var(--line);
+  padding: 18px 22px 22px;
+}
+.network-product .network-detail h2 {
+  font-size: 22px;
+}
+.network-product .network-detail > p,
+.network-product .network-detail h3 {
+  font-size: 12px;
+}
+.network-product .network-detail .tag {
+  font-size: 11px;
+}
+.network-product .canvas-label {
+  padding: 18px 20px;
+  font-size: 12px;
+}
+.network-product .canvas-label > span:last-child,
+.network-product .canvas-footer {
+  font-size: 11px;
+}
+.network-product .canvas-footer {
+  padding: 16px 20px;
+}
+.network-product .legend-line {
+  background: var(--muted);
+}
+.network-product .connection-list {
+  overflow-y: auto;
+}
+.network-product .connection-list strong {
+  font-size: 13px;
+}
+.network-product .connection-list small {
+  font-size: 11px;
+}
+.network-product .network-toolbar .segmented > button,
+.network-product .search-field input,
+.network-product .detail-top,
+.network-product .location,
+.network-product .met-at span,
+.network-product .page-footnote {
+  font-size: 11px;
+}
+.network-product .met-at strong {
+  font-size: 12px;
+}
+.network-product .page-footnote {
+  margin-top: 14px;
+}
+.profile-product .profile-preview-column {
+  position: sticky;
+  top: 25px;
+  align-self: start;
+}
+.profile-product .profile-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 360px);
+  gap: 34px;
+}
+.profile-product .profile-form label {
+  font-size: 12px;
+}
+.profile-product .profile-form > section {
+  padding-top: 20px;
+  margin-bottom: 28px;
+}
+.profile-product .profile-section-heading {
+  margin-bottom: 18px;
+}
+.profile-product .profile-section-heading h2 {
+  font-size: 16px;
+}
+.profile-product .profile-preview-column .section-title h2 {
+  font-size: 14px;
+}
+.profile-product .profile-section-heading > span,
+.profile-product .profile-identity p,
+.profile-product .profile-preview-scene > span,
+.profile-product .privacy-note {
+  font-size: 11px;
+}
+.profile-product .profile-identity {
+  margin-bottom: 22px;
+}
+.profile-product .chip-field {
+  margin-bottom: 24px;
+}
+.profile-product .profile-form input,
+.profile-product .profile-form textarea {
+  background: var(--surface);
+  border-color: var(--line);
+  font-size: 14px;
+}
+.profile-product .profile-form input:focus,
+.profile-product .profile-form textarea:focus,
+.profile-product .chip-input:focus-within {
+  border-color: var(--jade);
+}
+.profile-product .chip-input {
+  background: var(--surface);
+  border-color: var(--line);
+}
+.profile-product .chip-input input {
+  background: transparent;
+  font-size: 13px;
+}
+.profile-product .editable-tag,
+.profile-product .suggestions,
+.profile-product .suggestions button,
+.profile-product .field-help {
+  font-size: 11px;
+}
+.profile-product .preview-tabs {
+  margin-bottom: 17px;
+  display: flex;
+}
+.preview-tabs > button {
+  flex: 1;
+  justify-content: center;
+  min-height: 40px;
+  font-size: 11px;
+}
+.profile-product .profile-preview-scene {
+  height: 305px;
+}
+.preview-name {
+  position: relative;
+  border-radius: 11px;
+  padding: 10px 20px;
+  font-size: 17px;
+}
+.profile-product .preview-floating.match {
+  background: var(--raised);
+  border-color: var(--jade);
+}
+.preview-floating .match-label {
+  font-size: 11px;
+}
+.preview-floating .match-copy {
+  font-size: 12px;
+}
+.preview-inactive {
+  position: relative;
+  padding: 24px;
+  border-radius: 17px;
+  text-align: center;
+  width: 80%;
+}
+.preview-inactive p {
+  font-size: 12px;
+  margin-top: 13px;
+}
+.preview-context {
+  border-top: 1px solid var(--line);
+  padding: 23px 0;
+}
+.preview-context h3 {
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.preview-context p {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+.preview-context strong {
+  display: inline-block;
+  min-width: 60px;
+  font-weight: 500;
+  color: var(--text);
+}
+.profile-product .profile-guidance > svg {
+  color: var(--muted);
+}
+.profile-product .profile-guidance p {
+  font-size: 12px;
+  line-height: 1.65;
+}
+.visibility-intro {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 21px;
+}
+.visibility-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--text);
+}
+.contact-input {
+  margin-top: 25px;
+}
+.profile-preferences {
+  margin-top: 48px;
+  max-width: 850px;
+}
+.profile-preferences > h2 {
+  font-size: 23px;
+  letter-spacing: -0.6px;
+  margin-bottom: 24px;
+}
+.profile-map-link {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 20px 0;
+}
+.profile-completion {
+  padding: 20px 2px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.profile-completion .completeness {
+  margin-top: 0;
+  font-size: 11px;
+}
+.profile-completion .completeness strong {
+  color: var(--jade);
+  font-variant-numeric: tabular-nums;
+}
+.profile-completion .completion-track {
+  height: 4px;
+  background: var(--line);
+}
+.profile-completion .completion-track span {
+  background: var(--jade);
+}
+.shared-event-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted) !important;
+  font-size: 10px;
+}
+.header-enter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--raised);
+  color: var(--text);
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 5px;
+  font-size: 9px;
+}
+.app-header .shared-event-indicator .status-dot {
+  background: var(--jade);
+}
+.sidebar .nav-purpose {
+  display: block;
+  font-size: 8px;
+  line-height: 1.5;
+  margin-top: 4px;
+  color: var(--quiet);
+}
+.sidebar nav a {
+  padding-top: 13px;
+  padding-bottom: 13px;
+}
+.sidebar nav a > svg {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+@media (max-width: 1200px) {
+  .profile-product .profile-layout {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 28px;
+  }
+  .network-workspace.full-person {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+  .shared-event-indicator {
+    font-size: 9px;
+  }
+}
+@media (max-width: 1000px) {
+  .profile-product .profile-layout {
+    grid-template-columns: 1fr;
+  }
+  .profile-product .profile-preview-column {
+    position: static;
+    display: block;
+  }
+  .network-workspace.full-person {
+    grid-template-columns: 1fr;
+  }
+  .network-workspace.full-person .network-canvas {
+    display: none;
+  }
+  .shared-event-indicator {
+    max-width: 210px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+}
+@media (max-width: 760px) {
+  .network-product .network-workspace {
+    height: auto;
+    min-height: 0;
+  }
+  .network-product .network-canvas {
+    min-height: 440px;
+  }
+  .network-product .network-detail {
+    max-height: none;
+    overflow: visible;
+  }
+  .network-filters {
+    gap: 9px;
+  }
+  .network-filters > span {
+    display: none;
+  }
+  .network-filters select {
+    font-size: 11px;
+    max-width: 160px;
+  }
+  .network-product .connection-graph {
+    min-height: 380px;
+  }
+  .shared-event-indicator {
+    font-size: 8px;
+    max-width: 150px;
+  }
+  .app-header .demo-badge {
+    display: none;
+  }
+  .header-enter {
+    padding: 7px 9px;
+    font-size: 9px;
+  }
+  .profile-product .profile-form input,
+  .profile-product .profile-form textarea {
+    font-size: 13px;
+  }
+  .network-product .segmented > button {
+    font-size: 11px;
+    padding: 8px 10px;
+  }
+  .network-product .search-field {
+    min-width: 105px;
+  }
+  .profile-product .profile-preview-column {
+    order: -1;
+  }
+  .profile-product .profile-preview-scene {
+    height: 275px;
+  }
+  .profile-product .profile-guidance,
+  .profile-product .preview-context {
+    display: none;
+  }
+  .profile-preferences {
+    margin-top: 45px;
+  }
+  .profile-preferences .setting-row {
+    gap: 15px;
+  }
+  .profile-preferences .button {
+    font-size: 11px;
+    padding: 10px;
+  }
+}
