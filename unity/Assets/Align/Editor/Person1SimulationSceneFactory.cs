@@ -33,7 +33,9 @@ namespace Align.Editor
 
             var sourceObject = new GameObject("Simulated Remote Pose Source");
             sourceObject.transform.SetPositionAndRotation(
-                new Vector3(0f, 1.6f, 2.2f),
+                // Start comfortably inside the 6 m visibility limit. W moves
+                // Maya away from the viewer; S moves her toward the viewer.
+                new Vector3(0f, 1.6f, 0f),
                 Quaternion.identity);
             SimulatedHeadPoseProvider poseProvider =
                 sourceObject.AddComponent<SimulatedHeadPoseProvider>();
@@ -71,7 +73,7 @@ namespace Align.Editor
             cameraObject.tag = "MainCamera";
             cameraObject.transform.position = new Vector3(0f, 1.6f, -3.5f);
             cameraObject.transform.rotation = Quaternion.LookRotation(
-                new Vector3(0f, 1.6f, 2.2f) - cameraObject.transform.position,
+                new Vector3(0f, 1.6f, 0f) - cameraObject.transform.position,
                 Vector3.up);
             Camera camera = cameraObject.AddComponent<Camera>();
             camera.nearClipPlane = 0.05f;

@@ -94,7 +94,7 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 
 ## Immediate start while Quest hardware is unavailable
 
-**Current status:** The Unity source scaffold and simulated pose provider are complete on `person-1/quest`. The visibility policy, Quest pose adapter, profile-card presenter, scene generator, and EditMode tests are written but remain unverified until Unity is installed and opens the project successfully.
+**Current status:** Unity `6000.0.66f2` and its Android toolchain are installed. The project opens and compiles, the simulation and Quest demo scenes have been generated, and a Quest 2-only APK builds successfully at `unity/Builds/Quest/Align.apk`. The APK manifest has been checked for OpenXR, passthrough, ARM64, and Quest 2 targeting. Physical launch is still blocked on the headset USB-authorization prompt; the nine EditMode tests are discovered by Unity but still need a recorded run.
 
 - [x] **S-01** Create the Unity project scaffold and pin Unity `6000.0.66f2` in the repository.
 - [x] **S-02** Implement `IHeadPoseProvider` and a keyboard-controlled `SimulatedHeadPoseProvider`.
@@ -104,11 +104,11 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 
 ### Next Person 1 actions
 
-- [ ] **P1-NEXT-01** Install Unity Hub and Unity `6000.0.66f2` or newer with Android Build Support, Android SDK/NDK Tools, and OpenJDK.
-- [ ] **P1-NEXT-02** Open `unity/`, resolve packages, import TextMeshPro Essential Resources, and reach a clean Console with no compile errors.
+- [x] **P1-NEXT-01** Install Unity Hub and Unity `6000.0.66f2` or newer with Android Build Support, Android SDK/NDK Tools, and OpenJDK.
+- [x] **P1-NEXT-02** Open `unity/`, resolve packages, import TextMeshPro Essential Resources, and reach a clean Console with no compile errors.
 - [ ] **P1-NEXT-03** Run all EditMode tests and fix any Unity-version or package compatibility issues.
-- [ ] **P1-NEXT-04** Run **Align → Setup → Create Person 1 Simulation Scene** and save the generated scene/assets.
-- [ ] **P1-NEXT-05** Verify `WASD`, `Q/E`, arrow-key movement, and the `T` tracking toggle in Play Mode.
+- [x] **P1-NEXT-04** Run **Align → Setup → Create Person 1 Simulation Scene** and save the generated scene/assets.
+- [x] **P1-NEXT-05** Verify `WASD`, `Q/E`, arrow-key movement, and the `T` tracking toggle in Play Mode.
 - [ ] **P1-NEXT-06** Verify cards hide for invalid tracking, stale pose, range, calibration, room, and view-frustum failures; then complete S-03 and S-05.
 - [ ] **P1-NEXT-07** Create a reusable participant prefab from the validated simulation object for Person 2's Photon integration.
 
@@ -118,10 +118,12 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 
 ### Hours 0–4: prove the device path
 
-- [ ] **Q-01** Open and validate the pinned Unity Quest project; document any editor/package resolution changes.
-- [ ] **Q-02** Configure Android/Quest build settings, OpenXR or Meta XR, permissions, and passthrough.
+- [x] **Q-01** Open and validate the pinned Unity Quest project; document any editor/package resolution changes.
+- [x] **Q-02** Configure Android/Quest build settings, OpenXR or Meta XR, permissions, and passthrough.
 - [ ] **Q-03** Make a minimal scene that launches on the physical Quest 2 at 72 Hz with passthrough visible.
-- [ ] **Q-04** Create a world-space test card with large high-contrast text and a simple billboard component.
+- [x] **Q-04** Create a world-space test card with large high-contrast text and a simple billboard component.
+
+**Device-path status:** `QuestDemo.unity` and a verified development APK are ready. Q-03 remains open until the APK is installed and visibly launches in passthrough on a physical Quest 2.
 
 **Checkpoint H4:** An APK runs on a Quest 2 and a test card is readable in passthrough.
 
@@ -137,7 +139,7 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 ### Hours 10–16: integrate and optimize
 
 - [ ] **Q-11** Connect Person 2's remote pose to the prefab and verify card offset/alignment while walking.
-- [ ] **Q-12** Implement `QuestHeadPoseProvider` using the tracked XR camera transform; do not request or process passthrough camera pixels.
+- [x] **Q-12** Implement `QuestHeadPoseProvider` using the tracked XR camera transform; do not request or process passthrough camera pixels.
 - [ ] **Q-13** Keep scene geometry, transparency, and lighting minimal; verify stable frame rate on-device.
 - [ ] **Q-14** Produce numbered APKs for H12 and H16 integration tests and document the install command/path.
 

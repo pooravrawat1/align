@@ -3,7 +3,9 @@
   "rootNamespace": "Align",
   "references": [
     "Unity.TextMeshPro",
-    "UnityEngine.UI"
+    "UnityEngine.UI",
+    "Unity.XR.ARFoundation",
+    "Unity.XR.CoreUtils"
   ],
   "autoReferenced": true
 }

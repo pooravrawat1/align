@@ -50,7 +50,7 @@ Social links are displayed as user-provided contact information. They are not us
 ## Planned stack
 
 - Unity and C#
-- Meta XR All-in-One SDK and Quest passthrough
+- Unity OpenXR, Unity OpenXR: Meta, and Quest passthrough
 - Photon Fusion Shared Mode
 - TextMeshPro and world-space canvases
 - A small HTTP matching service with structured JSON output
@@ -80,9 +80,11 @@ Live AI, sound, and animation are secondary to a reliable two-user experience. T
 
 ## Unity client
 
-The mixed-reality client lives in `unity/`. Its first implementation slice includes the shared head-pose interface, keyboard-controlled simulation, Quest XR head tracking adapter, remote profile-card presentation, visibility gating, an editor scene generator, and EditMode policy tests.
+The mixed-reality client lives in `unity/`. Its first implementation slice includes the shared head-pose interface, keyboard-controlled simulation, Quest XR head tracking adapter, remote profile-card presentation, visibility gating, editor scene generators, and EditMode policy tests.
 
-Install Unity `6000.0.66f2` or newer with Android Build Support, open the `unity/` directory, and follow [the Unity setup guide](unity/README.md). Unity is not installed in the current development environment, so editor compilation and scene generation remain the next verification step.
+Unity `6000.0.66f2` and Android Build Support are installed, and the project compiles. A development APK is available at `unity/Builds/Quest/Align.apk`; it is configured for Quest 2, OpenXR, ARM64, 72 Hz, and passthrough. The current Quest scene displays Maya's hardcoded demo profile at a fixed shared-space position and lets A or X toggle the green match state. It does not detect a person or synchronize the second headset yet.
+
+Open `unity/` in Unity and use **Align → Build → Build Quest APK** to rebuild. See [the Unity setup guide](unity/README.md) for scene controls and headset installation.
 
 ## Web companion prototype
 
