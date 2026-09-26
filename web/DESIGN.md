@@ -13,9 +13,8 @@ colors:
   control-border: "#FFFFFF20"
   jade: "#69E6A6"
   jade-ink: "#103622"
-  spatial-glass-highlight: "#EEF0EE85"
-  spatial-glass-shadow: "#74787499"
-  spatial-glass-text: "#F4F7F1"
+  spatial-sage: "#B8E4C1"
+  spatial-sage-text: "#E8EDDF"
 typography:
   display:
     fontFamily: "Geist Variable, Inter Variable, sans-serif"
@@ -91,7 +90,7 @@ components:
 
 Align combines a neutral, Linear-like application shell with the intimacy of a modern salon. The interface stays compact, quiet, and operational until a room image or spatial scene earns atmosphere. The approved hybrid preserves the original v1 proportions and nested containers while using the sharper v2 typography, login, header, preview, and interaction language.
 
-Reference fidelity is additive, not a license to redesign: retain the old Event two-column photo cards and compact Home, Network, and Profile composition; use the final v2 type and shell; reveal Before / During / After only after an event is opened. Milky white glass is inherited from the approved spatial reference and belongs over imagery or inside the spatial experience.
+Reference fidelity is additive, not a license to redesign: retain the old Event two-column photo cards and compact Home, Network, and Profile composition; use the final v2 type and shell; reveal Before / During / After only after an event is opened. Silver-sage glass is inherited from the archived spatial material and belongs over imagery or inside the spatial experience.
 
 **Key Characteristics:**
 
@@ -103,7 +102,7 @@ Reference fidelity is additive, not a license to redesign: retain the old Event 
 
 ## Colors
 
-The palette is neutral charcoal and cool gray; milky white glass appears in spatial material, while bright jade is reserved for meaningful state.
+The palette is neutral charcoal and cool gray; sage appears in spatial material, while bright jade is reserved for meaningful state.
 
 ### Primary
 
@@ -117,7 +116,7 @@ The palette is neutral charcoal and cool gray; milky white glass appears in spat
 - **Primary Text** (`#F2F3F5`): headings and high-priority interface copy.
 - **Muted Gray** (`#A8ABB2`) and **Quiet Gray** (`#93979F`): support text and metadata.
 - **Hairline White** (`#FFFFFF14`): low-contrast borders and dividers.
-- **Frosted White** (`#EEF0EE85`), **Glass Shadow** (`#74787499`), and **Glass Text** (`#F4F7F1`): translucent spatial overlays with enough tonal depth to remain readable over passthrough imagery.
+- **Spatial Sage** (`#B8E4C1`) and **Sage Text** (`#E8EDDF`): spatial overlays and matched-room material only.
 
 **The State Color Rule.** Jade communicates readiness, live state, a compatible reason to meet, selection, or completion. It is never decorative and never implies public ranking.
 
@@ -157,8 +156,8 @@ The app shell is flat and tonal by default. Opaque surfaces separate through cha
 
 - **Cinematic ambient:** `0 22px 70px #070A071F` for image-led event frames.
 - **Spatial panel:** `0 18px 50px rgb(0 0 0 / 30%)` with inset light and dark edges.
-- **Milky spatial glass:** `linear-gradient(145deg, rgb(238 240 238 / 52%), rgb(116 120 116 / 60%))` plus `blur(28px) saturate(120%)`.
-- **Matched glass:** the same frosted material with a restrained jade edge and state label; the fill does not turn green.
+- **Silver-sage glass:** `linear-gradient(140deg, #C1CBC02B, #29392F9E)` plus `blur(24px) saturate(0.85)`.
+- **Neutral glass:** `linear-gradient(145deg, rgb(45 46 50 / 88%), rgb(23 24 27 / 92%))` for spatial drawers.
 
 **The Earned Glass Rule.** Use glass only over imagery, within the room stage, or for a short spatial overlay. Forms and long reading surfaces stay opaque.
 
@@ -194,7 +193,7 @@ Before / During / After is a compact segmented control labeled “Preview event 
 
 ### Spatial Setup Panel
 
-The setup panel, participant cards, drawers, and control dock share one milky white frosted material. The setup panel is no wider than 420px and compacts for short viewports. Keep every setup step and primary action visible without an internal scrollbar.
+The setup panel is centered silver-sage glass, no wider than 420px, with compact responsive variants for short viewports. Keep every setup step and primary action visible without an internal scrollbar.
 
 ## Do's and Don'ts
 
@@ -202,7 +201,7 @@ The setup panel, participant cards, drawers, and control dock share one milky wh
 
 - **Do** preserve the approved hybrid: v1 proportions and nested structure with v2 typography and interactions.
 - **Do** keep room imagery prominent while maintaining readable contrast and honest demo labels.
-- **Do** use milky white frosted glass consistently across the spatial layer and neutral opaque surfaces for product work.
+- **Do** use silver-sage glass for spatial context and neutral opaque surfaces for product work.
 - **Do** keep event browsing separate from the opened-event phase preview.
 - **Do** keep setup content fully visible at supported viewport heights.
 
