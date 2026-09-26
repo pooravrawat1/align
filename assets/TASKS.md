@@ -1,6 +1,6 @@
 # Align — 24-Hour Hackathon Execution Plan
 
-Original source of truth (superseded for the current demo): [`assets/match-prd.md`](assets/match-prd.md)
+Original source of truth (superseded for the current demo): [`match-prd.md`](match-prd.md)
 Team size: 4 people  
 Deadline: 24 hours from kickoff
 
@@ -27,6 +27,10 @@ Hours 20–24 are reserved for reliability, rehearsal, and submission. No new fe
 - Unity + C# + Meta XR All-in-One SDK, passthrough, and TextMeshPro
 - Photon Fusion Shared Mode for room and pose synchronization
 - Manual shared-origin calibration using position and yaw only
+- Quest 2 uses synchronized headset poses, not computer vision, to locate participants
+- Every spatial participant must wear a connected headset and join the same room
+- Cards render only for calibrated, in-range, in-view participants with a recent valid pose
+- Tracking is accessed through `IHeadPoseProvider`, with simulated and Quest implementations
 - A required profile creation/editing UI with name, bio, interests, skills, goals, and optional social links
 - Two preset profiles, Alex and Maya, remain available as one-click demo defaults
 - A small HTTP matching service with structured JSON; Person 3 chooses FastAPI or Express based on familiarity at kickoff
@@ -90,35 +94,71 @@ Coordinates sent over the network are relative to the calibrated origin, in Unit
 
 Social links are display-only fields. Do not send them to the matching model or include them in match explanations.
 
+```csharp
+public interface IHeadPoseProvider {
+    Vector3 Position { get; }
+    Quaternion Rotation { get; }
+    bool IsTracked { get; }
+}
+```
+
+Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvider` for the headset camera/XR origin. Multiplayer, calibration, and rendering must depend on the interface rather than Meta XR classes directly.
+
+## Immediate start while Quest hardware is unavailable
+
+**Current status:** Unity `6000.0.66f2` and its Android toolchain are installed. The project opens and compiles, the simulation and Quest demo scenes have been generated, and a Quest 2-only APK builds successfully at `unity/Builds/Quest/Align.apk`. The APK was installed and launched on Quest 2 `CoralWallaby3906`; logs confirm OpenXR, 72 Hz, and an active passthrough layer, but the visible scene has not yet been confirmed in-headset. The second headset still has ADB authorization trouble. All nine EditMode tests pass in a recorded Unity batch run. Hold APK rebuild/install until explicitly requested.
+
+- [x] **S-01** Create the Unity project scaffold and pin Unity `6000.0.66f2` in the repository.
+- [x] **S-02** Implement `IHeadPoseProvider` and a keyboard-controlled `SimulatedHeadPoseProvider`.
+- [ ] **S-03** Create a test participant prefab containing a head anchor, debug cube, and profile-card anchor 0.25 m above it.
+- [ ] **S-04** Run two editor/desktop clients and synchronize simulated position, yaw, tracking state, and pose timestamp.
+- [ ] **S-05** Gate the remote card on room membership, calibration, pose freshness, distance, and view direction.
+
+### Next Person 1 actions
+
+- [x] **P1-NEXT-01** Install Unity Hub and Unity `6000.0.66f2` or newer with Android Build Support, Android SDK/NDK Tools, and OpenJDK.
+- [x] **P1-NEXT-02** Open `unity/`, resolve packages, import TextMeshPro Essential Resources, and reach a clean Console with no compile errors.
+- [x] **P1-NEXT-03** Run all EditMode tests and fix any Unity-version or package compatibility issues.
+- [x] **P1-NEXT-04** Run **Align → Setup → Create Person 1 Simulation Scene** and save the generated scene/assets.
+- [x] **P1-NEXT-05** Verify `WASD`, `Q/E`, arrow-key movement, and the `T` tracking toggle in Play Mode.
+- [ ] **P1-NEXT-06** Verify cards hide for invalid tracking, stale pose, range, calibration, room, and view-frustum failures; then complete S-03 and S-05.
+- [ ] **P1-NEXT-07** Create a reusable participant prefab from the validated simulation object for Person 2's Photon integration.
+
+**Hardware-free checkpoint:** Moving the simulated head in Client A makes Client B show the correct card above it; leaving the view, range, room, or tracked state hides the card.
+
 ## Person 1 — Quest and mixed reality
 
 ### Hours 0–4: prove the device path
 
-- [ ] **Q-01** Create/open the Unity Quest project; pin versions in the repository and document the exact editor version.
-- [ ] **Q-02** Configure Android/Quest build settings, OpenXR or Meta XR, permissions, and passthrough.
+- [x] **Q-01** Open and validate the pinned Unity Quest project; document any editor/package resolution changes.
+- [x] **Q-02** Configure Android/Quest build settings, OpenXR or Meta XR, permissions, and passthrough.
 - [ ] **Q-03** Make a minimal scene that launches on the physical Quest 2 at 72 Hz with passthrough visible.
-- [ ] **Q-04** Create a world-space test card with large high-contrast text and a simple billboard component.
+- [x] **Q-04** Create a world-space test card with large high-contrast text and a simple billboard component.
+
+**Device-path status:** `QuestDemo.unity` and a verified development APK are ready. The APK has run as the foreground process and logs report active passthrough, but Q-03 remains open until passthrough and the card are visibly confirmed on a physical Quest 2.
 
 **Checkpoint H4:** An APK runs on a Quest 2 and a test card is readable in passthrough.
 
 ### Hours 4–10: build the remote avatar/card prefab
 
-- [ ] **Q-05** Create `NetworkPlayerView`: invisible head anchor, debug cube toggle, and card anchor 0.25 m above the head.
+- [ ] **Q-05** Create `NetworkPlayerView`: invisible head anchor, debug cube toggle, and card anchor 0.25 m above the synchronized remote head pose.
 - [ ] **Q-06** Bind the card to name, one-line bio, at most three interest tags, and compact optional social handles in the nearby/expanded state.
 - [ ] **Q-07** Hide the local user's card and make every remote card yaw-face the local camera.
-- [ ] **Q-08** Add distance detail: name-only when distant; full card when nearby. Use a conservative fixed threshold if tuning is costly.
-- [ ] **Q-09** Expose neutral, pending, and green matched visual states for Person 4 to drive.
+- [ ] **Q-08** Add a `RemoteCardVisibility` gate requiring same-room membership, calibration, a fresh tracked pose, configured range, and the local camera's view frustum.
+- [ ] **Q-09** Add distance detail: name-only when distant; full card when nearby. Use a conservative fixed threshold if tuning is costly.
+- [ ] **Q-10** Expose neutral, pending, and green matched visual states for Person 4 to drive.
 
 ### Hours 10–16: integrate and optimize
 
-- [ ] **Q-10** Connect Person 2's remote pose to the prefab and verify card offset/alignment while walking.
-- [ ] **Q-11** Keep scene geometry, transparency, and lighting minimal; verify stable frame rate on-device.
-- [ ] **Q-12** Produce numbered APKs for H12 and H16 integration tests and document the install command/path.
+- [ ] **Q-11** Connect Person 2's remote pose to the prefab and verify card offset/alignment while walking.
+- [x] **Q-12** Implement `QuestHeadPoseProvider` using the tracked XR camera transform; do not request or process passthrough camera pixels.
+- [ ] **Q-13** Keep scene geometry, transparency, and lighting minimal; verify stable frame rate on-device.
+- [ ] **Q-14** Produce numbered APKs for H12 and H16 integration tests and document the install command/path.
 
 ### Hours 16–24: hardening support
 
-- [ ] **Q-13** Fix only device, rendering, readability, and performance bugs from the shared test list.
-- [ ] **Q-14** Produce the final release APK and a known-good backup APK.
+- [ ] **Q-15** Fix only device, rendering, readability, and performance bugs from the shared test list.
+- [ ] **Q-16** Produce the final release APK and a known-good backup APK.
 
 ## Person 2 — multiplayer and spatial alignment
 
@@ -134,7 +174,7 @@ Social links are display-only fields. Do not send them to the matching model or 
 
 - [ ] **N-04** Implement calibration: capture current headset horizontal position and yaw when the user stands on the marker facing the arrow.
 - [ ] **N-05** Convert local head poses into calibrated shared-space poses before transmission; ignore pitch/roll when defining the origin.
-- [ ] **N-06** Transmit poses at 10–20 Hz and interpolate remote transforms between updates.
+- [ ] **N-06** Transmit poses and timestamps at 10–20 Hz, interpolate remote transforms, and mark a pose stale after a configurable timeout.
 - [ ] **N-07** Add ready/calibrated state and prevent the main experience from starting until both users are ready.
 - [ ] **N-08** Add recalibrate, reconnect, and leave/reset hooks for Person 4's buttons.
 
@@ -246,6 +286,9 @@ Social links are display-only fields. Do not send them to the matching model or 
 - [ ] Select Alex on one device and Maya on the other.
 - [ ] Join room `DEMO`; exactly one remote participant appears on each device.
 - [ ] Calibrate both users at the same marker and forward arrow.
+- [ ] Confirm no remote card appears before the remote participant joins and calibrates.
+- [ ] Confirm the card hides when the remote pose becomes stale, leaves the configured range, or moves outside the viewing direction.
+- [ ] Confirm no camera frames are requested or processed for Quest 2 participant detection.
 - [ ] Each card stays approximately 20–30 cm above the other headset while the wearer turns and walks within the demo area.
 - [ ] Cards face the viewer and are readable; neither user sees their own duplicate card.
 - [ ] Both clients transition to green and display the identical explanation.
@@ -256,7 +299,7 @@ Social links are display-only fields. Do not send them to the matching model or 
 
 ## Bug priority and cut order
 
-**P0 — stop everything:** build/install failure, crash, cannot join, no remote pose, unusable calibration, or asymmetric match result.
+**P0 — stop everything:** build/install failure, crash, cannot join, no remote pose, card shown for an invalid/stale participant, unusable calibration, or asymmetric match result.
 
 **P1 — fix before H20:** broken profile create/edit/save, unreadable card, major jitter, reset/reconnect failure, match delay over 10 seconds without fallback, or flow over two minutes.
 
@@ -270,7 +313,7 @@ Cut features in this order when behind:
 4. Live AI call (retain deterministic matching and API-shaped fixture)
 5. Backend dependency during the demo (retain bundled fixture)
 
-Never cut profile create/edit/save, Alex/Maya demo defaults, two-device networking, manual calibration, remote cards, synchronized green state, recovery controls, or the backup recording.
+Never cut profile create/edit/save, Alex/Maya demo defaults, two-device networking, manual calibration, pose-based visibility gating, remote cards, synchronized green state, recovery controls, or the backup recording.
 
 ## Demo-day runbook
 

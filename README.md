@@ -15,7 +15,23 @@ The current headset demo is successful when two users can:
 5. Receive the same green match cue and conversation starter, or remain neutral for Sam.
 6. Repeat Maya → Sam → Maya reliably in under two minutes.
 
-Quest/Unity and Photon integration is owned by the headset teammates. The matcher is a separate laptop service; its API and bundled offline results are documented in [matcher/README.md](matcher/README.md).
+Desktop development uses simulated head poses and browser clients. Tracking is kept behind a provider interface so headset poses can be connected without changing the networking, calibration, or profile-card systems. Quest/Unity and Photon integration is owned by the headset teammates. The matcher is a separate laptop service; its API and bundled offline results are documented in [matcher/README.md](matcher/README.md).
+
+## Quest 2 spatial behavior
+
+Align does not use computer vision or camera-pixel access on Quest 2. Every participant shown in the mixed-reality experience must wear a connected headset and join the same room.
+
+Quest 2 passthrough shows the physical person. Align synchronizes that participant's tracked headset pose, converts it into the manually calibrated shared coordinate system, and renders their profile card approximately 25 cm above the remote headset.
+
+A remote card is visible only when the participant:
+
+- Is connected to the same room
+- Has completed shared-origin calibration
+- Has sent a recent valid head pose
+- Is within the configured distance range
+- Is inside the local user's viewing direction
+
+This produces the intended “look toward someone and see their profile” behavior without claiming to detect or identify people from camera images. People who are not wearing a connected headset are outside the Quest 2 MVP.
 
 ## Demo profiles and privacy
 
@@ -28,7 +44,7 @@ Social links are displayed as user-provided contact information. They are not us
 ## Planned stack
 
 - Unity and C#
-- Meta XR All-in-One SDK and Quest passthrough
+- Unity OpenXR, Unity OpenXR: Meta, and Quest passthrough
 - Photon Fusion Shared Mode
 - TextMeshPro and world-space canvases
 - A separate Node HTTP matching service with Gemini structured JSON output
@@ -39,11 +55,12 @@ Social links are displayed as user-provided contact information. They are not us
 ```text
 Bundled Alex/Maya/Sam fixtures
     → matching service and offline result
+    → desktop simulation
     → two-client pose synchronization
     → manual shared-origin calibration
     → floating remote names
     → synchronized match reveal
-    → Quest pose and passthrough integration
+    → Quest 2 head-pose and passthrough integration
     → reliability testing and demo rehearsal
 ```
 
@@ -53,9 +70,18 @@ The judged run can use `npm run start:demo` in `matcher/` to force fixture-only 
 
 - [Product requirements](assets/match-prd.md)
 - [24-hour execution plan](assets/TASKS.md)
+- [Unity client setup](unity/README.md)
 - [Matching rubric](assets/align-matching-rubric.md)
 - [Quest matcher and Unity handoff](matcher/README.md)
 - [Interactive companion prototype](web/README.md)
+
+## Unity client
+
+The mixed-reality client lives in `unity/`. Its first implementation slice includes the shared head-pose interface, keyboard-controlled simulation, Quest XR head tracking adapter, remote profile-card presentation, visibility gating, editor scene generators, and EditMode policy tests.
+
+Unity `6000.0.66f2` and Android Build Support are installed, and the project compiles. A development APK is available at `unity/Builds/Quest/Align.apk`; it is configured for Quest 2, OpenXR, ARM64, 72 Hz, and passthrough. The APK was installed and launched on Quest 2 `CoralWallaby3906`; device logs confirmed OpenXR, 72 Hz, and an active passthrough layer, but the visible scene is not yet confirmed in-headset. The current Quest scene displays Maya's hardcoded demo profile and lets A or X toggle the green match state. It does not detect a person or synchronize the second headset yet. Do not rebuild or reinstall the APK until explicitly requested.
+
+Open `unity/` in Unity and use **Align → Build → Build Quest APK** to rebuild. See [the Unity setup guide](unity/README.md) for scene controls and headset installation.
 
 ## Web companion prototype
 

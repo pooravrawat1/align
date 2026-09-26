@@ -1,0 +1,12 @@
+{
+  "name": "Align.Runtime",
+  "rootNamespace": "Align",
+  "references": [
+    "Unity.TextMeshPro",
+    "UnityEngine.UI",
+    "Unity.InputSystem",
+    "Unity.XR.ARFoundation",
+    "Unity.XR.CoreUtils"
+  ],
+  "autoReferenced": true
+}
