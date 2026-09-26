@@ -1,0 +1,54 @@
+{
+  "asset": "public/assets/hero-room-v3.webp",
+  "source": "/Users/casey/questmatch-v3/docs/design-studies/fullscreen-visor-study-01.png",
+  "generationMode": "built-in image_gen edit, full repaint",
+  "prompt": "Use case: style-transfer\nAsset type: production full-screen hero photograph.\nRepaint the supplied image as a new standalone photograph, using the source only for atrium layout, camera framing, and approximate people placement. Do not preserve or reproduce the screenshot treatment.\nRequired final image: a bright natural-color, edge-to-edge photorealistic photograph of an airy contemporary hackathon networking atrium. Preserve the focal woman near x=59%, y=55%, plus the surrounding people and architectural framing. People wear plain matte white opaque Meta Quest 2 style headsets with simple white straps; no glossy dark faceplates and no transparent visors.\nThe final pixels must contain ONLY the natural room, people, furniture, plants, windows, and daylight. Remove and do not recreate every overlay and graphic from the source: visor/lens shape, black or white rim, interior tint, grayscale exterior, wordmark, headline, profile cards, labels, arrows, connector lines, HUD, environmental slogans, banners with readable words, logos, watermarks, and all other text. No typography anywhere. No UI. No border. No composited design study appearance.\nCamera: preserve the wide full-screen composition and people positions from the source, but make the result a clean editorial event photograph filling all four edges. Natural skin texture, realistic anatomy, subtle depth of field, warm late-afternoon light, architectural negative space.",
+  "dimensions": {
+    "width": 1672,
+    "height": 941,
+    "aspectRatio": "1.777"
+  },
+  "bytes": 224566,
+  "format": "image/webp",
+  "quality": {
+    "cwebpQuality": 90,
+    "sourceLongEdge": 1672
+  },
+  "headAnchors": {
+    "maya": {
+      "pixel": {
+        "x": 980,
+        "y": 387
+      },
+      "normalized": {
+        "x": 0.586,
+        "y": 0.411
+      },
+      "visualNote": "focal woman; headset/head center estimated from visible head and face"
+    },
+    "leftAttendee": {
+      "pixel": {
+        "x": 442,
+        "y": 323
+      },
+      "normalized": {
+        "x": 0.264,
+        "y": 0.343
+      },
+      "visualNote": "foreground attendee at left"
+    },
+    "rightForegroundAttendee": {
+      "pixel": {
+        "x": 1302,
+        "y": 372
+      },
+      "normalized": {
+        "x": 0.779,
+        "y": 0.395
+      },
+      "visualNote": "foreground attendee seen from behind at right"
+    }
+  },
+  "inspection": "Visually inspected source edit and converted WebP. The result is full-color and edge-to-edge with no visor/rim, tint, monochrome treatment, UI, cards, wordmark, headline, arrows, slogans, readable text, or watermark. White opaque headset shells are visible on the left attendee and Maya.",
+  "importedFrom": "/Users/casey/questmatch-v3/public/assets/hero-room-v3.webp"
+}

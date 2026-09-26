@@ -15,8 +15,8 @@ npm run dev
 
 ## Try the main journey
 
-1. On the landing page, select **See the introduction**.
-2. Select **Step inside**, then continue as Alex.
+1. On the landing page, scroll through the illuminated visor journey or select **See how it works**.
+2. Select **Try the demo** or **Step inside**, then continue with a prepared profile.
 3. Explore Home, Event, Network, and Profile. Edit and save your introduction; its spatial preview updates as you type.
 4. Open Spatial preview. Join `DEMO`, confirm your profile, simulate calibration, and enter the room.
 5. Find connections, open Maya, start a conversation, and save the connection.
@@ -41,3 +41,11 @@ HTTP tests exercise the in-memory API. A browser preview can establish compositi
 `src/theme.css` owns the unified color and typography tokens over reusable layout primitives in `styles.css`. `Landing.css`, `ProductPages.css`, `PersonalPages.css`, and `SpatialV2.css` own their respective compositions. Geist and Inter are self-hosted from Fontsource packages. The product presents one unified interface. Prior drafts are preserved separately in the original local workspace.
 
 See [product scope](PRODUCT.md), [implementation boundaries](docs/IMPLEMENTATION.md), and [asset provenance](docs/ASSETS.md). This companion prototype lives in `web/` in the Align repository; the repository’s existing Unity requirements and execution plan remain authoritative for headset implementation.
+
+## Cinematic public landing
+
+The approved V3 landing is now the Align front page. Its fullscreen room photograph, illuminated visor, Maya marker-to-contact transition and deliberate scroll checkpoints are scoped to the public route. The existing Align branding and login callback are reused; current Home, Event, Network, Profile and Spatial implementations remain in place. Below 900px and with reduced motion, the story uses the normal linear reading layout.
+
+GSAP owns the scroll timeline; Three.js renders the optical surface with an aligned SVG fallback. The illustrative photograph's provenance is in `public/assets/hero-room-v3.webp.json`. Development-only version comparison links remain in the separate V3 project and are not shown on Align.
+
+No builds, tests, browser verification or Playwright were run for this integration, per the user's instruction.
