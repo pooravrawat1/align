@@ -186,6 +186,7 @@
   letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
 }
+.np-score--high .np-score-value { color: #9be0ba; }
 
 .np-score-value small {
   margin-left: 3px;
@@ -248,8 +249,11 @@
   text-underline-offset: 4px;
   transition: text-decoration-color 150ms ease;
 }
+.np-open-profile svg { transition: transform 180ms cubic-bezier(.2,.8,.2,1); transform-origin: center; }
 .np-open-profile:hover span,
 .np-open-profile:focus-visible span { text-decoration-color: currentColor; }
+.np-open-profile:hover svg,
+.np-open-profile:focus-visible svg { transform: translate(2px, -1px) scale(1.14); }
 .np-save-connection { width: 100%; padding-inline: 13px; }
 .np-save-connection:disabled { opacity: 1; cursor: default; }
 
@@ -513,5 +517,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .np-disclosure > summary svg,
-  .np-message > summary svg { transition: none; }
+  .np-message > summary svg,
+  .np-open-profile span,
+  .np-open-profile svg { transition: none; }
 }

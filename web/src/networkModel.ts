@@ -24,9 +24,9 @@ export interface NetworkPerson {
   withdrawn: boolean;
 }
 
-const supplements: Record<string, { title: string; goals: string[] }> = {
+const supplements: Record<string, { title: string; description?: string; goals: string[] }> = {
   alex: { title: "Navigation that opens up the world", goals: ["Find a project collaborator", "Exchange technical expertise"] },
-  maya: { title: "Visual assistance, beyond the screen", goals: ["Find a project collaborator", "Test an early idea"] },
+  maya: { title: "Visual assistance, beyond the screen", description: "Testing how everyday objects can offer clearer, more natural guidance.", goals: ["Find a project collaborator", "Test an early idea"] },
   jordan: { title: "Making spatial interactions feel natural", goals: ["Prototype with other builders", "Exchange technical expertise"] },
   sam: { title: "A better space for creative collaboration", goals: ["Find a project collaborator", "Learn from other disciplines"] },
   nina: { title: "Small tools, closer communities", goals: ["Prototype with other builders", "Find a project collaborator"] },
@@ -130,7 +130,7 @@ export function networkPerson(state: State, user: Profile, original: Profile): N
   }
   return {
     profile, connection, withdrawn, goals, sharedInterests, theyOffer, youOffer, reason, contacts,
-    project: supplement ? { title: supplement.title, description: profile.bio, topics: profile.interests.slice(0, 3) } : undefined,
+    project: supplement ? { title: supplement.title, description: supplement.description ?? profile.bio, topics: profile.interests.slice(0, 3) } : undefined,
     sample: !!supplement || !!points,
     compatibility: {
       status: withdrawn ? "unavailable" : points ? "ready" : "partial",

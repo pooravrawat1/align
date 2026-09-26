@@ -268,8 +268,17 @@ async function replaceChips(page, groupName, inputName, values) {
 async function expectPillChip(page, groupName, value) {
   const group = chipGroup(page, groupName);
   const tag = group.getByRole('button', { name: `Remove ${value}`, exact: true }).locator('..');
-  const radius = await tag.evaluate((element) => parseFloat(getComputedStyle(element).borderRadius));
-  expect(radius).toBeGreaterThanOrEqual(999);
+  const style = await tag.evaluate((element) => {
+    const computed = getComputedStyle(element);
+    return {
+      background: computed.backgroundColor,
+      height: element.getBoundingClientRect().height,
+      radius: parseFloat(computed.borderRadius),
+    };
+  });
+  expect(style.radius).toBeGreaterThanOrEqual(999);
+  expect(style.height).toBeLessThanOrEqual(30);
+  expect(style.background).toBe('rgba(0, 0, 0, 0)');
   await expect(tag).toHaveClass(/chip--editable/);
 }
 

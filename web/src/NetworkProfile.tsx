@@ -99,7 +99,7 @@ function CompatibilityValue({ person, compact = false }: { person: NetworkPerson
   const { compatibility } = person;
   const hasScore = compatibility.score !== null;
   return (
-    <div className={`np-score ${compact ? "np-score--compact" : ""}`}>
+    <div className={`np-score ${compact ? "np-score--compact" : ""} ${hasScore && compatibility.score! >= 80 ? "np-score--high" : ""}`}>
       <span className="np-score-value">
         {hasScore ? compatibility.score : "—"}
         {hasScore && <small>/100</small>}

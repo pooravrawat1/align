@@ -12,7 +12,7 @@ const params = () => new URLSearchParams(location.hash.split("?")[1]);
 
 export function NetworkProduct({ state, user, act, busy, notify }: Props) {
   const [destination, setDestination] = useState<"network" | "discover">(() => params().get("tab") === "discover" ? "discover" : "network");
-  const [view, setView] = useState<"map" | "people">("map");
+  const [view, setView] = useState<"map" | "people">("people");
   const [groupBy, setGroupBy] = useState<"connections" | "event" | "interest">("connections");
   const [query, setQuery] = useState("");
   const [eventFilter, setEventFilter] = useState("all");
@@ -148,7 +148,7 @@ export function NetworkProduct({ state, user, act, busy, notify }: Props) {
           <button aria-pressed={destination === "discover"} onClick={() => switchDestination("discover")}><Compass size={16} />Discover<span>{discovered.length}</span></button>
         </div>
         <div className="nx-view-tools">
-          {destination === "network" && <div className="nx-view-switch" role="group" aria-label="Network view"><button aria-pressed={view === "map"} onClick={() => setView("map")}><Network size={15} />Map</button><button aria-pressed={view === "people"} onClick={() => setView("people")}><List size={15} />People</button></div>}
+          {destination === "network" && <div className="nx-view-switch" role="group" aria-label="Network view"><button aria-pressed={view === "people"} onClick={() => setView("people")}><List size={15} />People</button><button aria-pressed={view === "map"} onClick={() => setView("map")}><Network size={15} />Map</button></div>}
           <button className="nx-filter-trigger" aria-expanded={filtersOpen} aria-controls="network-filters" onClick={() => setFiltersOpen(!filtersOpen)}><SlidersHorizontal size={15} />Filters{activeFilters > 0 && <span>{activeFilters}</span>}</button>
         </div>
       </div>
@@ -168,7 +168,6 @@ export function NetworkProduct({ state, user, act, busy, notify }: Props) {
           : destination === "network" && view === "map" ? <NetworkMap user={user} people={visible.map(person => person.profile)} selectedId={selectedId} onSelect={select} groupBy={groupBy} eventNames={eventNames} sharedTopics={sharedTopics} />
           : destination === "discover" ? <div className="nx-discover-grid">{visible.map(person => <DiscoverCard key={person.profile.id} person={person} selected={person.profile.id === selectedId} onSelect={() => select(person.profile.id)} />)}</div>
           : <div className="nx-people-list">
-              <div className="nx-list-labels" aria-hidden="true"><span>Person</span><span>Compatibility</span></div>
               {visible.map(person => (
                 <button key={person.profile.id} className="nx-person-row" aria-label={`View ${person.profile.name}'s profile`} onClick={() => select(person.profile.id)}>
                   <Avatar profile={person.profile} />
@@ -194,7 +193,8 @@ export function NetworkProduct({ state, user, act, busy, notify }: Props) {
 }
 
 function FitLabel({ person }: { person: NetworkPerson }) {
-  return <span className={`nx-fit ${person.compatibility.score === null ? "nx-fit-pending" : ""}`}>{person.compatibility.score !== null ? <><span>{person.compatibility.score}<small>/100</small></span><small>Compatibility</small></> : <small>Explore fit</small>}</span>;
+  const score = person.compatibility.score;
+  return <span className={`nx-fit ${score === null ? "nx-fit-pending" : ""} ${score !== null && score >= 80 ? "nx-fit-high" : ""}`}>{score !== null ? <><span>{score}<small>/100</small></span><small>Compatibility</small></> : <small>Explore fit</small>}</span>;
 }
 
 function DiscoverCard({ person, selected, onSelect }: { person: NetworkPerson; selected: boolean; onSelect: () => void }) {
