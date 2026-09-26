@@ -43,3 +43,19 @@ tmp/
 [Mm]emoryCaptures/
 [Rr]ecordings/
 .utmp/
+
+# Prevent an accidental Unity project from being created at repository root.
+# The real Unity project lives in /unity.
+/Packages/
+/ProjectSettings/
+/assets/TextMesh Pro/
+/assets/**/*.meta
+
+# Unity IDE and Android build artifacts
+.gradle/
+*.csproj
+*.sln
+*.user
+*.userprefs
+*.apk
+*.aab

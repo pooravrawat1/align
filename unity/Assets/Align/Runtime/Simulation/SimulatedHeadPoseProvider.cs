@@ -1,5 +1,6 @@
 using Align.Pose;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Align.Simulation
 {
@@ -15,7 +16,7 @@ namespace Align.Simulation
         [SerializeField, Min(0f)] private float yawSpeedDegrees = 90f;
         [SerializeField] private bool isTracked = true;
         [SerializeField] private bool controlsEnabled = true;
-        [SerializeField] private KeyCode toggleTrackingKey = KeyCode.T;
+        [SerializeField] private Key toggleTrackingKey = Key.T;
 
         private double _sampleTimeSeconds;
 
@@ -54,7 +55,13 @@ namespace Align.Simulation
 
         private void UpdateControls()
         {
-            if (Input.GetKeyDown(toggleTrackingKey))
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard == null)
+            {
+                return;
+            }
+
+            if (keyboard[toggleTrackingKey].wasPressedThisFrame)
             {
                 isTracked = !isTracked;
             }
@@ -64,14 +71,14 @@ namespace Align.Simulation
             float vertical = 0f;
             float yaw = 0f;
 
-            if (Input.GetKey(KeyCode.A)) horizontal -= 1f;
-            if (Input.GetKey(KeyCode.D)) horizontal += 1f;
-            if (Input.GetKey(KeyCode.S)) forward -= 1f;
-            if (Input.GetKey(KeyCode.W)) forward += 1f;
-            if (Input.GetKey(KeyCode.Q)) vertical -= 1f;
-            if (Input.GetKey(KeyCode.E)) vertical += 1f;
-            if (Input.GetKey(KeyCode.LeftArrow)) yaw -= 1f;
-            if (Input.GetKey(KeyCode.RightArrow)) yaw += 1f;
+            if (keyboard.aKey.isPressed) horizontal -= 1f;
+            if (keyboard.dKey.isPressed) horizontal += 1f;
+            if (keyboard.sKey.isPressed) forward -= 1f;
+            if (keyboard.wKey.isPressed) forward += 1f;
+            if (keyboard.qKey.isPressed) vertical -= 1f;
+            if (keyboard.eKey.isPressed) vertical += 1f;
+            if (keyboard.leftArrowKey.isPressed) yaw -= 1f;
+            if (keyboard.rightArrowKey.isPressed) yaw += 1f;
 
             Vector3 planarForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
             if (planarForward.sqrMagnitude < 0.0001f)

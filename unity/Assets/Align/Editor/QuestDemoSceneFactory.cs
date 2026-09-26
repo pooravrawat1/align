@@ -52,6 +52,25 @@ namespace Align.Editor
             Debug.Log("Created QuestDemo. On Quest, look forward to see Maya's card; press A or X to toggle the match state.");
         }
 
+        [MenuItem("Align/Preview/Toggle Quest Demo Match _F8")]
+        private static void ToggleMatchPreview()
+        {
+            if (!EditorApplication.isPlaying)
+            {
+                Debug.LogWarning("Enter Play Mode before toggling the Quest demo match.");
+                return;
+            }
+
+            QuestDemoController controller = Object.FindFirstObjectByType<QuestDemoController>();
+            if (controller == null)
+            {
+                Debug.LogWarning("No QuestDemoController is active in the current scene.");
+                return;
+            }
+
+            controller.ToggleMatchState();
+        }
+
         private static Camera CreateXrOrigin()
         {
             var originObject = new GameObject("XR Origin");
@@ -124,7 +143,7 @@ namespace Align.Editor
             TMP_Text matchReason = CreateText(card.transform, "Match reason", 19f, new Vector2(32f, -314f), new Vector2(596f, 50f));
 
             RemoteProfileCardPresenter presenter = card.AddComponent<RemoteProfileCardPresenter>();
-            presenter.Configure(name, bio, interests, social, matchReason, panel);
+            presenter.Configure(name, bio, interests, social, matchReason, panel, brand);
             presenter.Bind(new ProfileCardData
             {
                 UserId = "maya",

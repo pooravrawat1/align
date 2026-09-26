@@ -2,6 +2,7 @@ using Align.Pose;
 using Align.Presentation;
 using UnityEngine;
 using UnityEngine.XR;
+using Keyboard = UnityEngine.InputSystem.Keyboard;
 
 namespace Align.Quest
 {
@@ -34,6 +35,12 @@ namespace Align.Quest
             cardPresenter = presenter;
             viewerCamera = localViewer;
             demoDistanceMeters = Mathf.Max(0.5f, distanceMeters);
+        }
+
+        public void ToggleMatchState()
+        {
+            _isMatched = !_isMatched;
+            cardPresenter?.SetMatchState(_isMatched, matchReason);
         }
 
         private void OnEnable()
@@ -75,12 +82,12 @@ namespace Align.Quest
 
             bool primaryPressed = ReadPrimaryButton();
 #if UNITY_EDITOR
-            primaryPressed |= Input.GetKey(KeyCode.Space);
+            Keyboard keyboard = Keyboard.current;
+            primaryPressed |= keyboard != null && keyboard.spaceKey.isPressed;
 #endif
             if (primaryPressed && !_wasPrimaryPressed)
             {
-                _isMatched = !_isMatched;
-                cardPresenter?.SetMatchState(_isMatched, matchReason);
+                ToggleMatchState();
             }
 
             _wasPrimaryPressed = primaryPressed;

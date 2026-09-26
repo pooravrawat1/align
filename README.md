@@ -16,7 +16,7 @@ The demo is successful when two users can:
 6. Receive the same compatibility result and match explanation.
 7. Repeat the complete demo flow reliably in under two minutes.
 
-Until Quest hardware is available, development uses simulated head poses and desktop clients. Tracking is kept behind a provider interface so real headset poses can be connected without changing the networking, calibration, or profile-card systems.
+Desktop development uses simulated head poses and browser clients. Tracking is kept behind a provider interface so headset poses can be connected without changing the networking, calibration, or profile-card systems.
 
 ## Quest 2 spatial behavior
 
@@ -82,7 +82,7 @@ Live AI, sound, and animation are secondary to a reliable two-user experience. T
 
 The mixed-reality client lives in `unity/`. Its first implementation slice includes the shared head-pose interface, keyboard-controlled simulation, Quest XR head tracking adapter, remote profile-card presentation, visibility gating, editor scene generators, and EditMode policy tests.
 
-Unity `6000.0.66f2` and Android Build Support are installed, and the project compiles. A development APK is available at `unity/Builds/Quest/Align.apk`; it is configured for Quest 2, OpenXR, ARM64, 72 Hz, and passthrough. The current Quest scene displays Maya's hardcoded demo profile at a fixed shared-space position and lets A or X toggle the green match state. It does not detect a person or synchronize the second headset yet.
+Unity `6000.0.66f2` and Android Build Support are installed, and the project compiles. A development APK is available at `unity/Builds/Quest/Align.apk`; it is configured for Quest 2, OpenXR, ARM64, 72 Hz, and passthrough. The APK was installed and launched on Quest 2 `CoralWallaby3906`; device logs confirmed OpenXR, 72 Hz, and an active passthrough layer, but the visible scene is not yet confirmed in-headset. The current Quest scene displays Maya's hardcoded demo profile and lets A or X toggle the green match state. It does not detect a person or synchronize the second headset yet. Do not rebuild or reinstall the APK until explicitly requested.
 
 Open `unity/` in Unity and use **Align → Build → Build Quest APK** to rebuild. See [the Unity setup guide](unity/README.md) for scene controls and headset installation.
 

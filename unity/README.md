@@ -39,6 +39,8 @@ The Maya card is visible only while the simulated participant is in the same roo
 
 The build is written to `Builds/Quest/Align.apk`. The checked-in scene uses a transparent XR camera over Quest passthrough, requests a 72 Hz refresh rate, and places Maya's hardcoded demo head anchor 2.5 m in front of the shared origin. Press A or X on either controller to toggle the green match state; press Space when previewing the same scene in the editor.
 
+Do not rebuild or reinstall the APK until explicitly requested. Scene and non-UI systems can be developed and verified in the editor first.
+
 The generated APK targets Quest 2 only. It does not require Quest Pro eye tracking. To install it after the headset accepts the USB debugging prompt, run from this directory:
 
 ```sh
@@ -61,4 +63,4 @@ Open **Window → General → Test Runner**, select **EditMode**, and run all te
 - The Quest 2 implementation does not request or process passthrough camera frames.
 - `QuestDemo.unity` uses AR Foundation passthrough, but Align code never requests or processes passthrough image frames.
 - The hardcoded Maya anchor proves rendering only. Person 2 still needs to replace it with the calibrated remote headset pose.
-- The APK is built and manifest-verified; physical Quest 2 launch remains pending until USB debugging is authorized.
+- The existing APK is built, manifest-verified, installed, and was observed as the foreground process on one Quest 2. Logs confirm OpenXR, 72 Hz, and active passthrough, but the visible passthrough/card result still needs in-headset confirmation. The second headset still needs ADB authorization.

@@ -94,7 +94,7 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 
 ## Immediate start while Quest hardware is unavailable
 
-**Current status:** Unity `6000.0.66f2` and its Android toolchain are installed. The project opens and compiles, the simulation and Quest demo scenes have been generated, and a Quest 2-only APK builds successfully at `unity/Builds/Quest/Align.apk`. The APK manifest has been checked for OpenXR, passthrough, ARM64, and Quest 2 targeting. Physical launch is still blocked on the headset USB-authorization prompt; the nine EditMode tests are discovered by Unity but still need a recorded run.
+**Current status:** Unity `6000.0.66f2` and its Android toolchain are installed. The project opens and compiles, the simulation and Quest demo scenes have been generated, and a Quest 2-only APK builds successfully at `unity/Builds/Quest/Align.apk`. The APK was installed and launched on Quest 2 `CoralWallaby3906`; logs confirm OpenXR, 72 Hz, and an active passthrough layer, but the visible scene has not yet been confirmed in-headset. The second headset still has ADB authorization trouble. The nine EditMode tests are discovered by Unity but still need a recorded run. Hold APK rebuild/install until explicitly requested.
 
 - [x] **S-01** Create the Unity project scaffold and pin Unity `6000.0.66f2` in the repository.
 - [x] **S-02** Implement `IHeadPoseProvider` and a keyboard-controlled `SimulatedHeadPoseProvider`.
@@ -123,7 +123,7 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 - [ ] **Q-03** Make a minimal scene that launches on the physical Quest 2 at 72 Hz with passthrough visible.
 - [x] **Q-04** Create a world-space test card with large high-contrast text and a simple billboard component.
 
-**Device-path status:** `QuestDemo.unity` and a verified development APK are ready. Q-03 remains open until the APK is installed and visibly launches in passthrough on a physical Quest 2.
+**Device-path status:** `QuestDemo.unity` and a verified development APK are ready. The APK has run as the foreground process and logs report active passthrough, but Q-03 remains open until passthrough and the card are visibly confirmed on a physical Quest 2.
 
 **Checkpoint H4:** An APK runs on a Quest 2 and a test card is readable in passthrough.
 

@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using Align.Presentation;
 using Align.Profiles;
 using Align.Simulation;
@@ -58,7 +59,13 @@ namespace Align.Editor
 
             Directory.CreateDirectory(SceneDirectory);
             EditorSceneManager.SaveScene(scene, ScenePath);
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
+            EditorBuildSettingsScene[] existingScenes = EditorBuildSettings.scenes;
+            if (!existingScenes.Any(existing => existing.path == ScenePath))
+            {
+                EditorBuildSettings.scenes = existingScenes
+                    .Concat(new[] { new EditorBuildSettingsScene(ScenePath, true) })
+                    .ToArray();
+            }
             AssetDatabase.SaveAssets();
 
             Selection.activeGameObject = sourceObject;
