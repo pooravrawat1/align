@@ -26,7 +26,7 @@
       {
         "name": "spatial-panel",
         "value": "inset 0 1px 0 #F0FFED38, inset 0 -1px 0 #00000025, 0 18px 50px rgb(0 0 0 / 30%)",
-        "purpose": "Physical edge and depth for silver-sage spatial glass."
+        "purpose": "Physical edge and depth for milky white spatial glass."
       }
     ],
     "motion": [
@@ -99,14 +99,14 @@
     {
       "name": "Spatial Setup Panel",
       "kind": "custom",
-      "description": "Silver-sage scene glass sized so the complete setup remains visible without internal scrolling.",
+      "description": "Milky white scene glass sized so the complete setup remains visible without internal scrolling.",
       "html": "<section class=\"ds-setup-panel\"><div class=\"ds-progress\"><span class=\"is-complete\"></span><span></span><span></span></div><small>ROOM DEMO</small><h2>Find your shared origin.</h2><p>Stand inside the demo area and align with the shared marker.</p><button>Begin calibration</button></section>",
-      "css": ".ds-setup-panel { width: min(100%, 420px); padding: 22px 26px; border: 1px solid rgb(255 255 255 / 18%); border-radius: 27px; color: #F5F6F7; text-align: center; background: linear-gradient(140deg, #C1CBC02B, #29392F9E); box-shadow: inset 0 1px 0 #F0FFED38, inset 0 -1px 0 #00000025, 0 18px 50px rgb(0 0 0 / 30%); backdrop-filter: blur(24px) saturate(0.85); font-family: 'Inter Variable', sans-serif; } .ds-progress { display: flex; justify-content: center; gap: 7px; margin-bottom: 20px; } .ds-progress span { width: 34px; height: 3px; border-radius: 3px; background: #FFFFFF24; } .ds-progress span.is-complete { background: #B8E4C1; } .ds-setup-panel small { color: #E8EDDF; font-size: 11px; font-weight: 650; letter-spacing: 0.09em; } .ds-setup-panel h2 { margin: 12px 0 0; font: 500 32px/1.1 'Geist Variable', sans-serif; letter-spacing: -0.035em; } .ds-setup-panel p { margin: 12px auto 18px; max-width: 42ch; color: #E8EDDF; font-size: 14px; line-height: 1.5; } .ds-setup-panel button { width: 100%; min-height: 46px; border: 0; border-radius: 12px; color: #17351F; background: #B8E4C1; font: 600 14px/1 'Inter Variable', sans-serif; } .ds-setup-panel button:hover { background: #C7EACD; } .ds-setup-panel button:focus-visible { outline: 2px solid #F5F6F7; outline-offset: 3px; }"
+      "css": ".ds-setup-panel { width: min(100%, 420px); padding: 22px 26px; border: 1px solid rgb(255 255 255 / 24%); border-radius: 27px; color: #F5F6F7; text-align: center; background: linear-gradient(145deg, rgb(238 240 238 / 52%), rgb(116 120 116 / 60%)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 42%), inset 0 -1px 0 rgb(0 0 0 / 15%), 0 18px 50px rgb(0 0 0 / 30%); backdrop-filter: blur(28px) saturate(120%); font-family: 'Inter Variable', sans-serif; } .ds-progress { display: flex; justify-content: center; gap: 7px; margin-bottom: 20px; } .ds-progress span { width: 34px; height: 3px; border-radius: 3px; background: #FFFFFF24; } .ds-progress span.is-complete { background: #B8E4C1; } .ds-setup-panel small { color: #F2F4EF; font-size: 11px; font-weight: 650; letter-spacing: 0.09em; } .ds-setup-panel h2 { margin: 12px 0 0; font: 500 32px/1.1 'Geist Variable', sans-serif; letter-spacing: -0.035em; } .ds-setup-panel p { margin: 12px auto 18px; max-width: 42ch; color: #F2F4EF; font-size: 14px; line-height: 1.5; } .ds-setup-panel button { width: 100%; min-height: 46px; border: 0; border-radius: 12px; color: #111214; background: #F2F3F5; font: 600 14px/1 'Inter Variable', sans-serif; } .ds-setup-panel button:hover { background: #FFFFFF; } .ds-setup-panel button:focus-visible { outline: 2px solid #69E6A6; outline-offset: 3px; }"
     }
   ],
   "narrative": {
     "northStar": "Spatial Salon",
-    "overview": "Align combines a neutral, Linear-like application shell with the intimacy of a modern salon. The interface stays compact, quiet, and operational until a room image or spatial scene earns atmosphere. The approved hybrid preserves the original v1 proportions and nested containers while using the sharper v2 typography, login, header, preview, and interaction language. Reference fidelity is additive, not a license to redesign: retain the old Event two-column photo cards and compact Home, Network, and Profile composition; use the final v2 type and shell; reveal Before / During / After only after an event is opened. Silver-sage glass is inherited from the archived spatial material and belongs over imagery or inside the spatial experience.",
+    "overview": "Align combines a neutral, Linear-like application shell with the intimacy of a modern salon. The interface stays compact, quiet, and operational until a room image or spatial scene earns atmosphere. The approved hybrid preserves the original v1 proportions and nested containers while using the sharper v2 typography, login, header, preview, and interaction language. Reference fidelity is additive, not a license to redesign: retain the old Event two-column photo cards and compact Home, Network, and Profile composition; use the final v2 type and shell; reveal Before / During / After only after an event is opened. Milky white frosted glass is inherited from the approved spatial reference and belongs over imagery or inside the spatial experience.",
     "keyCharacteristics": [
       "Neutral charcoal application layers with disciplined jade state cues.",
       "Compact, readable 13–14px interface text and 11–12px metadata.",
@@ -139,7 +139,7 @@
     "dos": [
       "**Do** preserve the approved hybrid: v1 proportions and nested structure with v2 typography and interactions.",
       "**Do** keep room imagery prominent while maintaining readable contrast and honest demo labels.",
-      "**Do** use silver-sage glass for spatial context and neutral opaque surfaces for product work.",
+      "**Do** use milky white frosted glass for spatial context and neutral opaque surfaces for product work.",
       "**Do** keep event browsing separate from the opened-event phase preview.",
       "**Do** keep setup content fully visible at supported viewport heights."
     ],

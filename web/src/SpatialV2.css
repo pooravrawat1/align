@@ -9,11 +9,11 @@
   --qv2-line: rgb(255 255 255 / 16%);
   --qv2-glass: linear-gradient(
     145deg,
-    rgb(45 46 50 / 88%),
-    rgb(23 24 27 / 92%)
+    rgb(238 240 238 / 52%),
+    rgb(116 120 116 / 60%)
   );
-  --qv2-sage-glass: linear-gradient(140deg, #c1cbc02b, #29392f9e);
-  --qv2-sage-text: #e8eddf;
+  --qv2-sage-glass: var(--qv2-glass);
+  --qv2-sage-text: #f4f7f1;
   --qv2-shadow: 0 18px 50px rgb(0 0 0 / 30%);
   --qv2-ease: cubic-bezier(0.16, 1, 0.3, 1);
   color: var(--qv2-white);
@@ -612,10 +612,14 @@
   border: 1px solid #ffffff33;
   border-radius: 14px;
   color: var(--qv2-white);
-  background: linear-gradient(145deg, #383a3edb, #191a1de8);
-  box-shadow: 0 16px 42px #00000042;
+  background: var(--qv2-glass);
+  box-shadow:
+    inset 0 1px 0 #ffffff5c,
+    inset 0 -1px 0 #1b1d1b24,
+    0 16px 42px #00000042;
   text-align: left;
-  backdrop-filter: blur(22px) saturate(112%);
+  backdrop-filter: blur(28px) saturate(120%);
+  -webkit-backdrop-filter: blur(28px) saturate(120%);
   pointer-events: auto;
   transition:
     transform 300ms var(--qv2-ease),
@@ -634,7 +638,7 @@
   pointer-events: none;
 }
 .qmv2-card--matched {
-  background: var(--qv2-sage-glass);
+  background: var(--qv2-glass);
   border-color: #c8e4be80;
   box-shadow:
     inset 0 1px 0 #e1fce345,
@@ -781,9 +785,10 @@
   border: 1px solid #b8e4c147;
   border-radius: 999px;
   color: var(--qv2-white);
-  background: #202226eb;
+  background: var(--qv2-glass);
   box-shadow: 0 12px 30px #0000003d;
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(28px) saturate(120%);
+  -webkit-backdrop-filter: blur(28px) saturate(120%);
   transform: translateX(-50%);
 }
 
@@ -798,11 +803,12 @@
   padding: 6px;
   border: 1px solid #ffffff42;
   border-radius: 20px;
-  background: var(--qv2-sage-glass);
+  background: var(--qv2-glass);
   box-shadow:
     inset 0 1px 0 #ffffff24,
     0 18px 45px #00000047;
-  backdrop-filter: blur(24px);
+  backdrop-filter: blur(30px) saturate(120%);
+  -webkit-backdrop-filter: blur(30px) saturate(120%);
   transform: translateX(-50%);
 }
 .qmv2-dock button {
@@ -850,7 +856,8 @@
   color: var(--qv2-white);
   background: var(--qv2-glass);
   box-shadow: var(--qv2-shadow);
-  backdrop-filter: blur(30px);
+  backdrop-filter: blur(34px) saturate(120%);
+  -webkit-backdrop-filter: blur(34px) saturate(120%);
   scrollbar-color: #8d8f9666 transparent;
 }
 .qmv2-drawer-header {
@@ -883,7 +890,7 @@
 }
 .qmv2-profile-drawer {
   border-radius: 22px;
-  background: var(--qv2-sage-glass);
+  background: var(--qv2-glass);
   border-color: #f1f3e84d;
   box-shadow:
     inset 0 1px 0 #ffffff40,
@@ -1185,9 +1192,10 @@
   width: min(100%, 520px);
   border: 1px solid #ffffff2e;
   border-radius: 15px;
-  background: #202225d9;
+  background: var(--qv2-glass);
   box-shadow: 0 16px 44px #00000040;
-  backdrop-filter: blur(24px);
+  backdrop-filter: blur(30px) saturate(120%);
+  -webkit-backdrop-filter: blur(30px) saturate(120%);
 }
 .qmv2-conversation-person {
   display: flex;
@@ -1554,7 +1562,8 @@
   }
 }
 .solid-surfaces .qmv2 {
-  --qv2-sage-glass: #444b3e;
+  --qv2-glass: #666a67;
+  --qv2-sage-glass: #666a67;
 }
 .solid-surfaces .qmv2-card,
 .solid-surfaces .qmv2-drawer,
@@ -1563,7 +1572,8 @@
 }
 @media (prefers-reduced-transparency: reduce) {
   .qmv2 {
-    --qv2-sage-glass: #444b3e;
+    --qv2-glass: #666a67;
+    --qv2-sage-glass: #666a67;
   }
   .qmv2-card,
   .qmv2-drawer,
