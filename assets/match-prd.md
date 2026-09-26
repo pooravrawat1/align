@@ -1,4 +1,4 @@
-# PRD: QuestMatch
+# PRD: Align
 
 **Version:** 1.0  
 **Status:** Hackathon MVP  
@@ -7,7 +7,7 @@
 
 ## 1. Product summary
 
-QuestMatch is a colocated mixed-reality networking experience for events. Attendees wearing Meta Quest 2 headsets can see lightweight profile cards floating above other participants' heads.
+Align is a colocated mixed-reality networking experience for events. Attendees wearing Meta Quest 2 headsets can see lightweight profile cards floating above other participants' heads.
 
 An AI matching system compares participant profiles in the background. When two people are considered compatible, their profile cards turn green and display a specific reason they should meet.
 
@@ -15,13 +15,15 @@ An AI matching system compares participant profiles in the background. When two 
 
 At hackathons, conferences, and networking events, attendees frequently walk past people who share their interests or could help with their projects. Existing networking applications require users to browse directories or continually check their phones.
 
-QuestMatch makes relevant connections visible directly in the physical environment.
+Align makes relevant connections visible directly in the physical environment.
 
 ## 3. Goals
 
 The MVP must:
 
 - Allow two or more Quest 2 users to join the same event session.
+- Let each user create, preview, edit, and save a session profile or load a demo default.
+- Support optional user-provided social links or handles on the profile.
 - Align users within one shared physical coordinate system.
 - Display a profile card above each participant's physical head.
 - Synchronize headset positions in real time.
@@ -62,7 +64,7 @@ A judge who needs to understand the product within one minute and see the comple
 
 ## 6. Core user journey
 
-1. The user launches QuestMatch on a Quest 2.
+1. The user launches Align on a Quest 2.
 2. The user enters an event room code.
 3. The user enters or selects:
    - Name
@@ -70,25 +72,41 @@ A judge who needs to understand the product within one minute and see the comple
    - Interests
    - Skills
    - What they are looking for
-4. The user completes spatial calibration.
-5. The user enters the shared passthrough experience.
-6. The user sees profile cards above nearby participants.
-7. The backend evaluates the profiles.
-8. If two users are compatible:
+   - Optional social links or handles
+4. The user previews and saves the profile for the current session. Alex and Maya are available as editable demo defaults.
+5. The user completes spatial calibration.
+6. The user enters the shared passthrough experience.
+7. The user sees profile cards above nearby participants.
+8. The backend evaluates the profiles.
+9. If two users are compatible:
    - Both profile cards turn green.
    - Both users see the match explanation.
    - An optional sound indicates that a match was found.
-9. The users approach each other and begin a conversation.
+10. The users approach each other and begin a conversation.
 
 ## 7. User experience
 
-### 7.1 Profile card
+### 7.1 Profile creation
+
+The profile UI must allow a user to:
+
+- Enter a name and short bio.
+- Add interests, skills, and what they are looking for.
+- Optionally add LinkedIn, GitHub, Instagram, and personal website links or handles.
+- Preview how their information will appear to another participant.
+- Edit and save the profile for the current session.
+- Load Alex or Maya as an editable demo default.
+
+Name is required. Other fields are optional but should be clearly labeled. The MVP stores profiles only for the current session and does not require an account.
+
+### 7.2 Profile card
 
 The default profile card displays:
 
 - First name
 - Role or one-line bio
 - Up to three interest tags
+- Compact social icons or handles in the nearby/expanded state when supplied
 
 Example:
 
@@ -100,7 +118,7 @@ Robotics Engineer
 Robotics · Computer Vision · Startups
 ```
 
-### 7.2 Match state
+### 7.3 Match state
 
 When two users match, the profile card:
 
@@ -120,7 +138,7 @@ Maya needs embedded-systems help, and you have
 experience deploying models on edge devices.
 ```
 
-### 7.3 Nonmatch state
+### 7.4 Nonmatch state
 
 Nonmatching users remain neutral. The application will not display:
 
@@ -129,7 +147,7 @@ Nonmatching users remain neutral. The application will not display:
 - Public rejection indicators
 - Sensitive or inferred personal attributes
 
-### 7.4 Visibility behavior
+### 7.5 Visibility behavior
 
 To reduce visual clutter:
 
@@ -149,9 +167,12 @@ To reduce visual clutter:
 
 ### FR-2: Profile creation
 
-- Users must be able to provide a name, bio, interests, skills, and goals.
+- Users must be able to create and edit a profile containing a name, bio, interests, skills, goals, and optional social links or handles.
+- The UI must provide profile preview, validation, and save-for-session behavior.
+- Name is required; social links are optional and must be visibly identified as user-provided.
+- Alex and Maya must remain available as one-click, editable demo defaults.
 - The system must associate the profile with the user's session identifier.
-- For the demo, profiles may be entered in-headset, selected from presets, or loaded from configuration.
+- The same profile form should work with desktop input during development and the Quest system keyboard once hardware is available.
 
 ### FR-3: Spatial calibration
 
@@ -173,6 +194,7 @@ To reduce visual clutter:
 - Make the card follow the remote headset's position.
 - Make the card face the local viewer.
 - Do not show the local user a duplicate card above their own head.
+- Display supplied social handles or links only in the nearby/expanded profile state to avoid visual clutter.
 
 ### FR-6: Matching
 
@@ -207,7 +229,11 @@ The application must include controls to:
   "bio": "Robotics engineer building assistive devices",
   "interests": ["computer vision", "robotics", "startups"],
   "skills": ["Python", "machine learning", "CAD"],
-  "lookingFor": ["embedded systems collaborator"]
+  "lookingFor": ["embedded systems collaborator"],
+  "socialLinks": [
+    {"platform": "GitHub", "urlOrHandle": "maya-builds"},
+    {"platform": "LinkedIn", "urlOrHandle": "maya-robotics"}
+  ]
 }
 ```
 
@@ -238,6 +264,7 @@ For two to four demo users:
 The model must:
 
 - Use only information explicitly present in the profiles.
+- Exclude social links and handles from model input and matching decisions.
 - Identify a concrete reason for the users to meet.
 - Avoid inferring protected or sensitive attributes.
 - Avoid romantic, medical, political, or employment judgments.
@@ -343,6 +370,8 @@ If time permits, replace manual calibration with Meta Shared Spatial Anchors. Ma
 ## 14. Privacy and safety requirements
 
 - Display only user-entered profile information.
+- Make social links optional, visibly user-provided, and editable before joining a room.
+- Do not send social links or handles to the AI matching service.
 - Do not perform facial recognition.
 - Do not infer sensitive characteristics.
 - Store profiles only for the current event or demonstration.
@@ -356,6 +385,9 @@ If time permits, replace manual calibration with Meta Shared Spatial Anchors. Ma
 
 The hackathon MVP succeeds when:
 
+- A user can create, preview, edit, and save a custom profile.
+- A user can add optional social links and another participant can view them.
+- Alex and Maya can be loaded as editable defaults for a fast demo.
 - Two Quest 2 users can join the same room.
 - Each user sees the other person through passthrough.
 - A profile card remains visibly attached above the other headset.
@@ -394,7 +426,15 @@ The hackathon MVP succeeds when:
 
 **Exit condition:** The remote cube remains close to the physical headset.
 
-### Phase 4: Profile cards
+### Phase 4: Profile creation
+
+- Build the profile form, validation, preview, edit, and session save flow.
+- Add optional LinkedIn, GitHub, Instagram, and personal website fields.
+- Add Alex and Maya as editable defaults that populate the same form.
+
+**Exit condition:** A custom profile can be created and previewed, and a demo default can be loaded in one action.
+
+### Phase 5: Profile cards
 
 - Replace cubes with profile cards.
 - Add distance-based detail.
@@ -402,7 +442,7 @@ The hackathon MVP succeeds when:
 
 **Exit condition:** Each participant sees the correct profile above the correct person.
 
-### Phase 5: Matching
+### Phase 6: Matching
 
 - Create profile and match data models.
 - Connect the backend and LLM.
@@ -411,7 +451,7 @@ The hackathon MVP succeeds when:
 
 **Exit condition:** The system returns a compatibility result and explanation.
 
-### Phase 6: Match reveal
+### Phase 7: Match reveal
 
 - Add the green state and animation.
 - Synchronize match results between clients.
@@ -419,7 +459,7 @@ The hackathon MVP succeeds when:
 
 **Exit condition:** Both participants see each other turn green simultaneously.
 
-### Phase 7: Demo hardening
+### Phase 8: Demo hardening
 
 - Add preset profiles.
 - Add reconnect and reset controls.
@@ -453,6 +493,7 @@ The hackathon MVP succeeds when:
 
 ### Designer or presenter
 
+- Profile creation, validation, preview, and edit flow
 - Profile-card layout
 - Match animation
 - Preset profiles
@@ -472,6 +513,7 @@ For a smaller team, combine the Quest and multiplayer roles first. Add the AI in
 | AI API fails | High | Include precomputed demo matches |
 | Quest build process is slow | High | Test device builds early and avoid unnecessary packages |
 | Text is difficult to read | Medium | Use large fonts, short bios, and high-contrast cards |
+| In-headset profile entry is slow | Medium | Keep fields concise, support the Quest system keyboard, and retain one-click editable defaults |
 | Venue Wi-Fi is unreliable | High | Bring a dedicated hotspot if hackathon rules permit |
 | User movement creates safety concerns | High | Use a clear, obstacle-free demo area |
 
@@ -494,16 +536,17 @@ For a smaller team, combine the Quest and multiplayer roles first. Add the AI in
 ### Demonstration
 
 1. Alex and Maya put on their Quest 2 headsets.
-2. Both join room `DEMO`.
-3. Both calibrate at the marked location.
-4. Each sees the other person's name and profile tags.
-5. The backend evaluates their profiles.
-6. Both profile cards animate to green.
-7. Both users see:
+2. Each loads a default profile, previews it, and may edit any field.
+3. Both join room `DEMO`.
+4. Both calibrate at the marked location.
+5. Each sees the other person's name, profile tags, and supplied social handles.
+6. The backend evaluates their profiles without using social links.
+7. Both profile cards animate to green.
+8. Both users see:
 
 > You are both building assistive technology. Maya brings computer-vision expertise, while Alex can help deploy it on wearable hardware.
 
-8. The presenter explains that the system makes useful connections visible without requiring attendees to search a directory.
+9. The presenter explains that attendees can create their own profiles and make useful connections visible without searching a directory.
 
 ## 20. Stretch goals
 
@@ -524,6 +567,9 @@ For a smaller team, combine the Quest and multiplayer roles first. Add the AI in
 - [ ] Quest application launches without a computer connection.
 - [ ] Passthrough displays the physical room.
 - [ ] Two headsets can join the same session.
+- [ ] A user can create, preview, edit, and save a profile.
+- [ ] Optional social links display to other participants but are excluded from AI matching input.
+- [ ] Alex and Maya remain available as editable demo defaults.
 - [ ] Manual calibration works.
 - [ ] Remote head transforms are synchronized.
 - [ ] Profile cards appear above the correct participants.
