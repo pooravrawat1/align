@@ -1,6 +1,6 @@
 # Align Matching Rubric
 
-The AI gives every pair of attendees a compatibility score out of 100 using the following rubric.
+The AI scores the networking-fit route for every pair out of 100 using the following rubric. The Quest demo's final score also considers the human-connection routes defined below.
 
 ## 1. Skill-to-Need Fit — 30 points
 
@@ -91,3 +91,54 @@ The AI should not award points when the only possible explanation is generic, su
 | Shared Interests | 10 |
 | Conversation Potential | 5 |
 | **Total** | **100** |
+
+## Quest demo extension: human connection
+
+The six categories above remain the **networking-fit route**. The Quest demo also
+scores self-declared past experiences so that a useful introduction need not be
+purely transactional. The final percentage is the highest of networking fit,
+professional shared experience, and personal shared experience. A score of 70
+or more is a match. The score is never shown to attendees.
+
+Only experiences explicitly supplied in a profile count. Do not infer where
+someone has been or count the event the two people are currently attending.
+
+### Professional shared experience
+
+| Strongest connection | Base score |
+|---|---:|
+| Same named event in the same year | 90 |
+| Same named event in different years | 80 |
+| Same kind of past event, such as different hackathons | 70 |
+| No shared event or event kind | 0 |
+
+Add 5 for a shared interest and 5 for a skill that meets the other person's
+stated need, only when the base score is positive. Cap the route at 100.
+
+### Personal shared experience
+
+| Strongest connection | Base score |
+|---|---:|
+| Same specific destination or activity | 45 |
+| Same broad kind of activity | 20 |
+| No shared activity kind | 0 |
+
+Only with a positive base score, add 25 for an overlapping self-declared work
+domain, 15 for a shared interest, 10 for a skill that meets the other person's
+stated need, and 5 when those facts support a specific opening question. Cap
+the route at 100. A personal experience alone cannot reach the match threshold;
+a specific one plus work-domain alignment can.
+
+The matching service uses `networkingGoal`, `domains`, and `experiences` in
+addition to bio, interests, skills, and `lookingFor`. Each experience records
+`category` (`professional` or `personal`), `kind`, `label`, and optional `year`.
+Matching fields are hidden from other attendees; only the name and a matched
+conversation starter appear above a person. Reasons must use supplied facts,
+contain at most 30 words, and avoid sensitive or unsupported inferences.
+
+For the fixed, fictional Quest fixtures, Alex/Maya score 100 on the
+professional-experience route (90 for the same past event, 5 for a shared
+interest, 5 for a skill-to-need connection). Alex/Sam and Maya/Sam have no
+qualifying shared experience or concrete networking fit in the demo fixture;
+their bundled offline results are 0 and neutral. These example results are
+checked against the fixture in automated tests.
