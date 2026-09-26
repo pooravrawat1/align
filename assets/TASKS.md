@@ -1,0 +1,259 @@
+# QuestMatch — 24-Hour Hackathon Execution Plan
+
+Source of truth: [`assets/match-prd.md`](assets/match-prd.md)  
+Team size: 4 people  
+Deadline: 24 hours from kickoff
+
+## Ship target
+
+By Hour 20, two Quest 2 headsets must be able to join room `DEMO`, calibrate to the same marked origin, see a readable card above the other person, and show the same green match explanation. The flow must work three times in a row and take under two minutes.
+
+Hours 20–24 are reserved for reliability, rehearsal, and submission. No new features enter the build after Hour 20.
+
+## Locked MVP decisions
+
+- Unity + C# + Meta XR All-in-One SDK, passthrough, and TextMeshPro
+- Photon Fusion Shared Mode for room and pose synchronization
+- Manual shared-origin calibration using position and yaw only
+- Two preset profiles: Alex and Maya
+- A small HTTP matching service with structured JSON; Person 3 chooses FastAPI or Express based on familiarity at kickoff
+- A matching interface in Unity that can return either the live API result or a bundled precomputed result
+- Target two headsets; four-user support, Shared Spatial Anchors, voice input, authentication, persistence, and polish beyond the core reveal are cut
+
+If live AI or the backend is not working by Hour 12, the demo uses the bundled result. Judges should see a reliable product, not infrastructure debugging.
+
+## Ownership
+
+| Person | Primary ownership | Deliverable at Hour 12 |
+|---|---|---|
+| Person 1 — Quest/MR lead | Unity project, Quest builds, passthrough, profile-card rendering | Installable build showing a readable billboard card in passthrough |
+| Person 2 — Multiplayer/spatial lead | Photon room, network identity, pose sync, interpolation, calibration | Two devices see aligned remote-head placeholders |
+| Person 3 — Backend/AI lead | Profile/match schema, API, model call, cache, deterministic fallback | Contract-tested endpoint plus fixture responses |
+| Person 4 — UX/demo/integration lead | Preset/profile flow, match states, recovery controls, QA, pitch and backup | End-to-end UI shell, runbook, and first recorded test |
+
+Each task has exactly one owner. Pairing is encouraged, but ownership does not move unless the team explicitly reassigns it.
+
+## First 30 minutes — everyone
+
+- [ ] **ALL-01** Confirm both headsets can install and launch an Android build; record device IDs and battery state.
+- [ ] **ALL-02** Confirm Photon credentials, AI credentials, signing setup, Wi-Fi/hotspot, and one development machine that can build to Quest.
+- [ ] **ALL-03** Create branches `person-1/quest`, `person-2/network`, `person-3/backend`, and `person-4/ux-demo`.
+- [ ] **ALL-04** Agree on the contracts below. Any contract change must be announced to all four people.
+- [ ] **ALL-05** Put a visible calibration marker and forward arrow in the physical demo area.
+
+## Shared contracts — freeze by Hour 1
+
+```csharp
+public struct PlayerProfile {
+    public string UserId;
+    public string Name;
+    public string Bio;
+    public string[] Interests;
+    public string[] Skills;
+    public string[] LookingFor;
+}
+
+public struct MatchResult {
+    public string UserA;
+    public string UserB;
+    public bool Compatible;
+    public float Score;
+    public string Reason; // 30 words maximum
+}
+```
+
+Networked player state must contain:
+
+- `userId`, selected profile ID, calibrated head position, calibrated yaw/rotation, and ready state
+- match state: `pending`, `matched`, or `neutral`, plus a shared reason string
+
+Coordinates sent over the network are relative to the calibrated origin, in Unity meters. Pair cache keys sort the two user IDs before joining them.
+
+## Person 1 — Quest and mixed reality
+
+### Hours 0–4: prove the device path
+
+- [ ] **Q-01** Create/open the Unity Quest project; pin versions in the repository and document the exact editor version.
+- [ ] **Q-02** Configure Android/Quest build settings, OpenXR or Meta XR, permissions, and passthrough.
+- [ ] **Q-03** Make a minimal scene that launches on the physical Quest 2 at 72 Hz with passthrough visible.
+- [ ] **Q-04** Create a world-space test card with large high-contrast text and a simple billboard component.
+
+**Checkpoint H4:** An APK runs on a Quest 2 and a test card is readable in passthrough.
+
+### Hours 4–10: build the remote avatar/card prefab
+
+- [ ] **Q-05** Create `NetworkPlayerView`: invisible head anchor, debug cube toggle, and card anchor 0.25 m above the head.
+- [ ] **Q-06** Bind the card to name, one-line bio, and at most three interest tags.
+- [ ] **Q-07** Hide the local user's card and make every remote card yaw-face the local camera.
+- [ ] **Q-08** Add distance detail: name-only when distant; full card when nearby. Use a conservative fixed threshold if tuning is costly.
+- [ ] **Q-09** Expose neutral, pending, and green matched visual states for Person 4 to drive.
+
+### Hours 10–16: integrate and optimize
+
+- [ ] **Q-10** Connect Person 2's remote pose to the prefab and verify card offset/alignment while walking.
+- [ ] **Q-11** Keep scene geometry, transparency, and lighting minimal; verify stable frame rate on-device.
+- [ ] **Q-12** Produce numbered APKs for H12 and H16 integration tests and document the install command/path.
+
+### Hours 16–24: hardening support
+
+- [ ] **Q-13** Fix only device, rendering, readability, and performance bugs from the shared test list.
+- [ ] **Q-14** Produce the final release APK and a known-good backup APK.
+
+## Person 2 — multiplayer and spatial alignment
+
+### Hours 0–4: prove two-device networking
+
+- [ ] **N-01** Add Photon Fusion Shared Mode and implement join-by-room-code with default room `DEMO`.
+- [ ] **N-02** Spawn one network player per client with a unique `userId`; prevent duplicate local representations.
+- [ ] **N-03** Synchronize a debug cube's position and yaw between two editor/device clients.
+
+**Checkpoint H4:** Two clients join `DEMO` and see each other's moving debug cube.
+
+### Hours 4–10: calibration and smooth tracking
+
+- [ ] **N-04** Implement calibration: capture current headset horizontal position and yaw when the user stands on the marker facing the arrow.
+- [ ] **N-05** Convert local head poses into calibrated shared-space poses before transmission; ignore pitch/roll when defining the origin.
+- [ ] **N-06** Transmit poses at 10–20 Hz and interpolate remote transforms between updates.
+- [ ] **N-07** Add ready/calibrated state and prevent the main experience from starting until both users are ready.
+- [ ] **N-08** Add recalibrate, reconnect, and leave/reset hooks for Person 4's buttons.
+
+**Checkpoint H10:** Two physical headsets show remote cubes close to the other headset after calibration.
+
+### Hours 10–16: state integration
+
+- [ ] **N-09** Synchronize selected profile ID and match state so both clients receive the same result/reason.
+- [ ] **N-10** Make one authoritative client/service submit each unordered pair once; handle a late join or reconnect without duplicate evaluations.
+- [ ] **N-11** Replace the debug cube view with Person 1's card prefab while retaining a debug toggle.
+
+### Hours 16–24: hardening support
+
+- [ ] **N-12** Test packet loss/reconnect and eliminate duplicate players, stale rooms, or asymmetric match state.
+- [ ] **N-13** Tune interpolation and update rate only after correctness; document known drift and the one-click recovery.
+
+## Person 3 — backend, AI, and deterministic fallback
+
+### Hours 0–4: contract-first service
+
+- [ ] **B-01** Scaffold the smallest familiar HTTP service and add `POST /match` plus `GET /health`.
+- [ ] **B-02** Validate the agreed profile schema and return the exact `MatchResult` shape.
+- [ ] **B-03** Store results in memory using a sorted `userA:userB` key so A/B and B/A are identical.
+- [ ] **B-04** Add Alex/Maya fixtures and the known successful result from the PRD.
+
+**Checkpoint H4:** A local request returns valid match JSON for Alex and Maya.
+
+### Hours 4–10: guarded live matching
+
+- [ ] **B-05** Add the LLM call with structured JSON output, a configurable threshold, and an explanation limit of 30 words.
+- [ ] **B-06** In the prompt, restrict reasoning to supplied profile fields and prohibit sensitive, romantic, medical, political, or employment judgments.
+- [ ] **B-07** Add timeout/error handling that immediately returns the fixture result for known demo profiles.
+- [ ] **B-08** Add unit/contract tests for valid output, reversed user order, cache reuse, timeout, malformed model output, and offline fallback.
+- [ ] **B-09** Provide Person 4 with the base URL, sample request/response, start command, and `.env.example`; never commit secrets.
+
+### Hours 10–16: Unity integration support
+
+- [ ] **B-10** Pair with Person 4 to implement/test the Unity matching adapter against live and fallback modes.
+- [ ] **B-11** Add a health indicator and concise logs that reveal live, cached, or fallback mode without exposing credentials.
+- [ ] **B-12** Test over the actual demo network from a Quest-accessible address; if blocked, declare fallback mode by H12.
+
+### Hours 16–24: freeze and operate
+
+- [ ] **B-13** Freeze the API at H16; fix only contract or reliability bugs afterward.
+- [ ] **B-14** Prepare one command to start the service and a second offline fixture/config bundled with the Unity build.
+
+## Person 4 — UX, end-to-end integration, QA, and demo
+
+### Hours 0–4: make the flow deterministic
+
+- [ ] **D-01** Implement a minimal state flow: profile select → room join → calibrate → waiting → experience.
+- [ ] **D-02** Add Alex and Maya preset selectors. No keyboard entry is required for the MVP.
+- [ ] **D-03** Create a persistent debug/status panel showing room, connection, calibration, peer, backend, and match state.
+- [ ] **D-04** Draft the sub-two-minute demo script and a reset checklist before integration begins.
+
+### Hours 4–10: match experience and recovery
+
+- [ ] **D-05** Implement a `MatchProvider` interface with `LiveMatchProvider` and `FixtureMatchProvider` implementations.
+- [ ] **D-06** Drive Person 1's card states: neutral → pending → green matched, with the shared explanation.
+- [ ] **D-07** Add buttons for recalibrate, reconnect, re-run matching, force known demo match, and reset session.
+- [ ] **D-08** Add a subtle match sound only if it takes under 30 minutes and works on-device; otherwise cut it.
+
+### Hours 10–16: own the vertical slice
+
+- [ ] **D-09** Integrate all branches in small commits; keep the project buildable after each merge.
+- [ ] **D-10** Run the complete two-headset test and maintain one shared bug list ordered P0/P1/P2.
+- [ ] **D-11** Verify the same reason appears on both clients and that forced fallback works with network/AI disabled.
+- [ ] **D-12** Record the first backup video as soon as one complete successful flow exists.
+
+### Hours 16–24: submission and presentation
+
+- [ ] **D-13** Lead three consecutive timed demo runs; assign every failure to an owner immediately.
+- [ ] **D-14** Record a clean final backup video showing both physical users and at least one headset view.
+- [ ] **D-15** Prepare the one-minute pitch: problem (10s), experience (15s), live reveal (20s), architecture/impact (10s), close (5s).
+- [ ] **D-16** Package final APK, server instructions, credentials checklist, video, screenshots, and submission text.
+
+## Integration schedule
+
+| Time | Required result | Decision if missed |
+|---|---|---|
+| H1 | Contracts and branches frozen | Leads resolve immediately; no parallel schema invention |
+| H4 | Passthrough card, two-client cube sync, match endpoint, UI shell each work independently | Drop cosmetic work and pair on the failed foundation |
+| H8 | First merge window; project builds after shared contracts/prefabs land | Revert only the broken integration commit; keep working modules |
+| H10 | Two-headset calibrated cube test | If alignment is poor, shrink demo area and prioritize recalibrate |
+| H12 | End-to-end attempt with preset profiles | Lock deterministic fallback if live backend/AI is not reliable |
+| H16 | Feature complete; first successful full flow and backup recording | Cut distance behavior, sound, animation, and live AI as needed |
+| H20 | Code freeze; three-run reliability test begins | Only P0/P1 fixes allowed |
+| H22 | Final APK/video/submission package ready | Demo from known-good APK; do not take risky upgrades |
+| H24 | Submission and rehearsed presentation | Done |
+
+## Merge and communication rules
+
+- Merge during planned windows around H4, H8, H12, and H16, not in one large merge near the deadline.
+- Person 4 owns integration; the task owner resolves conflicts in their files.
+- Commit messages start with the task ID, for example `N-04 add manual origin calibration`.
+- Keep credentials out of Git. Commit `.env.example` and document setup in the README.
+- Report blockers after 20 minutes. After 40 minutes, pair or use the fallback; do not silently burn an hour.
+- Every merge into the demo branch must launch in the editor. At H8 onward, it must also be smoke-tested on at least one Quest.
+
+## Acceptance test — run at H12, H16, and H20
+
+- [ ] Install/launch on both Quest 2 headsets without editor intervention.
+- [ ] Select Alex on one device and Maya on the other.
+- [ ] Join room `DEMO`; exactly one remote participant appears on each device.
+- [ ] Calibrate both users at the same marker and forward arrow.
+- [ ] Each card stays approximately 20–30 cm above the other headset while the wearer turns and walks within the demo area.
+- [ ] Cards face the viewer and are readable; neither user sees their own duplicate card.
+- [ ] Both clients transition to green and display the identical explanation.
+- [ ] The forced demo match completes when live AI/backend access is unavailable.
+- [ ] Recalibrate, reconnect, re-run, and reset recover without reinstalling the app.
+- [ ] Complete the full judge flow in under two minutes.
+- [ ] Repeat the full flow three consecutive times.
+
+## Bug priority and cut order
+
+**P0 — stop everything:** build/install failure, crash, cannot join, no remote pose, unusable calibration, or asymmetric match result.
+
+**P1 — fix before H20:** unreadable card, major jitter, reset/reconnect failure, match delay over 10 seconds without fallback, or flow over two minutes.
+
+**P2 — fix only if safe:** visual polish, minor spacing, audio, extra animations, and non-demo profile entry.
+
+Cut features in this order when behind:
+
+1. Sound and reveal animation
+2. Distance-based card detail
+3. Live text entry and any profiles beyond Alex/Maya
+4. Live AI call (retain deterministic matching and API-shaped fixture)
+5. Backend dependency during the demo (retain bundled fixture)
+
+Never cut two-device networking, manual calibration, remote cards, synchronized green state, recovery controls, or the backup recording.
+
+## Demo-day runbook
+
+- Charge both headsets and controllers; disable sleep surprises and unrelated notifications.
+- Use the tested hotspot/router, start Photon/backend checks, and launch `GET /health` if live mode is enabled.
+- Clear the demo area, tape the calibration marker/arrow, and mark where users should stand.
+- Install the known-good APK on both headsets and run one private rehearsal before judging.
+- Keep the backup APK, fixture mode, video, charging cables, and printed pitch immediately available.
+- Start every judge run from a reset room and known Alex/Maya profile assignment.
+
+## Definition of done
+
+The project is done when the H20 acceptance test passes three times in a row, the final APK and backup video are accessible without rebuilding, and any team member can execute the reset-and-demo runbook.
