@@ -156,8 +156,8 @@ The app shell is flat and tonal by default. Opaque surfaces separate through cha
 
 - **Cinematic ambient:** `0 22px 70px #070A071F` for image-led event frames.
 - **Spatial panel:** `0 18px 50px rgb(0 0 0 / 30%)` with inset light and dark edges.
-- **Silver-sage glass:** `linear-gradient(140deg, #C1CBC02B, #29392F9E)` plus `blur(24px) saturate(0.85)`.
-- **Neutral glass:** `linear-gradient(145deg, rgb(45 46 50 / 88%), rgb(23 24 27 / 92%))` for spatial drawers.
+- **Matched glass:** original v1 `linear-gradient(120deg, #89A78CAA, #436B50C7)` with a pale jade edge and white text.
+- **Neutral glass:** `linear-gradient(140deg, #C0C2C742, #292C32B8)` for setup panels, neutral identities, drawers, and the dock. Neutral surfaces have no green tint. Profile and live-room cards share these material tokens.
 
 **The Earned Glass Rule.** Use glass only over imagery, within the room stage, or for a short spatial overlay. Forms and long reading surfaces stay opaque.
 

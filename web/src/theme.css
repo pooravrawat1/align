@@ -15,6 +15,9 @@
   --line: #ffffff14;
   --jade: #69e6a6;
   --jade-ink: #103622;
+  --spatial-glass: linear-gradient(140deg, #c0c2c742, #292c32b8);
+  --spatial-match-glass: linear-gradient(120deg, #89a78caa, #436b50c7);
+  --spatial-glass-shadow: inset 0 1px 0 #ffffff30, inset 1px 0 0 #ffffff10, 0 14px 38px #080e0b26;
   --glass: linear-gradient(140deg, #c0c2c742, #292c32b8);
   --glass-edge: #f0f2f536;
   --glass-shadow:
@@ -327,8 +330,7 @@ summary:focus-visible {
   font-size: 13px;
 }
 .preview-floating.match {
-  background: linear-gradient(140deg, #7096806e, #153624bd);
-  border-color: #69e6a678;
+  border-color: #c8f7cb99;
 }
 .profile-guidance h3 {
   font-size: 18px;
