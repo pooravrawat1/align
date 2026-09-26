@@ -1,7 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import {
   ArrowLeft,
-  ArrowUpRight,
   Bookmark,
   CalendarDays,
   Check,
@@ -18,7 +17,7 @@ import {
 } from "lucide-react";
 import type { NetworkPerson } from "./networkModel";
 import type { Action, Profile, State } from "./types";
-import { Avatar, Button, Chip } from "./ui";
+import { Avatar, Button, Chip, Disclosure } from "./ui";
 import "./NetworkProfile.css";
 
 const contactIcons = {
@@ -95,11 +94,11 @@ function ContactLinks({ person }: { person: NetworkPerson }) {
   );
 }
 
-function CompatibilityValue({ person, compact = false }: { person: NetworkPerson; compact?: boolean }) {
+function CompatibilityValue({ person }: { person: NetworkPerson }) {
   const { compatibility } = person;
   const hasScore = compatibility.score !== null;
   return (
-    <div className={`np-score ${compact ? "np-score--compact" : ""} ${hasScore && compatibility.score! >= 80 ? "np-score--high" : ""}`}>
+    <div className={`np-score ${hasScore && compatibility.score! >= 80 ? "np-score--high" : ""}`}>
       <span className="np-score-value">
         {hasScore ? compatibility.score : "—"}
         {hasScore && <small>/100</small>}
@@ -118,22 +117,16 @@ function CompatibilityValue({ person, compact = false }: { person: NetworkPerson
   );
 }
 
-function Header({ expanded, name, onExpand, onClose }: {
-  expanded: boolean;
+function Header({ name, onClose }: {
   name: string;
-  onExpand: () => void;
   onClose: () => void;
 }) {
   return (
-    <header className="np-header">
-      {expanded ? (
-        <button className="np-back" type="button" onClick={onExpand}>
-          <ArrowLeft size={15} aria-hidden="true" />
-          Back to network
-        </button>
-      ) : (
-        <span>Profile preview</span>
-      )}
+    <header className="np-header np-header--expanded">
+      <button className="np-back" type="button" onClick={onClose} aria-label="Back to network">
+        <ArrowLeft size={15} aria-hidden="true" />
+        Back
+      </button>
       <button className="np-close" type="button" onClick={onClose} aria-label={`Close ${name}'s profile`}>
         <X size={17} aria-hidden="true" />
       </button>
@@ -154,65 +147,6 @@ function SaveConnectionButton({ saved, busy, onSave }: { saved: boolean; busy: b
       {saved ? <Check size={15} aria-hidden="true" /> : <Bookmark size={15} aria-hidden="true" />}
       {saved ? "Saved" : "Save connection"}
     </Button>
-  );
-}
-
-function Preview({ person, busy, onExpand, onSave }: {
-  person: NetworkPerson;
-  busy: boolean;
-  onExpand: () => void;
-  onSave: () => void;
-}) {
-  const profile = person.profile;
-  return (
-    <div className="np-preview-body">
-      <div className="np-preview-identity">
-        <Avatar profile={profile} size="large" />
-
-        <h2>{profile.name}</h2>
-        <p>{profile.role || "Role not shared"}</p>
-        {profile.location && (
-          <span className="np-location"><MapPin size={13} aria-hidden="true" />{profile.location}</span>
-        )}
-        <ContactLinks person={person} />
-        {profile.contact && (
-          <p className="np-other-contact"><span>Other contact</span>{profile.contact}</p>
-        )}
-        <button className="np-open-profile" type="button" onClick={onExpand}>
-          <span>Explore profile</span> <ArrowUpRight size={15} aria-hidden="true" />
-        </button>
-      </div>
-
-      {person.withdrawn ? (
-        <div className="np-private-notice" role="status">
-          <strong>This profile is now private.</strong>
-          <p>The person’s shared details are no longer available. Your saved connection notes remain private to you.</p>
-        </div>
-      ) : (
-        <>
-          <section className="np-preview-fit" aria-label="Compatibility overview">
-            <CompatibilityValue person={person} compact />
-            <p>{person.reason}</p>
-          </section>
-
-          <section className="np-preview-section">
-            <h3>Common ground</h3>
-            <TopicList items={person.sharedInterests} empty="No shared interests are visible yet." />
-          </section>
-
-          {person.project && (
-            <section className="np-preview-project">
-              <h3>{person.project.title}</h3>
-              <p>{person.project.description}</p>
-            </section>
-          )}
-        </>
-      )}
-
-      <div className="np-preview-actions">
-        <SaveConnectionButton saved={Boolean(person.connection)} busy={busy} onSave={onSave} />
-      </div>
-    </div>
   );
 }
 
@@ -275,11 +209,13 @@ function CompatibilityRail({ person, useStarter }: { person: NetworkPerson; useS
   const { compatibility } = person;
   return (
     <section className="np-compatibility" aria-labelledby="np-compatibility-title">
-      <div className="np-rail-title">
-        <Sparkles size={15} aria-hidden="true" />
-        <h2 id="np-compatibility-title">Why you connect</h2>
+      <div className="np-compatibility-head">
+        <div className="np-rail-title">
+          <Sparkles size={15} aria-hidden="true" />
+          <h2 id="np-compatibility-title">Why you connect</h2>
+        </div>
+        <CompatibilityValue person={person} />
       </div>
-      <CompatibilityValue person={person} />
       <p className="np-compatibility-summary">{compatibility.summary || person.reason}</p>
 
       <details className="np-disclosure">
@@ -318,7 +254,7 @@ function CompatibilityRail({ person, useStarter }: { person: NetworkPerson; useS
   );
 }
 
-function FollowUp({ person, busy, act, notify, onClose, notes, setNotes, reminder, setReminder, status, setStatus, message, setMessage, messageOpen, setMessageOpen }: {
+function FollowUp({ person, busy, act, notify, onClose, notes, setNotes, reminder, setReminder, status, setStatus, message, setMessage, messageOpen, setMessageOpen, open, setOpen }: {
   person: NetworkPerson;
   busy: boolean;
   act: Action;
@@ -334,6 +270,8 @@ function FollowUp({ person, busy, act, notify, onClose, notes, setNotes, reminde
   setMessage: (message: string) => void;
   messageOpen: boolean;
   setMessageOpen: (open: boolean) => void;
+  open: boolean;
+  setOpen: (open: boolean) => void;
 }) {
   const connection = person.connection;
 
@@ -359,56 +297,63 @@ function FollowUp({ person, busy, act, notify, onClose, notes, setNotes, reminde
   }
 
   return (
-    <section className="np-follow-up" aria-labelledby="np-follow-up-title">
-      <h2 id="np-follow-up-title">{connection ? "Your follow-up" : "Start a conversation"}</h2>
-      <MessageComposer
-        person={person}
-        notify={notify}
-        message={message}
-        setMessage={setMessage}
-        open={messageOpen}
-        setOpen={setMessageOpen}
-      />
-      {connection && (
-        <>
-          <div className="np-fields">
-            <label>
-              Follow-up status
-              <select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}>
-                <option value="needed">Needs follow-up</option>
-                <option value="contacted">Contacted</option>
-                <option value="none">No follow-up needed</option>
-              </select>
-            </label>
-            <label>
-              Private notes
-              <textarea
-                rows={4}
-                maxLength={2000}
-                placeholder="What would you like to remember?"
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-              />
-            </label>
-            <label>
-              Follow-up date
-              <input type="date" value={reminder} onChange={(event) => setReminder(event.target.value)} />
-              <small>Only visible to you. No reminder is sent.</small>
-            </label>
-          </div>
-          <Button type="button" busy={busy} onClick={() => void saveDetails()} className="np-save-details">
-            Save follow-up <Check size={15} aria-hidden="true" />
-          </Button>
-          <button className="np-remove" type="button" disabled={busy} onClick={() => void removeConnection()}>
-            Remove connection
-          </button>
-        </>
-      )}
-    </section>
+    <Disclosure
+      className="np-follow-up"
+      title={connection ? "Your follow-up" : "Start a conversation"}
+      description={connection ? "Message, notes, and reminder" : "Draft a message when you’re ready"}
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <div className="np-follow-up-body">
+        <MessageComposer
+          person={person}
+          notify={notify}
+          message={message}
+          setMessage={setMessage}
+          open={messageOpen}
+          setOpen={setMessageOpen}
+        />
+        {connection && (
+          <>
+            <div className="np-fields">
+              <label>
+                Follow-up status
+                <select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}>
+                  <option value="needed">Needs follow-up</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="none">No follow-up needed</option>
+                </select>
+              </label>
+              <label>
+                Private notes
+                <textarea
+                  rows={4}
+                  maxLength={2000}
+                  placeholder="What would you like to remember?"
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                />
+              </label>
+              <label>
+                Follow-up date
+                <input type="date" value={reminder} onChange={(event) => setReminder(event.target.value)} />
+                <small>Only visible to you. No reminder is sent.</small>
+              </label>
+            </div>
+            <Button type="button" busy={busy} onClick={() => void saveDetails()} className="np-save-details">
+              Save follow-up <Check size={15} aria-hidden="true" />
+            </Button>
+            <button className="np-remove" type="button" disabled={busy} onClick={() => void removeConnection()}>
+              Remove connection
+            </button>
+          </>
+        )}
+      </div>
+    </Disclosure>
   );
 }
 
-function Expanded({ person, state, act, busy, notify, onClose, onSave, notes, setNotes, reminder, setReminder, status, setStatus, message, setMessage, messageOpen, setMessageOpen }: {
+function Expanded({ person, state, act, busy, notify, onClose, onSave, notes, setNotes, reminder, setReminder, status, setStatus, message, setMessage, messageOpen, setMessageOpen, followUpOpen, setFollowUpOpen }: {
   person: NetworkPerson;
   state: State;
   act: Action;
@@ -426,6 +371,8 @@ function Expanded({ person, state, act, busy, notify, onClose, onSave, notes, se
   setMessage: (value: string) => void;
   messageOpen: boolean;
   setMessageOpen: (open: boolean) => void;
+  followUpOpen: boolean;
+  setFollowUpOpen: (open: boolean) => void;
 }) {
   const connection = person.connection;
   const draftRef = useRef(message);
@@ -433,6 +380,7 @@ function Expanded({ person, state, act, busy, notify, onClose, onSave, notes, se
 
   function useStarter() {
     setMessage(person.compatibility.starter || draftRef.current);
+    setFollowUpOpen(true);
     setMessageOpen(true);
     requestAnimationFrame(() => {
       const field = document.querySelector<HTMLTextAreaElement>(".np-message textarea");
@@ -451,14 +399,14 @@ function Expanded({ person, state, act, busy, notify, onClose, onSave, notes, se
     profile.bio.trim() &&
     profile.bio.trim() !== person.project?.description.trim(),
   );
+  const showMore = showAbout || person.goals.length > 0 || profile.skills.length > 0 || profile.lookingFor.length > 0;
   return (
     <div className="np-expanded-body">
       <section className="np-identity">
         <Avatar profile={profile} size="large" />
         <div className="np-identity-copy">
           <div className="np-name-line">
-            <h1>{profile.name}</h1>
-
+            <h1 tabIndex={-1} data-profile-focus>{profile.name}</h1>
           </div>
           <p>{profile.role || "Role not shared"}</p>
           <div className="np-identity-meta">
@@ -488,14 +436,6 @@ function Expanded({ person, state, act, busy, notify, onClose, onSave, notes, se
                     <h2>{person.project.title}</h2>
                     <p>{person.project.description}</p>
                   </div>
-                  <TopicList items={person.project.topics} empty="No project topics shared." />
-                </section>
-              )}
-
-              {showAbout && (
-                <section className="np-section">
-                  <h2>About</h2>
-                  <p className="np-prose">{profile.bio}</p>
                 </section>
               )}
 
@@ -515,28 +455,15 @@ function Expanded({ person, state, act, busy, notify, onClose, onSave, notes, se
                 </div>
               </section>
 
-              {person.goals.length > 0 && (
-                <section className="np-section">
-                  <h2>Goals</h2>
-                  <TopicList items={person.goals} empty="" />
-                </section>
-              )}
-
-              {(profile.skills.length > 0 || profile.lookingFor.length > 0) && (
-                <section className="np-split-section">
-                  {profile.skills.length > 0 && (
-                    <div>
-                      <h2>Skills</h2>
-                      <TopicList items={profile.skills} empty="" />
-                    </div>
-                  )}
-                  {profile.lookingFor.length > 0 && (
-                    <div>
-                      <h2>Looking for</h2>
-                      <TopicList items={profile.lookingFor} empty="" />
-                    </div>
-                  )}
-                </section>
+              {showMore && (
+                <Disclosure className="np-more-profile" title={`More about ${firstName(profile)}`} description="Bio, goals, and full skill profile">
+                  <div className="np-more-profile-body">
+                    {showAbout && <div><h2>About</h2><p className="np-prose">{profile.bio}</p></div>}
+                    {person.goals.length > 0 && <div><h2>Goals</h2><TopicList items={person.goals} empty="" /></div>}
+                    {profile.skills.length > 0 && <div><h2>Skills</h2><TopicList items={profile.skills} empty="" /></div>}
+                    {profile.lookingFor.length > 0 && <div><h2>Looking for</h2><TopicList items={profile.lookingFor} empty="" /></div>}
+                  </div>
+                </Disclosure>
               )}
             </>
           )}
@@ -560,6 +487,8 @@ function Expanded({ person, state, act, busy, notify, onClose, onSave, notes, se
             setMessage={setMessage}
             messageOpen={messageOpen}
             setMessageOpen={setMessageOpen}
+            open={followUpOpen}
+            setOpen={setFollowUpOpen}
           />
         </aside>
       </div>
@@ -567,15 +496,13 @@ function Expanded({ person, state, act, busy, notify, onClose, onSave, notes, se
   );
 }
 
-export function NetworkProfile({ person, state, act, busy, notify, expanded, onExpand, onClose, onSave }: {
+export function NetworkProfile({ person, state, act, busy, notify, onClose, onSave }: {
   person: NetworkPerson;
   user: Profile;
   state: State;
   act: Action;
   busy: boolean;
   notify: (s: string) => void;
-  expanded: boolean;
-  onExpand: () => void;
   onClose: () => void;
   onSave: () => void;
 }) {
@@ -586,6 +513,7 @@ export function NetworkProfile({ person, state, act, busy, notify, expanded, onE
   const suggestedMessage = initialMessage(person);
   const [message, setMessage] = useState(suggestedMessage);
   const [messageOpen, setMessageOpen] = useState(false);
+  const [followUpOpen, setFollowUpOpen] = useState(false);
 
   useEffect(() => {
     setMessage(suggestedMessage);
@@ -593,31 +521,29 @@ export function NetworkProfile({ person, state, act, busy, notify, expanded, onE
   }, [suggestedMessage]);
 
   return (
-    <article className={`np-profile ${expanded ? "np-profile--expanded" : "np-profile--preview"}`}>
-      <Header expanded={expanded} name={person.profile.name} onExpand={onExpand} onClose={expanded ? onExpand : onClose} />
-      {expanded ? (
-        <Expanded
-          person={person}
-          state={state}
-          act={act}
-          busy={busy}
-          notify={notify}
-          onClose={onClose}
-          onSave={onSave}
-          notes={notes}
-          setNotes={setNotes}
-          reminder={reminder}
-          setReminder={setReminder}
-          status={status}
-          setStatus={setStatus}
-          message={message}
-          setMessage={setMessage}
-          messageOpen={messageOpen}
-          setMessageOpen={setMessageOpen}
-        />
-      ) : (
-        <Preview person={person} busy={busy} onExpand={onExpand} onSave={onSave} />
-      )}
+    <article className="np-profile np-profile--expanded">
+      <Header name={person.profile.name} onClose={onClose} />
+      <Expanded
+        person={person}
+        state={state}
+        act={act}
+        busy={busy}
+        notify={notify}
+        onClose={onClose}
+        onSave={onSave}
+        notes={notes}
+        setNotes={setNotes}
+        reminder={reminder}
+        setReminder={setReminder}
+        status={status}
+        setStatus={setStatus}
+        message={message}
+        setMessage={setMessage}
+        messageOpen={messageOpen}
+        setMessageOpen={setMessageOpen}
+        followUpOpen={followUpOpen}
+        setFollowUpOpen={setFollowUpOpen}
+      />
     </article>
   );
 }

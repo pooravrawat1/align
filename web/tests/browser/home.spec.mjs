@@ -34,7 +34,7 @@ async function openHome(page, { userId = 'alex', privateInterests = false, share
 }
 
 for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
-  test(`Home opens details and Network preserves editable drafts at ${viewport.width}px`, async ({ page }) => {
+  test(`Home opens full Network profiles with editable drafts at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await openHome(page, { sharedLinks: true });
     await expect(page.getByLabel('Message draft', { exact: true })).toHaveCount(0);
@@ -46,9 +46,11 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844
     const nina = page.getByRole('link', { name: 'View connection with Nina Patel' });
     await nina.focus();
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/#\/network\?person=nina&details=1$/);
+    await expect(page).toHaveURL(/#\/network\?person=nina$/);
+    await expect(page.getByRole('dialog', { name: 'Nina Patel — full profile' })).toBeVisible();
     const draft = page.getByLabel('Message draft', { exact: true });
     await expect(draft).not.toBeVisible();
+    await page.getByText('Your follow-up', { exact: true }).click();
     await page.getByText('Draft a message', { exact: true }).click();
     await expect(draft).toHaveValue("Hi Nina—I'd love to compare notes on Open source.");
     await draft.fill('Hi Nina—let’s exchange notes next week.');
@@ -60,23 +62,127 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844
     await draft.fill('   ');
     await expect(page.getByRole('button', { name: 'Copy message' })).toBeDisabled();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await page.goto(`${origin}/#/network?person=jordan&details=1`);
+    await page.goto(`${origin}/#/network?person=jordan`);
+    await expect(page.getByRole('dialog', { name: 'Jordan Lee — full profile' })).toBeVisible();
+    await page.getByText('Your follow-up', { exact: true }).click();
     await page.getByText('Draft a message', { exact: true }).click();
     await expect(draft).toHaveValue("Hi Jordan—I'd love to compare notes on Open source.");
     await page.getByRole('button', { name: 'Back to network' }).click();
-    await expect(page).toHaveURL(/#\/network\?person=jordan$/);
+    await expect(page).toHaveURL(/#\/network$/);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.reload();
     await expect(page.getByText('Draft a message', { exact: true })).toHaveCount(0);
-    await page.getByRole('button', { name: 'Explore profile' }).click();
-    await expect(page).toHaveURL(/#\/network\?person=jordan&details=1$/);
+    await page.getByRole('button', { name: "View Jordan Lee's profile" }).click();
+    await expect(page.getByRole('dialog', { name: 'Jordan Lee — full profile' })).toBeVisible();
+    await expect(page).toHaveURL(/#\/network\?person=jordan$/);
   });
 }
+
+for (const width of [1440, 390]) {
+  test(`primary page titles share the display scale at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 960 });
+    await openHome(page);
+    for (const [route, title] of [['home', 'Good to see you, Alex.'], ['event', 'Find your room.'], ['event?event=demo', 'The Builders Room'], ['network', 'Your network'], ['profile', 'Profile']]) {
+      await page.goto(`${origin}/#/${route}`);
+      const heading = page.getByRole('heading', { level: 1, name: title, exact: true });
+      await expect(heading).toBeVisible();
+      await expect(heading).toHaveCSS('font-size', width === 390 ? '30px' : '36px');
+      await expect(heading).toHaveCSS('font-weight', '500');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      if (route === 'profile') await expect(page.getByRole('heading', { name: 'About you', exact: true })).toHaveCSS('font-size', '20px');
+      await page.screenshot({ path: `.impeccable/review/title-${route.replace(/\W/g, '-')}-${width}.png` });
+    }
+  });
+}
+
+test('experience map stays accessible by direct link but is absent from navigation', async ({ page }) => {
+  await openHome(page);
+  await expect(page.locator('.sidebar a[href="#/map"]')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Spatial preview', exact: true })).toBeVisible();
+  await page.goto(`${origin}/#/map`);
+  await expect(page.getByRole('heading', { name: 'One experience. Three human moments.', exact: true })).toBeVisible();
+  await expect(page.locator('.sidebar a[href="#/map"]')).toHaveCount(0);
+});
+
+test('sidebar selection is heavier and navigation highlights are pill shaped', async ({ page }) => {
+  await openHome(page);
+  const home = page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Home', exact: true });
+  const event = page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Event', exact: true });
+  await expect(home).toHaveCSS('font-weight', '600');
+  await expect(home).toHaveCSS('border-radius', '999px');
+  await event.hover();
+  await expect(event).toHaveCSS('border-radius', '999px');
+  await expect(event).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  const pill = page.locator('.sidebar-selection');
+  const aligned = async target => {
+    const mark = await pill.boundingBox(), row = await target.boundingBox();
+    return Math.abs(mark.y - row.y) < 1 && Math.abs(mark.height - row.height) < 1;
+  };
+  await expect.poll(() => aligned(home)).toBe(true);
+  const motion = await event.evaluate(async element => {
+    const marker = document.querySelector('.sidebar-selection');
+    const start = marker.getBoundingClientRect().y;
+    const target = element.getBoundingClientRect().y;
+    element.click();
+    const positions = [];
+    for (let frame = 0; frame < 20; frame++) {
+      await new Promise(requestAnimationFrame);
+      positions.push(marker.getBoundingClientRect().y);
+    }
+    return { start, target, positions };
+  });
+  expect(motion.positions.some(y => y > motion.start + 1 && y < motion.target - 1)).toBe(true);
+  await expect(event).toHaveAttribute('aria-current', 'page');
+  await expect(event).toHaveCSS('font-weight', '600');
+  await expect(home).not.toHaveCSS('font-weight', '600');
+  await expect.poll(() => aligned(event)).toBe(true);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await home.click();
+  await expect.poll(() => aligned(home)).toBe(true);
+});
+
+test('signed-in header is removed while mobile navigation remains accessible', async ({ page }) => {
+  await openHome(page);
+  await expect(page.locator('.app-header')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Open your profile', exact: true })).toHaveCount(0);
+  await page.screenshot({ path: '.impeccable/review/home-no-header-desktop.png' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  const toggle = page.getByRole('button', { name: 'Open navigation', exact: true });
+  await expect(toggle).toBeVisible();
+  await page.screenshot({ path: '.impeccable/review/home-no-header-mobile.png' });
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Profile', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Profile', exact: true })).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.app-header')).toHaveCount(0);
+});
+
+test('landing header matches Creo navigation type proportions', async ({ page }) => {
+  await openHome(page);
+  await page.goto(`${origin}/#/`);
+  const navigation = page.getByRole('navigation', { name: 'Website navigation' });
+  await expect(navigation.getByRole('button', { name: 'The experience' })).toHaveCSS('font-size', '14px');
+  await expect(navigation.getByRole('button', { name: 'The connection' })).toHaveCSS('font-weight', '520');
+  const enter = page.locator('.qv-header .qv-enter');
+  await expect(enter).toHaveCSS('font-size', '14px');
+  await expect(enter).toHaveCSS('font-weight', '550');
+  await page.screenshot({ path: '.impeccable/review/landing-nav-type-desktop.png' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(enter).toHaveCSS('font-size', '14px');
+  await expect(enter).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: '.impeccable/review/landing-nav-type-mobile.png' });
+});
 
 test('private contact links and interests remain hidden on Home and Network', async ({ page }) => {
   await openHome(page, { privateInterests: true });
   await expect(page.locator('.contact-link')).toHaveCount(0);
   await page.getByRole('link', { name: 'View connection with Leo Park' }).click();
   await expect(page.locator('.contact-link')).toHaveCount(0);
+  await page.getByText('Your follow-up', { exact: true }).click();
   await page.getByText('Draft a message', { exact: true }).click();
   await expect(page.getByLabel('Message draft', { exact: true })).toHaveValue("Hi Leo—I'd love to keep in touch.");
 });

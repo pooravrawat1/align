@@ -49,19 +49,43 @@ for (const width of [1440, 390]) {
     await expect(page.locator('.home-focus-statement')).toHaveText('Building accessible tools with a small team.');
     await page.getByRole('button', { name: 'Edit your profile', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'About you', exact: true })).toBeVisible();
+    await expect(page.locator('.pe-save-status')).toBeEmpty();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await mkdir('.impeccable/review', { recursive: true });
     await page.screenshot({ path: `.impeccable/review/profile-${width === 1440 ? 'desktop' : 'mobile'}.png`, fullPage: true });
     await tab(page, 'Focus').click();
     await expect(page.getByRole('heading', { name: 'Your focus', exact: true })).toBeVisible();
+    await expect(page.locator('.pe-page-heading button')).toHaveCount(0);
+    if (width === 1440) {
+      await expect(page.locator('.pe-preview-rail')).toHaveClass(/pe-panel/);
+      const panel = page.locator('.pe-editor');
+      const rail = page.locator('.pe-preview-rail');
+      expect(await rail.evaluate(element => getComputedStyle(element).backgroundColor)).toBe(await panel.evaluate(element => getComputedStyle(element).backgroundColor));
+      await expect(rail.locator('.pe-panel-heading')).toHaveCSS('border-bottom-width', '1px');
+      await expect(rail.locator('.pe-panel-heading p')).toHaveText('Your name, headline, and shared interests at a glance.');
+      await expect(page.locator('.pe-panel-heading .ds-panel-header-icon svg')).toHaveCount(2);
+    }
     await page.screenshot({ path: `.impeccable/review/profile-focus-${width === 1440 ? 'desktop' : 'mobile'}.png`, fullPage: true });
     await tab(page, 'Contact').click();
     await expect(page.getByRole('heading', { name: 'Contact details', exact: true })).toBeVisible();
+    await expect(page.locator('.pe-panel-heading .ds-panel-header-icon svg')).toHaveCount(1);
+    await expectCenteredEditor(page);
     await page.screenshot({ path: `.impeccable/review/profile-contact-${width === 1440 ? 'desktop' : 'mobile'}.png`, fullPage: true });
     await tab(page, 'Settings').click();
     await expect(page.getByRole('heading', { name: 'Visibility', exact: true })).toBeVisible();
+    await expect(page.locator('.pe-panel-heading .ds-panel-header-icon svg')).toHaveCount(3);
+    await expectCenteredEditor(page);
     await page.screenshot({ path: `.impeccable/review/profile-settings-${width === 1440 ? 'desktop' : 'mobile'}.png`, fullPage: true });
   });
+}
+
+async function expectCenteredEditor(page) {
+  const tabs = await page.locator('.pe-tabs').boundingBox();
+  const editor = await page.locator('.pe-layout').boundingBox();
+  expect(Math.abs(editor.x + editor.width / 2 - tabs.x - tabs.width / 2)).toBeLessThan(2);
+  expect(Math.abs(editor.width - Math.min(960, tabs.width))).toBeLessThan(2);
+  await expect(page.locator('.pe-preview-rail')).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 }
 
 test('unsaved sections survive tabs, route navigation, refresh, and isolated discard', async ({ page, demo }) => {
@@ -106,19 +130,21 @@ test('preview respects contextual sharing and restores focus after Escape', asyn
   await page.getByRole('textbox', { name: /^Website/ }).fill('https://example.com/alex');
   await page.getByRole('checkbox', { name: 'Share Website with saved connections' }).check();
   await save(page).click(); await expect(page.locator('.pe-save-status')).toHaveText('Saved');
-  await page.getByRole('button', { name: 'Preview profile', exact: true }).click();
+  await tab(page, 'About').click();
+  await page.getByRole('button', { name: 'Preview full profile', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Profile preview' });
   await dialog.getByRole('button', { name: 'Saved connection', exact: true }).click();
   await expect(dialog.getByRole('link', { name: 'Website for Alex Morgan' })).toHaveAttribute('href', 'https://example.com/alex');
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: 'Preview profile', exact: true })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Preview full profile', exact: true })).toBeFocused();
   await tab(page, 'Settings').click();
   await page.getByRole('switch', { name: 'Access for saved connections' }).click();
-  await page.getByRole('button', { name: 'Preview profile', exact: true }).click();
+  await tab(page, 'About').click();
+  await page.getByRole('button', { name: 'Preview full profile', exact: true }).click();
   await dialog.getByRole('button', { name: 'Saved connection', exact: true }).click();
   await expect(dialog.getByRole('link')).toHaveCount(0);
   await expect(dialog.getByText('Your focus, interests, skills, and contact links are hidden from saved connections.')).toBeVisible();
-  await page.keyboard.press('Escape'); await save(page).click();
+  await page.keyboard.press('Escape'); await tab(page, 'Settings').click(); await save(page).click();
   await expect(page.locator('.pe-save-status')).toHaveText('Saved');
   expect((await demo.api('bootstrap')).profiles[0].visibility.previousConnections).toBe(false);
 });
@@ -147,13 +173,15 @@ test('tab keyboard navigation, legacy settings route, and pending topic restorat
 test('hidden focus and room presence change preview without publishing the draft', async ({ page, demo }) => {
   await page.goto(`${origin}/#/profile?section=focus`);
   await page.getByRole('checkbox', { name: 'Share current focus', exact: true }).uncheck();
-  await page.getByRole('button', { name: 'Preview profile', exact: true }).click();
+  await expect(page.locator('.pe-page-heading button')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Preview full profile', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('heading', { name: 'Current focus' })).toHaveCount(0);
   await expect(dialog.getByText('Showing your draft. Save changes to update your shared profile.')).toBeVisible();
   await page.keyboard.press('Escape'); await tab(page, 'Settings').click();
   await page.getByRole('switch', { name: 'Show me in rooms' }).click();
-  await page.getByRole('button', { name: 'Preview profile', exact: true }).click();
+  await tab(page, 'About').click();
+  await page.getByRole('button', { name: 'Preview full profile', exact: true }).click();
   await expect(dialog.getByText('Your profile is hidden in rooms.')).toBeVisible();
   expect((await demo.api('bootstrap')).profiles[0].visibility.activeInEvent).toBe(true);
 });
@@ -163,7 +191,7 @@ test('long profile values and topics fit a phone and narrower zoom-equivalent la
   await page.setViewportSize({ width: 320, height: 700 });
   await page.goto(`${origin}/#/profile?section=focus`);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.getByRole('button', { name: 'Preview profile', exact: true }).click();
+  await page.getByRole('button', { name: 'Preview full profile', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
@@ -196,13 +224,53 @@ test('a pending topic is included before preview opens', async ({ page, demo }) 
   void demo;
   await page.goto(`${origin}/#/profile?section=focus`);
   await page.getByRole('textbox', { name: 'Interests', exact: true }).fill('A new interest');
-  await page.getByRole('button', { name: 'Preview profile', exact: true }).click();
+  await page.getByRole('button', { name: 'Preview full profile', exact: true }).click();
   await expect(page.getByRole('dialog').getByText('A new interest', { exact: true })).toBeVisible();
 });
 
-test('profile photos upload as a draft, save, restore, export, and remove', async ({ page, demo }) => {
+for (const width of [1440, 390]) {
+  test(`profile drawer integrates spatial states and shared panel headers at ${width}px`, async ({ page, demo }) => {
+    void demo;
+    await page.setViewportSize({ width, height: 960 });
+    await page.goto(`${origin}/#/profile`);
+    await page.getByRole('button', { name: 'Preview full profile', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Profile preview' });
+    await expect(dialog.locator('details')).toHaveCount(0);
+    const distance = dialog.getByRole('group', { name: 'Spatial distance' });
+    await expect(distance).toBeVisible();
+    await expect(dialog.locator('.pe-preview-section .ds-panel-header').first()).toContainText('In the room');
+    await expect(distance.getByRole('button', { name: 'Nearby', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await page.screenshot({ path: `.impeccable/review/drawer-room-${width}.png` });
+    await distance.getByRole('button', { name: 'Distant', exact: true }).click();
+    await expect(dialog.locator('.pe-room-scene')).toHaveCount(1);
+    await expect(dialog.locator('.pe-room-scene')).toContainText('A name marker at a distance.');
+    await distance.getByRole('button', { name: 'Matched', exact: true }).click();
+    await expect(dialog.locator('.pe-room-scene')).toHaveCount(1);
+    await expect(dialog.getByText('Illustrative match based on eligible sample profiles and your sharing choices.')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Saved connection', exact: true }).click();
+    await expect(distance).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Saved connection', exact: true })).toHaveCSS('background-color', 'rgb(242, 243, 245)');
+    await expect(dialog.getByRole('heading', { name: 'Saved connection', exact: true })).toBeVisible();
+    expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await page.screenshot({ path: `.impeccable/review/drawer-connection-${width}.png` });
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('button', { name: 'Preview full profile', exact: true })).toBeFocused();
+  });
+}
+
+test('subtle profile photo control uploads a draft, saves, restores, and exports', async ({ page, demo }) => {
   await page.goto(`${origin}/#/profile`);
   await expect(page.getByText('Sample photo for this demo')).toHaveCount(0);
+  await expect(page.getByText('JPG, PNG or WebP · Up to 10 MB')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Remove photo', exact: true })).toHaveCount(0);
+  const edit = page.getByRole('button', { name: 'Upload profile photo' });
+  await expect(edit).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  expect(await edit.evaluate(element => getComputedStyle(element, '::before').content)).toBe('none');
+  await page.screenshot({ path: '.impeccable/review/profile-photo-subtle-desktop.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await expect(edit).toBeVisible();
+  await page.screenshot({ path: '.impeccable/review/profile-photo-subtle-mobile.png', fullPage: true });
   const fileChooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Upload profile photo' }).click();
   await (await fileChooser).setFiles({ name: 'portrait.jpg', mimeType: 'image/jpeg', buffer: await readFile('public/assets/alex.jpg') });
@@ -221,12 +289,6 @@ test('profile photos upload as a draft, save, restore, export, and remove', asyn
   const download = await downloading;
   const exported = JSON.parse(await readFile(await download.path(), 'utf8'));
   expect(exported.profile.avatar).toBe(draftImage);
-  await tab(page, 'About').click();
-  await page.getByRole('button', { name: 'Remove photo', exact: true }).click();
-  await expect(page.locator('.pe-photo-wrap .avatar-fallback')).toHaveText('AM');
-  await save(page).click(); await expect(page.locator('.pe-save-status')).toHaveText('Saved');
-  await page.reload();
-  await expect(page.locator('.pe-photo-wrap .avatar-fallback')).toHaveText('AM');
 });
 
 test('invalid photo uploads preserve the previous portrait and a new photo recovers a failed image', async ({ page, demo }) => {

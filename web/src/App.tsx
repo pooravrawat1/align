@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -8,7 +9,6 @@ import {
   ExternalLink,
   Glasses,
   Home,
-  LayoutGrid,
   Menu,
   Network,
   Plus,
@@ -18,14 +18,16 @@ import {
   X,
 } from "lucide-react";
 import seed from "../shared/demo-data.json";
-import { Avatar, Brand, Button, Empty, Mark } from "./ui";
+import { Avatar, Brand, Button, Empty, Mark, PageHeader } from "./ui";
 import { Spatial } from "./Spatial";
+import { SidebarSelection } from "./SidebarSelection";
 import { Landing } from "./Landing";
 import { HomeProduct, EventProduct } from "./ProductPages";
 import { NetworkProduct, ProfileProduct } from "./PersonalPages";
 import { clearSessionProfileDrafts, useProfileEditor } from "./useProfileEditor";
 import type { Action, State } from "./types";
 import { Onboarding, entryDraftKey, type OnboardingDetails } from "./Onboarding";
+import { DesignSystemPage } from "./DesignSystemPage";
 
 const initial: State = { ...seed, matches: [], session: null, demo: true };
 const route = () => {
@@ -318,7 +320,22 @@ export default function App() {
       ) : activePage === "landing" ? (
         <Landing
           profiles={state.profiles}
-          onEnter={() => go("login")}
+          onEnter={() => {
+            const open = () => {
+              flushSync(() => setPage("login"));
+              go("login");
+              window.scrollTo({ top: 0, behavior: "instant" });
+            };
+            if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+              open();
+              return;
+            }
+            document.documentElement.dataset.entryCrossfade = 'true';
+            const transition = document.startViewTransition(open);
+            void transition.finished.finally(() => {
+              delete document.documentElement.dataset.entryCrossfade;
+            }).catch(() => {});
+          }}
         />
       ) : activePage === "login" ? (
         <Onboarding
@@ -333,7 +350,8 @@ export default function App() {
           className={`app-layout ${page === "spatial" ? "spatial-layout" : ""}`}
         >
           <aside className={`sidebar ${menu ? "open" : ""}`}>
-            <Brand compact showLogo />
+            <SidebarSelection page={page} />
+            <Brand compact />
             <div className="workspace-label">
               <span className="workspace-monogram">B</span>
               <span>
@@ -366,10 +384,6 @@ export default function App() {
                 <Glasses size={18} />
                 <span>Spatial preview</span>
               </a>
-              <a href="#/map" className={page === "map" ? "active" : ""}>
-                <LayoutGrid size={18} />
-                <span>Experience map</span>
-              </a>
             </nav>
             <div className="sidebar-bottom">
               <div className="demo-note">
@@ -397,49 +411,14 @@ export default function App() {
             />
           )}
           <main className="app-main" id="main-content" tabIndex={-1}>
-            <header className="app-header">
-              <div>
-                <button
-                  className="icon-button mobile-menu"
-                  aria-label="Open navigation"
-                  onClick={() => setMenu(true)}
-                >
-                  <Menu size={20} />
-                </button>
-                <span>Your space</span>
-                <span className="breadcrumb-slash">/</span>
-                <strong>
-                  {nav.find((n) => n.id === page)?.name ||
-                    (page === "spatial"
-                      ? "Spatial experience"
-                      : page === "map"
-                        ? "Experience map"
-                        : "Settings")}
-                </strong>
-              </div>
-              <div>
-                {page !== "home" && (
-                  <>
-                <span className="header-live">
-                  <span className="status-dot" />
-                  {event
-                    ? event.name + " · live"
-                    : "The Builders Room"}
-                </span>
-                <Button className="header-enter" onClick={() => go("spatial")}>
-                  Enter <ArrowUpRight size={12} />
-                </Button>
-                  </>
-                )}
-                <button
-                  className="icon-button"
-                  aria-label="Open your profile"
-                  onClick={() => go("profile")}
-                >
-                  <Avatar profile={user} size="small" />
-                </button>
-              </div>
-            </header>
+            <button
+              className="icon-button app-navigation-toggle"
+              aria-label="Open navigation"
+              aria-expanded={menu}
+              onClick={() => setMenu(true)}
+            >
+              <Menu size={20} />
+            </button>
             {error && (
               <div className="error-banner" role="alert">
                 <span>{error}</span>
@@ -478,6 +457,7 @@ export default function App() {
               />
             )}
             {page === "map" && <ExperienceMap />}
+            {page === "system" && <DesignSystemPage user={user} />}
             {![
               "home",
               "event",
@@ -485,6 +465,7 @@ export default function App() {
               "profile",
               "spatial",
               "map",
+              "system",
               "settings",
             ].includes(page) && (
               <Empty title="This space is still taking shape.">
@@ -513,26 +494,6 @@ export default function App() {
   );
 }
 
-
-function PageHeading({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div className="page-heading">
-      <div>
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </div>
-      {children}
-    </div>
-  );
-}
 
 function ExperienceMap() {
   const lanes = [
@@ -611,7 +572,8 @@ function ExperienceMap() {
   ];
   return (
     <div className="page-content">
-      <PageHeading
+      <PageHeader
+        className="page-heading"
         title="One experience. Three human moments."
         description="The website prepares the introduction. The headset makes room for the conversation."
       />

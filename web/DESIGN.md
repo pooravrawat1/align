@@ -5,15 +5,18 @@ colors:
   graphite-background: "#101113"
   deep-canvas: "#050606"
   surface: "#191A1D"
+  surface-subtle: "#202125"
   raised: "#222428"
+  hover: "#27282E"
+  selected: "#2B2D32"
   text: "#F2F3F5"
   muted: "#A8ABB2"
   quiet: "#93979F"
   hairline: "#FFFFFF14"
   control-subtle: "#FFFFFF06"
   control-border: "#FFFFFF20"
-  chip-surface: "transparent"
-  chip-border: "#FFFFFF12"
+  chip-surface: "#101113"
+  chip-border: "#FFFFFF26"
   jade: "#69E6A6"
   jade-ink: "#103622"
   spatial-glass-highlight: "#72756B72"
@@ -21,19 +24,46 @@ colors:
 typography:
   display:
     fontFamily: "Geist Variable, Inter Variable, sans-serif"
-    fontSize: "clamp(28px, 3vw, 42px)"
+    fontSize: "clamp(34px, 4.4vw, 53px)"
     fontWeight: 500
     lineHeight: 1.08
     letterSpacing: "-0.035em"
-  title:
+  page-title:
+    fontFamily: "Geist Variable, Inter Variable, sans-serif"
+    fontSize: "36px"
+    fontWeight: 500
+    lineHeight: 1.14
+    letterSpacing: "-0.035em"
+  dialog-title:
+    fontFamily: "Geist Variable, Inter Variable, sans-serif"
+    fontSize: "28px"
+    fontWeight: 500
+    lineHeight: 1.2
+    letterSpacing: "-0.025em"
+  card-title:
     fontFamily: "Geist Variable, Inter Variable, sans-serif"
     fontSize: "20px"
     fontWeight: 500
-    lineHeight: 1.2
-    letterSpacing: "-0.02em"
+    lineHeight: 1.3
+    letterSpacing: "-0.025em"
+  section-title:
+    fontFamily: "Geist Variable, Inter Variable, sans-serif"
+    fontSize: "16px"
+    fontWeight: 500
+    lineHeight: 1.4
   body:
     fontFamily: "Inter Variable, -apple-system, BlinkMacSystemFont, sans-serif"
     fontSize: "14px"
+    fontWeight: 400
+    lineHeight: 1.5
+  supporting:
+    fontFamily: "Inter Variable, -apple-system, BlinkMacSystemFont, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
+    lineHeight: 1.6
+  metadata:
+    fontFamily: "Inter Variable, -apple-system, BlinkMacSystemFont, sans-serif"
+    fontSize: "12px"
     fontWeight: 400
     lineHeight: 1.5
   label:
@@ -47,6 +77,7 @@ rounded:
   panel: "14px"
   cinematic: "16px"
   spatial: "22px"
+  feature: "24px"
   pill: "999px"
 spacing:
   xs: "8px"
@@ -80,7 +111,7 @@ components:
     height: "44px"
   tag:
     backgroundColor: "{colors.chip-surface}"
-    textColor: "#B8BBC2"
+    textColor: "#D7D9DE"
     typography: "{typography.body}"
     rounded: "{rounded.pill}"
 ---
@@ -109,13 +140,15 @@ Reference fidelity is additive, not a license to redesign: retain the old Event 
 
 The entry screen uses the supplied split-layout reference with Catalyst's shared geometry: 10px controls and 14px panels. The outer frame uses the same `product-panel` class as Home and Event. The artwork is flush with the frame, with square right corners at the column seam. A deep emerald gradient with softly diffused teal light and three journey steps sits on the left. The first step is white with a dark-green number circle; steps two and three have a subtle white translucent fill without an outline. This artwork is a scoped exception, not a global accent.
 
-The right side is a three-step demo-entry form, not real account creation: “Create your profile,” “What are you working on?”, then “Who would you love to meet?” Use left-aligned 36px headings (30px on small phones), 14px supporting copy, shared raised charcoal inputs, and a white CTA. Headings, supporting text, and fields share a left edge and consistent top origin. Field groups use 24px spacing, with helpers kept 8px from their own field. The Alex/Maya pill appears only on step one; each person has a separate prefilled draft. Step two collects a short bio, offered skills, and an optional LinkedIn link. Step three collects interests and sought expertise, with The Builders Room selected. All three numbered journey cards are full-card buttons for direct forward/back navigation; the current step is white and the others frosted. Navigation and refresh preserve drafts, including unfinished tags. Only “Go to Home” validates the complete draft, saves the confirmed profile, and joins DEMO, then opens Home. Invalid skipped fields return to the corresponding step before any API writes. Failures stay inline with the draft intact; retries reuse the current person's session and do not rejoin an already joined room. Successful completion clears the entry draft. LinkedIn is a saved link, not an import; sharing remains controlled by Profile visibility. Résumé parsing and live two-device synchronization are separate follow-ups, with no dead upload or OAuth controls. The landing page's Step inside action always opens entry, including for returning visitors. The upper-right X returns to the landing page. On mobile the artwork becomes a compact, edge-to-edge header above the form.
+The right side is a three-step demo-entry form, not real account creation: “Create your profile,” “What are you working on?”, then “Who would you love to meet?” Use left-aligned 36px headings (30px on small phones), left-aligned 14px supporting copy, shared raised charcoal inputs, and a white CTA. Center the form group within the desktop panel when it fits; longer content starts at the top and scrolls inside that panel. Headings, subtitles, the selector, labels, and inputs share a left edge; the overall group remains vertically centered. Helper text uses smaller 12px italic type. Field groups use 16px spacing, with helpers kept 8px from their own field and 24px between the header and form. The left-aligned Alex/Maya pill appears only on step one; each person has a separate prefilled draft. Step two collects a short bio, offered skills, and an optional LinkedIn link. Step three collects interests and sought expertise, with The Builders Room selected. All three numbered journey cards are full-card buttons for direct forward/back navigation; the current step is white and the others frosted. Navigation and refresh preserve drafts, including unfinished tags. Only “Go to Home” validates the complete draft, saves the confirmed profile, and joins DEMO, then opens Home. Invalid skipped fields return to the corresponding step before any API writes. Failures stay inline with the draft intact; retries reuse the current person's session and do not rejoin an already joined room. Successful completion clears the entry draft. LinkedIn is a saved link, not an import; sharing remains controlled by Profile visibility. Résumé parsing and live two-device synchronization are separate follow-ups, with no dead upload or OAuth controls. The landing page's Step inside action always opens entry, including for returning visitors. The upper-right X returns to the landing page. On mobile the artwork becomes a compact, edge-to-edge header above the form.
 
 The website palette is neutral charcoal, white, and cool gray, including branding, selected profiles, navigation, and focus states. Jade signals connections and live presence; it is not a general accent. Spatial cards restore the original v1 material exactly, retaining its subtle environmental tint and brighter diffusion over room imagery.
 
+The entry preset selector uses the same raised charcoal surface as the fields, with a white selected pill. One neutral hairline separates the selector from the identity fields. Scrollbar space is symmetric so the form remains horizontally centered.
+
 The onboarding project question writes the existing profile `bio`, which Home presents as “Your focus.” The expertise sought in step three writes `lookingFor`, which supplies the card's “Looking for” pills and collaborator matching. Keep these shared fields authoritative rather than adding a separate onboarding project record.
 
-Keep the entry copy compact: “Create your profile” fits a single desktop line. Step two omits its introductory subtitle and the LinkedIn helper; the demo-mode footer is removed from all steps. LinkedIn remains optional. Form top padding is 48px, with scrolling retained for expanded content. Interests and sought expertise use the same outlined neutral pill treatment as Home; Enter or comma adds a typed item and × removes it. Skills retain their existing chip styling.
+Keep the entry copy compact: “Create your profile” fits a single desktop line. Every step uses the app's established panel-heading hierarchy: a left-aligned title, a concise subtitle, 16px of space, a neutral 1px hairline, then 24px before the form content. Step two uses “Share what you're building and what you bring.” and omits the LinkedIn helper. The demo-mode footer is removed from all steps. LinkedIn remains optional. Form top padding is 48px, with scrolling retained for expanded content. Interests and sought expertise use the same outlined neutral pill treatment as Home; Enter or comma adds a typed item and × removes it. Skills retain their existing chip styling.
 
 ### Primary
 
@@ -147,12 +180,22 @@ Keep the entry copy compact: “Create your profile” fits a single desktop lin
 
 ### Hierarchy
 
-- **Display** (450–600, 28–53px, 1–1.16): page headings, cinematic event titles, login, and spatial setup.
-- **Title** (500–600, 17–24px): card titles, panel headings, and person names.
-- **Body** (400, 13–14px, 1.5–1.7): descriptions, guidance, and connection reasons.
-- **Label** (600–700, 11–12px): state, metadata, codes, and segmented controls; uppercase only for compact status labels.
+- **Display:** landing, onboarding, cinematic event titles, and spatial setup use the responsive display role, capped at 53px with 1.08–1.16 line-height.
+- **Page title:** Home, event browse/detail, Network, Profile, and system reference use `--type-page-title`: 36px desktop and 30px at widths up to 760px, weight 500, line-height 1.14, tracking -0.035em.
+- **Dialog title:** focused person and modal identity titles use `--type-dialog-title` at 28px/500.
+- **Card heading:** panel and card names use `--type-card-title` at 20px/500.
+- **Section heading:** compact content divisions use `--type-section-title` at 16px/500.
+- **Body:** descriptions, form labels, and reading copy use 14px/400 with 1.5–1.65 line-height.
+- **Supporting and controls:** context and actions use 13px; person names may use 14–15px/600 according to density.
+- **Metadata:** dates, locations, topic pills, and quiet secondary facts use 12px. The 11px label role is reserved for short status labels, codes, and segmented controls.
 
 **The Compact, Not Tiny Rule.** Core support copy and controls remain 13–14px; 11–12px is limited to metadata and status labels.
+
+### Shared implementation
+
+- `src/theme.css` owns semantic surface, text, typography, spacing, border, radius, and motion tokens. Page CSS consumes the semantic role rather than repeating a hex value or inventing a nearby size.
+- `src/ui.tsx` owns Button, TextAction, Chip, PageHeader, PanelHeader, Disclosure, Avatar, Toggle, and empty-state primitives. Repeated page structures compose these components; surface-specific CSS may arrange them without redefining their hierarchy.
+- `#/system` is the visual reference for type roles, the surface ladder, and shared component states. Review a system change there before migrating it to product surfaces.
 
 ## Layout
 
@@ -200,7 +243,7 @@ Primary and secondary CTAs use the shared pill silhouette. Utility controls use 
 
 ### Card headers and dividers
 
-Home's Recent connections and Your focus, and Network's optional Keep in touch composer use the shared `.card-header` pattern: header, inset hairline, content, and an optional action. Standard headers reserve a 32px action row, followed by 8px of space (`--card-header-gap`), a 1px divider, and 16px before the content. The `.card-header--compact` variant uses the label's natural line height without the action-row minimum or a bottom margin; its parent supplies the 16px content gap.
+Home's Recent connections and Your focus use the shared `.card-header` pattern: header, inset hairline, content, and an optional action. Standard headers reserve a 32px action row, followed by 8px of space (`--card-header-gap`), a 1px divider, and 16px before the content. The `.card-header--compact` variant uses the label's natural line height without the action-row minimum or a bottom margin; its parent supplies the 16px content gap.
 
 - `--divider-subtle` follows `--line` for opaque panels; `--divider-on-glass` is white at approximately 17% opacity for photo-backed glass.
 - The Home profile badge is capped at 250px, with 14px padding, an 18px radius, and a 48px portrait. It uses `--glass-milky` over a lighter neutral base and `--glass-stroke` for a fine glass edge. Name and role sit beside a circular pencil affordance; the whole badge opens Profile. Omit the status header and divider, and show Complete profile only when incomplete. Opaque page and connection panels retain their existing material.
@@ -210,7 +253,7 @@ Home's Recent connections and Your focus, and Network's optional Keep in touch c
 - Rows link directly to expanded Network connection details. A faint rounded hover extends 12px into the panel's existing inset, preserving text alignment and giving portraits comfortable space. There is no persistent selection, appearing action label, or repeated arrow. Keyboard focus remains visible.
 - Optional LinkedIn, website, and email icons sit alongside saved people only when the person explicitly shares each field and permits access for previous connections. These use labeled links with tooltips; no fictional contact destinations are added to demo profiles. Network details shows the same destinations with text labels. The expandable Other contact field preserves free-text contact entry and editing.
 - Profile's contact fields are optional and private by default, with independent sharing controls. URL fields accept HTTP(S), LinkedIn links must use its domain, and email accepts a single address. These remain temporary demo-session data, included in the existing profile export.
-- Network's expanded connection details keeps the original composer under **Draft a message**. Opening it reveals Keep in touch, the selected person's portrait, an editable prefilled message, and the white Copy message action. Suggestions use current, visible shared interests; otherwise use a neutral greeting. Drafts reset when the recipient or suggested context changes and are not saved or sent.
+- Network's expanded connection details show identity, project summary, common ground, reciprocal skills, and compact Compatibility context first. Bio, goals, and the full skill profile sit under **More about**. Follow-up tools start closed under **Your follow-up**; opening **Draft a message** within it reveals Keep in touch, the selected person's portrait, an editable prefilled message, and the white Copy message action. Suggestions use current, visible shared interests; otherwise use a neutral greeting. Drafts reset when the recipient or suggested context changes and are not saved or sent.
 - Draft fields use three rows, 12px padding, a faint fill, a 1px border, and the shared control radius. Leave 12px before the copy action. Fields remain vertically resizable.
 - All events, Event details, and View network use text that brightens and underlines on hover/focus. Keep the forward arrow on Enter room and copy icon on Copy message. Event's existing connection-row presentation remains unchanged.
 
@@ -218,24 +261,24 @@ Home's Recent connections and Your focus, and Network's optional Keep in touch c
 
 Profile uses four directly addressable tabs: About, Focus, Contact, and Settings. Home-style opaque panels, inset dividers, 20px panel headings, 14px field labels, and 15–16px input text replace the long undifferentiated form. The active section owns its Save changes and Discard changes actions; dirty indicators describe other unsaved sections without a completion score. Drafts survive navigation and tab refresh within the same session.
 
-About includes a portrait with a pencil upload control and a quiet Remove photo action. Uploads preview before saving; the format/size hint replaces the old sample-photo label. Focus uses clear field names and topic controls with a visible Add action. Sharing controls remain beside their fields; browser preferences are separated from saved profile settings.
+About includes a portrait with a small, unframed pencil upload icon and an invisible 44px hit area. Uploads preview before saving; omit persistent file requirements and a Remove photo action. Show preparation or validation feedback only when needed. Focus uses clear field names and topic controls with a visible Add action. Sharing controls remain beside their fields; browser preferences are separated from saved profile settings.
 
-The compact nearby preview sits beside About and Focus only when space permits. Preview profile opens a focus-managed drawer with room and saved-connection audiences; spatial-distance exploration is optional. On phones, hide the preview rail, stack fields, use 16px input text, and retain the four short tabs. Save controls remain reachable; short viewports use a normal-flow footer. Glass is confined to the image-backed room preview.
+The compact nearby preview sits beside About and Focus only when space permits. Contact and Settings use a centered single column, capped at 960px and filling the available width below that, rather than retaining an empty preview column. Keep the page heading and tab bar stable between sections. The preview link inside the room card opens a focus-managed drawer with pill-shaped room/saved-connection audience controls. Its shared PanelHeader title/subtitle/divider pattern matches the editor. Distant, Nearby, and Matched controls live within the room card and update one scene; they are not a separate bottom disclosure. Shared details and the saved-connection view use opaque panels with divided field groups. On phones, retain the preview link below the form without the image rail, stack fields, use 16px input text, and retain the four short tabs. Save controls remain reachable; short viewports use a normal-flow footer. Glass is confined to the image-backed room preview.
 
 ### Inputs / Fields
 
 Inputs are opaque charcoal, at least 44px tall, with 14px text and 9–10px corners. Room codes use uppercase tracking. Focus changes the border to jade with a restrained outer ring.
 
-### Quiet chips
+### Profile pills
 
-- Skills, interests, looking-for topics, shared interests, and profile topics use one compact pill-shaped chip. Section labels carry the semantic distinction; chip geometry does not change by topic type.
-- The base chip is transparent with a faint hairline and muted 11px text. It organizes metadata without competing with names, project descriptions, or actions.
-- Removable chips keep the same surface with a compact circular remove affordance. Suggestion and overflow chips gain only a soft neutral fill and brighter edge on hover or keyboard focus; they do not lift or cast a shadow.
-- Status badges, filters, segmented controls, counts, and navigation tabs are separate component families and do not inherit quiet-chip styling.
+- Skills, interests, looking-for topics, shared interests, and profile topics use the original profile-pill treatment everywhere. Section labels carry the semantic distinction; pill geometry does not change by topic type.
+- The shared recipe uses the graphite canvas (`#101113`) inside charcoal panels, a `#ffffff26` edge, clear 12px text, a restrained inset highlight, 26px minimum height, and `3px 9px` padding.
+- Removable pills use `3px 5px 3px 9px` spacing with a circular 24px remove affordance. Suggestion and overflow pills use the same base and brighten softly on hover or keyboard focus.
+- Status badges, filters, segmented controls, counts, and navigation tabs remain separate component families.
 
 ### Navigation
 
-Home, Event, Network, and Profile are the primary destinations. Preview and Map remain secondary. Active navigation uses a quiet neutral fill, white text, and white icons.
+Home, Event, Network, and Profile are the primary destinations. Spatial preview remains secondary; Experience map is direct-link only. A single pill-shaped background follows the selected sidebar item in a brief, interruptible slide; hover only brightens the label. Reduced motion places the pill without travel. Active navigation uses a quiet neutral fill, semibold (600) white text, and white icons.
 
 ### Event Phase Control
 

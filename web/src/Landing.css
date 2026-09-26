@@ -2,6 +2,14 @@
 .qv-landing ::selection { background: #a5dcba; color: #10251a; }
 .qv-landing h1, .qv-landing h2 { font-family: 'Geist Variable', sans-serif; font-weight: 430; letter-spacing: -.04em; }
 .qv-landing button:not(.button):focus-visible, .qv-landing a:focus-visible { outline: 2px solid #b8f1ce; outline-offset: 5px; }
+.qv-landing.is-entering { cursor: wait; }
+.qv-landing.is-entering button { pointer-events: none; }
+.qv-entry-transition { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; overflow: hidden; pointer-events: none; opacity: 0; visibility: hidden; }
+.qv-entry-backdrop { position: absolute; inset: 0; background: var(--qv-bg); opacity: 0; }
+.qv-entry-optics { position: absolute; left: 50%; top: 50%; width: max(100vw, 178vh); height: auto; overflow: visible; transform: translate(-50%, -50%); filter: drop-shadow(0 18px 48px #b8f1ce24); }
+.qv-entry-aperture, .qv-entry-rim { transform-box: fill-box; transform-origin: center; }
+.qv-entry-aperture { fill: var(--qv-bg); }
+.qv-entry-rim { stroke: #b8f1ce; stroke-width: 5; vector-effect: non-scaling-stroke; }
 .qv-runway { position: relative; height: 410svh; }
 .qv-stage { position: sticky; top: 0; height: 100svh; isolation: isolate; overflow: hidden; background: #0b100e; }
 .qv-scene, .qv-optics, .qv-canvas, .qv-rim, .qv-hud { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -20,14 +28,14 @@
 .qv-header { position: absolute; z-index: 10; top: 0; left: 3.5%; right: 3.5%; height: 94px; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
 .qv-header .brand { font-size: 26px; font-weight: 520; letter-spacing: -.055em; color: #f3f5f0; gap: 8px; }
 .qv-header .brand > span { font: inherit; letter-spacing: inherit; }
-.qv-header .brand .mark { display: none; }
+.qv-header .brand .mark { width: 30px; height: 19px; }
 .qv-header .brand-dot { color: #a5dcba; }
 .qv-header nav { display: flex; gap: 32px; margin-left: auto; }
-.qv-header nav button { padding: 12px 0; border: 0; background: none; color: #e0e9e2; font-size: 12px; min-height: 44px; }
+.qv-header nav button { padding: 12px 0; border: 0; background: none; color: #e0e9e2; font-size: 14px; font-weight: 520; line-height: 1.4; min-height: 44px; }
 .qv-header nav button:hover { color: #b8f1ce; }
 .qv-header-actions { display: flex; align-items: center; gap: 26px; }
 .qv-version-link { font-size: 11px; color: #d0dcd2; padding: 14px 0; }
-.qv-enter { min-height: 42px; padding: 0 19px; font-size: 12px; }
+.qv-header .qv-enter { min-height: 44px; padding: 0 19px; font-size: 14px; font-weight: 550; line-height: 1.4; }
 .qv-hero-copy { position: absolute; z-index: 7; left: 3.5%; bottom: 7.5%; }
 .qv-hero-copy h1 { font-size: clamp(44px, 4.15vw, 78px); line-height: 1.04; white-space: nowrap; }
 .qv-hero-copy h1 > span { color: #a5dcba; }
@@ -100,7 +108,7 @@
 .qv-linear-story { display: none; }
 .qv-invitation { position: relative; min-height: max(680px, 100svh); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 100px 25px; text-align: center; background: #101912; }
 .qv-invitation-mark { display: flex; margin-bottom: 34px; }
-.qv-invitation-mark span { width: 29px; height: 29px; border: 1px solid #a5dcba88; border-radius: 50%; margin: 0 -5px; }
+.qv-invitation-mark .mark { width: 52px; height: 32px; }
 .qv-invitation h2 { font-size: clamp(48px, 5.6vw, 86px); line-height: 1.02; }
 .qv-invitation h2 > span { color: #b5e4c5; }
 .qv-invitation > p { color: #acbeb0; font-size: 14px; margin-top: 27px; }
@@ -109,8 +117,18 @@
 .qv-invitation > small { margin-top: 20px; color: #9cad9f; font-size: 10px; }
 .qv-footer { min-height: 100px; padding: 25px 4%; display: flex; align-items: center; gap: 35px; color: #a7b9ad; font-size: 11px; }
 .qv-footer .brand { margin-right: auto; color: #d9e6dd; font-size: 16px; gap: 7px; }
-.qv-footer .brand .mark { width: 23px; height: 23px; }
+.qv-footer .brand .mark { width: 23px; height: 15px; }
 .qv-footer > a:last-child { display: inline-flex; align-items: center; gap: 6px; }
+/* Keep the room visible underneath the arriving card for the entire handoff. */
+:root[data-entry-crossfade]::view-transition-old(root) { animation: none; opacity: 1; mix-blend-mode: normal; }
+:root[data-entry-crossfade]::view-transition-new(root) { animation: qv-card-crossfade .48s ease-in-out both; mix-blend-mode: normal; }
+:root[data-entry-crossfade] .login-fields { animation: none; }
+@keyframes qv-card-crossfade { from { opacity: 0; } to { opacity: 1; } }
+.login-page .login-fields { animation: qv-step-arrival .32s cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes qv-step-arrival {
+  from { opacity: 0; transform: translateY(6px); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
 @media (width < 1200px) {
   .qv-jordan { display: none; }
 }
@@ -144,7 +162,7 @@
   .qv-header { height: 80px; left: 6%; right: 6%; gap: 10px; }
   .qv-header .brand { font-size: 24px; }
   .qv-header-actions { gap: 15px; }
-  .qv-enter { min-height: 40px; padding: 0 13px; font-size: 11px; }
+  .qv-header .qv-enter { padding: 0 15px; }
   .qv-enter svg { display: none; }
   .qv-version-link { font-size: 10px; }
   .qv-hero-copy { left: 6%; bottom: 11%; right: 6%; }
@@ -176,6 +194,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .qv-landing *, .qv-landing *::before, .qv-landing *::after { scroll-behavior: auto !important; transition: none !important; }
+  .qv-entry-transition { display: none; }
 }
 @media (prefers-reduced-transparency: reduce) {
   .qv-match { background: #183626; backdrop-filter: none; }

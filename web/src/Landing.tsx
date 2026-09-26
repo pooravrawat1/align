@@ -1,11 +1,11 @@
-import { useRef } from 'react';
+import { useRef, useState, type MouseEvent } from 'react';
 import { ArrowDown, ArrowRight, ArrowUpRight, Check, Bookmark } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
-import { Brand, Button } from './ui';
+import { Brand, Button, Mark } from './ui';
 import { VisorScene, type VisorHandle } from './VisorScene';
-import { JOURNEY, JOURNEY_TRACKS, ROOM_IMAGE } from './visorGeometry';
+import { JOURNEY, JOURNEY_TRACKS, ROOM_IMAGE, VISOR_PATH } from './visorGeometry';
 import { createCheckpointScroll, type CheckpointScroll } from './checkpointScroll';
 import { resolveJourneyMotion } from './journeyMotion';
 import type { Profile } from './types';
@@ -48,8 +48,11 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
   const timeline = useRef<gsap.core.Timeline | null>(null);
   const checkpoints = useRef<CheckpointScroll | null>(null);
   const invitation = useRef<HTMLElement>(null);
+  const entryTimeline = useRef<gsap.core.Timeline | null>(null);
+  const releaseEntryInput = useRef<(() => void) | null>(null);
+  const [entering, setEntering] = useState(false);
 
-  useGSAP(() => {
+  const { contextSafe } = useGSAP(() => {
     const media = gsap.matchMedia();
     let alive = true;
     media.add('(min-width: 900px) and (prefers-reduced-motion: no-preference)', () => {
@@ -71,23 +74,25 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
       const tracks = JOURNEY_TRACKS;
       const to = (selector: string, vars: gsap.TweenVars, range: readonly [number, number]) =>
         tl.to(select(selector), { ...vars, duration: range[1] - range[0] }, range[0]);
-      const reveal = (selector: string, range: readonly [number, number]) =>
-        tl.fromTo(select(selector), { autoAlpha: 0, y: 8, clipPath: 'inset(0 0 12% 0)' },
-          { autoAlpha: 1, y: 0, clipPath: 'inset(0 0 0% 0)', duration: range[1] - range[0] }, range[0]);
-      to('.qv-hero-copy, .qv-scroll-cue, .qv-lens-caption', { autoAlpha: 0, y: -8 }, tracks.heroExit);
+      const reveal = (selector: string, range: readonly [number, number], from: gsap.TweenVars = {}) =>
+        tl.fromTo(select(selector), { autoAlpha: 0, y: 18, filter: 'blur(10px)', clipPath: 'inset(0 0 16% 0)', ...from },
+          { autoAlpha: 1, y: 0, x: 0, scale: 1, filter: 'blur(0px)', clipPath: 'inset(0 0 0% 0)', duration: range[1] - range[0], ease: 'power2.out' }, range[0]);
+      to('.qv-hero-copy', { autoAlpha: 0, y: -20, filter: 'blur(8px)', scale: .985, transformOrigin: 'left bottom', ease: 'power2.in' }, tracks.heroExit);
+      to('.qv-scroll-cue, .qv-lens-caption', { autoAlpha: 0, y: -10, filter: 'blur(5px)', ease: 'power1.in' }, tracks.heroExit);
       to('.qv-jordan', { autoAlpha: 0 }, tracks.jordanExit);
       to('.qv-scene-shade', { opacity: .88 }, tracks.shadeIn);
-      reveal('.qv-discover-copy', tracks.discoverIn);
-      reveal('.qv-match-reason', tracks.reasonIn);
-      to('.qv-discover-copy, .qv-match-reason, .qv-tether', { autoAlpha: 0 }, tracks.detailExit);
+      reveal('.qv-discover-copy', tracks.discoverIn, { x: -26 });
+      reveal('.qv-match-reason', tracks.reasonIn, { y: 12, scale: .97, transformOrigin: 'center top' });
+      to('.qv-discover-copy, .qv-match-reason, .qv-tether', { autoAlpha: 0, x: -18, filter: 'blur(8px)', ease: 'power2.in' }, tracks.detailExit);
       to('.qv-scene-shade', { opacity: 0 }, tracks.shadeOut);
-      reveal('.qv-conversation-copy', tracks.conversationIn);
-      to('.qv-conversation-copy', { autoAlpha: 0 }, tracks.conversationOut);
+      reveal('.qv-conversation-copy', tracks.conversationIn, { y: 24 });
+      to('.qv-conversation-copy', { autoAlpha: 0, y: -16, filter: 'blur(9px)', ease: 'power2.in' }, tracks.conversationOut);
       to('.qv-world-dim', { opacity: .88 }, tracks.worldDim);
-      to('.qv-network', { autoAlpha: 1 }, tracks.networkIn);
-      reveal('.qv-match-saved', tracks.savedIn);
-      tl.fromTo(select('.qv-network .qv-alex-link'), { autoAlpha: 0, y: 8 },
-        { autoAlpha: 1, y: 0, duration: tracks.connectionIn[1] - tracks.connectionIn[0] }, tracks.connectionIn[0]);
+      tl.fromTo(select('.qv-network'), { autoAlpha: 0, clipPath: 'inset(0 0 0 8%)', filter: 'blur(12px)' },
+        { autoAlpha: 1, clipPath: 'inset(0 0 0 0%)', filter: 'blur(0px)', duration: tracks.networkIn[1] - tracks.networkIn[0], ease: 'power2.out' }, tracks.networkIn[0]);
+      reveal('.qv-match-saved', tracks.savedIn, { y: 14, scale: .975, transformOrigin: 'center top' });
+      tl.fromTo(select('.qv-network .qv-alex-link'), { autoAlpha: 0, y: 14, filter: 'blur(7px)' },
+        { autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: tracks.connectionIn[1] - tracks.connectionIn[0], ease: 'power2.out' }, tracks.connectionIn[0]);
       tl.fromTo(select('.qv-network .qv-alex-link > i'), { scaleY: 0, transformOrigin: 'top' },
         { scaleY: 1, duration: tracks.connectionIn[1] - tracks.connectionIn[0] }, tracks.connectionIn[0]);
       tl.eventCallback('onUpdate', () => syncScene(tl.progress()));
@@ -101,10 +106,67 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
       return () => { controller.destroy(); checkpoints.current = null; timeline.current = null; scene.current?.setProgress(0); root.current?.style.removeProperty('--journey-progress'); };
     });
     void document.fonts.ready.then(() => { if (alive) ScrollTrigger.refresh(); });
-    return () => { alive = false; media.revert(); };
+    return () => { alive = false; entryTimeline.current?.kill(); releaseEntryInput.current?.(); media.revert(); };
   }, { scope: root });
 
+  const enterExperience = contextSafe((event: MouseEvent<HTMLButtonElement>) => {
+    if (entryTimeline.current || entering) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      onEnter();
+      return;
+    }
+
+    setEntering(true);
+    root.current?.classList.add('is-entering');
+    checkpoints.current?.destroy();
+    checkpoints.current = null;
+    timeline.current?.scrollTrigger?.disable(false);
+
+    const blockScroll = (event: Event) => event.preventDefault();
+    const blockKey = (event: KeyboardEvent) => {
+      if ([' ', 'ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', 'Tab', 'Enter'].includes(event.key)) event.preventDefault();
+    };
+    window.addEventListener('wheel', blockScroll, { passive: false });
+    window.addEventListener('touchmove', blockScroll, { passive: false });
+    window.addEventListener('keydown', blockKey, true);
+    releaseEntryInput.current = () => {
+      window.removeEventListener('wheel', blockScroll);
+      window.removeEventListener('touchmove', blockScroll);
+      window.removeEventListener('keydown', blockKey, true);
+    };
+
+    const select = gsap.utils.selector(root);
+    const trigger = event.currentTarget;
+    const fromScene = Boolean(trigger.closest('.qv-stage'));
+    const tl = gsap.timeline({ defaults: { overwrite: 'auto' } });
+    entryTimeline.current = tl;
+    gsap.set(select('.qv-entry-transition'), { autoAlpha: 1 });
+    gsap.set(select('.qv-entry-aperture, .qv-entry-rim'), { scale: .28, rotation: -.6, transformOrigin: '50% 50%' });
+    gsap.set(select('.qv-entry-rim'), { opacity: .12 });
+
+    tl.to(trigger, { scale: .98, duration: .1, ease: 'power2.out' }, 0)
+      .to(select('.qv-header, .qv-hero-copy, .qv-scroll-cue, .qv-stage-bottom, .qv-invitation > :not(.qv-entry-transition)'),
+        { autoAlpha: 0, duration: .24, ease: 'power2.inOut' }, .02);
+
+    if (fromScene) {
+      // Continue the renderer's current geometry; never introduce a second visor.
+      gsap.set(select('.qv-entry-optics'), { visibility: 'hidden' });
+      const optical = { progress: timeline.current?.progress() ?? 0 };
+      tl.to(optical, {
+        progress: Math.max(optical.progress, JOURNEY.discover), duration: .54, ease: 'sine.inOut',
+        onUpdate: () => scene.current?.setProgress(optical.progress),
+      }, 0)
+        .to(select('.qv-hud'), { autoAlpha: 0, duration: .2 }, 0)
+        .to(select('.qv-entry-backdrop'), { opacity: .18, duration: .22, ease: 'sine.inOut' }, .08);
+    } else {
+      gsap.set(select('.qv-entry-optics'), { visibility: 'hidden' });
+      tl.to(select('.qv-entry-backdrop'), { opacity: .18, duration: .22, ease: 'sine.inOut' }, 0);
+    }
+    tl.call(onEnter, [], .32);
+  });
+
   function jumpTo(moment: 'discover' | 'network' | 'start') {
+    if (entryTimeline.current) return;
     const trigger = timeline.current?.scrollTrigger;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (trigger) {
@@ -116,7 +178,14 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
     }
   }
 
-  return <main className="qv-landing" ref={root} id="main-content" tabIndex={-1}>
+  return <main className={`qv-landing${entering ? ' is-entering' : ''}`} ref={root} id="main-content" tabIndex={-1} aria-busy={entering || undefined}>
+    <div className="qv-entry-transition" aria-hidden="true">
+      <div className="qv-entry-backdrop" />
+      <svg className="qv-entry-optics" viewBox="0 0 1600 800" preserveAspectRatio="xMidYMid meet">
+        <path className="qv-entry-aperture" d={VISOR_PATH} />
+        <path className="qv-entry-rim" d={VISOR_PATH} fill="none" />
+      </svg>
+    </div>
     <section className="qv-runway" ref={runway} id="qv-experience" aria-label="The Catalyst experience">
       <div className="qv-stage">
         <VisorScene ref={scene}>
@@ -134,9 +203,9 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
         <header className="qv-header">
           <Brand />
           <nav aria-label="Website navigation"><button onClick={() => jumpTo('discover')}>The experience</button><button onClick={() => jumpTo('network')}>The connection</button></nav>
-          <div className="qv-header-actions"><Button className="qv-enter" onClick={onEnter}>Step inside<ArrowUpRight size={15} /></Button></div>
+          <div className="qv-header-actions"><Button className="qv-enter" onClick={enterExperience} disabled={entering}>Step inside<ArrowUpRight size={15} /></Button></div>
         </header>
-        <div className="qv-hero-copy"><h1>Your people.<br className="qv-mobile-break" /> In plain sight<span>.</span></h1><p>A little context. A real connection.</p><div className="qv-hero-actions"><Button className="qv-primary" onClick={onEnter}>Try the demo<ArrowUpRight size={17} /></Button><Button variant="secondary" className="qv-how" onClick={() => jumpTo('discover')}>See how it works<ArrowDown size={14} /></Button></div></div>
+        <div className="qv-hero-copy"><h1>Your people.<br className="qv-mobile-break" /> In plain sight<span>.</span></h1><p>A little context. A real connection.</p><div className="qv-hero-actions"><Button className="qv-primary" onClick={enterExperience} disabled={entering}>Try the demo<ArrowUpRight size={17} /></Button><Button variant="secondary" className="qv-how" onClick={() => jumpTo('discover')}>See how it works<ArrowDown size={14} /></Button></div></div>
         <span className="qv-lens-caption">Through Alex’s eyes<span />Catalyst</span>
         <button className="qv-scroll-cue" onClick={() => jumpTo('discover')}><span>Scroll to find your people</span><ArrowDown size={23} strokeWidth={1.3} /></button>
         <div className="qv-chapter qv-discover-copy"><span className="qv-eyebrow">01 / Find the common ground</span><h2>You bring the hardware.<br /><span>She brings the vision.</span></h2><p>Different skills. The same thing you care about.<br />Now you have a reason to say hello.</p></div>
@@ -150,10 +219,10 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
       <section className="qv-linear-network" id="qv-linear-network"><NetworkCopy /><div className="qv-static-connection"><div className="qv-static-card qv-static-saved"><MayaIdentity /><SavedContext /></div><AlexConnection linear /></div></section>
     </div>
     <section className="qv-invitation" ref={invitation}>
-      <div className="qv-invitation-mark" aria-hidden="true"><span /><span /></div>
+      <div className="qv-invitation-mark" aria-hidden="true"><Mark /></div>
       <h2>Who could you<br /><span>build with?</span></h2>
       <p>Bring what you know. Find what you’re missing.</p>
-      <div className="qv-invitation-actions"><Button className="qv-primary" onClick={onEnter}>Try the demo<ArrowUpRight size={17} /></Button><Button variant="secondary" className="qv-back" onClick={() => jumpTo('start')}>Back to the room<ArrowRight size={15} /></Button></div>
+      <div className="qv-invitation-actions"><Button className="qv-primary" onClick={enterExperience} disabled={entering}>Try the demo<ArrowUpRight size={17} /></Button><Button variant="secondary" className="qv-back" onClick={() => jumpTo('start')}>Back to the room<ArrowRight size={15} /></Button></div>
       <small>No headset needed for this preview.</small>
     </section>
     <footer className="qv-footer"><Brand compact /><span>Made for meeting in person.</span></footer>

@@ -113,8 +113,8 @@
   display: grid;
   min-width: 48px;
   padding: 0 8px;
-  border-right: 1px solid #ffffff14;
-  border-left: 1px solid #ffffff14;
+  border-right: 1px solid var(--nx-divider, var(--divider-subtle, #ffffff14));
+  border-left: 1px solid var(--nx-divider, var(--divider-subtle, #ffffff14));
   color: #969aa2;
   font-size: 10px;
   font-variant-numeric: tabular-nums;

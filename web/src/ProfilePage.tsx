@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Check, Download, Eye, EyeOff, Glasses, LogOut, Pencil, Plus, X } from "lucide-react";
+import { Check, ContactRound, Database, Download, Eye, EyeOff, Focus, Glasses, LogOut, Pencil, Plus, SlidersHorizontal, UserRound, X } from "lucide-react";
 import contract from "../shared/profile-contract.json";
 import type { Action, Profile, State } from "./types";
-import { Avatar, Button, Chip, TextAction, Toggle } from "./ui";
+import { Avatar, Button, Chip, PageHeader, PanelHeader, TextAction, Toggle } from "./ui";
 import { NearbyProfile, ProfilePreview } from "./ProfilePreview";
 import { prepareProfilePhoto } from "./profilePhoto";
 import { profileSectionFromHash, profileSections, visibilityOf } from "./profileEditor";
@@ -100,7 +100,7 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
   };
 
   return <div className="pe-page">
-    <header className="pe-page-heading"><h1>Profile</h1><TextAction icon={<Eye size={17} />} iconPosition="start" onClick={openPreview}>Preview profile</TextAction></header>
+    <PageHeader className="pe-page-heading" title="Profile" />
     <div className="pe-tabs" role="tablist" aria-label="Profile sections">
       {profileSections.map(tab => <button key={tab} ref={element => { tabRefs.current[tab] = element; }} id={`pe-tab-${tab}`} type="button" role="tab" aria-selected={section === tab} aria-controls={`pe-panel-${tab}`} tabIndex={section === tab ? 0 : -1} onClick={() => select(tab)} onKeyDown={event => {
         const index = profileSections.indexOf(tab);
@@ -123,45 +123,45 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
         }}>
           <div className="pe-panel-body">
             {section === "about" && <>
-              <PanelHeading title="About you" description="The first things people see when you meet." />
-              <div className="pe-identity"><div className="pe-photo-wrap"><Avatar key={draft.avatar} profile={draft} size="large" /><button id="pe-avatar" type="button" className="pe-photo-edit" aria-label="Upload profile photo" aria-describedby="pe-photo-help" disabled={photoBusy} onClick={() => photoInput.current?.click()}><Pencil size={15} /></button></div><div><strong>{draft.name || "Your name"}</strong><span id="pe-photo-help">{photoBusy ? "Preparing photo…" : "JPG, PNG or WebP · Up to 10 MB"}</span>{draft.avatar && <button type="button" className="pe-photo-remove" disabled={photoBusy} onClick={() => { editor.change("avatar", ""); setPhotoError(""); }}>Remove photo</button>}</div><input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp" hidden aria-label="Choose profile photo" onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void choosePhoto(file); }} /></div>
+              <PanelHeading title="About you" icon={<UserRound size={19} />} description="The first things people see when you meet." />
+              <div className="pe-identity"><div className="pe-photo-wrap"><Avatar key={draft.avatar} profile={draft} size="large" /><button id="pe-avatar" type="button" className="pe-photo-edit" aria-label="Upload profile photo" title="Change photo" disabled={photoBusy} onClick={() => photoInput.current?.click()}><Pencil size={13} /></button></div><div><strong>{draft.name || "Your name"}</strong>{photoBusy && <span role="status">Preparing photo…</span>}</div><input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp" hidden aria-label="Choose profile photo" onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void choosePhoto(file); }} /></div>
               {photoError && <p className="pe-photo-error" role="alert">{photoError}</p>}
               <div className="pe-field-grid">{field("name", "Name", "Your name", "text", false)}{field("role", "Headline", "e.g. Hardware engineer")}</div>
               {field("location", "Location", "e.g. Atlanta, GA")}
               <p className="pe-help">Name, headline, and location appear on your saved-connection profile. Add your interests and what you’re working on in <button type="button" className="pe-inline-link" onClick={() => select("focus")}>Focus</button>.</p>
             </>}
             {section === "focus" && <>
-              <PanelHeading title="Your focus" description="Help the right people find a reason to connect." />
+              <PanelHeading title="Your focus" icon={<Focus size={19} />} description="Help the right people find a reason to connect." />
               <div className="pe-field"><label htmlFor="pe-bio">Current focus<span className="pe-optional">Optional</span></label><textarea ref={focusRef} id="pe-bio" name="bio" rows={4} maxLength={contract.stringLimits.bio} value={draft.bio} placeholder="What are you working on or exploring?" aria-invalid={!!errors.bio} aria-describedby="pe-bio-help pe-bio-error" onChange={event => editor.change("bio", event.target.value)} /><div className="pe-field-meta"><span id="pe-bio-help">This also appears in Your focus on Home.</span><span>{draft.bio.length}/{contract.stringLimits.bio}</span></div><FieldError field="bio" message={errors.bio} />{share("bio", "Share current focus")}</div>
               {([ ["interests", "Interests", "Topics you’d enjoy talking about.", ["Robotics", "Design", "Open source", "Spatial computing"]], ["skills", "I can help with", "Skills or experience you can share.", skills], ["lookingFor", "I’m looking for help with", "Expertise you’d like to meet someone for.", skills] ] as const).map(([key, label, help, suggestions]) => <div className="pe-focus-group" key={key}><TopicInput field={key} label={label} help={help} suggestions={suggestions} editor={editor} snapshot={snapshot} />{share(key, `Share ${label}`)}</div>)}
               <p className="pe-help">Only shared interests and skills are used for demo matching.</p>
             </>}
             {section === "contact" && <>
-              <PanelHeading title="Contact details" description="Choose how saved connections can reach you." />
+              <PanelHeading title="Contact details" icon={<ContactRound size={19} />} description="Choose how saved connections can reach you." />
               {([ ["linkedin", "LinkedIn", "https://www.linkedin.com/in/you", "url"], ["website", "Website", "https://your-website.com", "url"], ["email", "Email", "you@example.com", "email"] ] as const).map(([key, label, placeholder, type]) => <div className="pe-contact-group" key={key}>{field(key, label, placeholder, type)}{share(key, `Share ${label} with saved connections`, true)}</div>)}
               <details className="pe-other-contact" open={draft.contact ? true : undefined}><summary>Other contact</summary>{field("contact", "Other contact", "Another way to reach you")}{share("contact", "Share other contact with saved connections", true)}</details>
               <p className="pe-help">Contact details are private until you choose to share them. They aren’t used for matching.</p>
             </>}
             {section === "settings" && <>
-              <PanelHeading title="Visibility" description="Choose where your profile can be discovered." />
+              <PanelHeading title="Visibility" icon={<Eye size={19} />} description="Choose where your profile can be discovered." />
               <Setting title="Show me in rooms" description="Make your shared introduction available to people in your room."><Toggle label="Show me in rooms" checked={visible.activeInEvent} onChange={() => editor.share("activeInEvent", !visible.activeInEvent)} /></Setting>
               <Setting title="Access for saved connections" description="Let saved connections see your shared focus, interests, skills, and contact links."><Toggle label="Access for saved connections" checked={visible.previousConnections} onChange={() => editor.share("previousConnections", !visible.previousConnections)} /></Setting>
               <p className="pe-help">Individual sharing choices live beside your fields in Focus and Contact. Hidden fields stay in your profile.</p>
             </>}
           </div>
           <footer className="pe-save-footer">
-            <div className="pe-save-status" role="status">{saving === section ? "Saving…" : dirty ? "Unsaved changes" : saved === section ? <><Check size={15} />Saved</> : "No unsaved changes"}</div>
+            <div className="pe-save-status" role="status">{saving === section ? "Saving…" : dirty ? "Unsaved changes" : saved === section ? <><Check size={15} />Saved</> : null}</div>
             <div className="pe-save-actions"><TextAction disabled={!dirty || !!saving || photoBusy} onClick={() => { editor.discard(section); setPhotoError(""); }}>Discard changes</TextAction><Button type="submit" busy={saving === section} disabled={!dirty || !!saving || photoBusy}>Save changes</Button></div>
             {failure?.section === section && <p className="pe-save-error" role="alert">{failure.message}</p>}
           </footer>
         </form>
         {section === "settings" && <>
-          <section className="pe-panel pe-settings-panel"><PanelHeading title="Preferences" description="Applies immediately on this browser." />
+          <section className="pe-panel pe-settings-panel"><PanelHeading title="Preferences" icon={<SlidersHorizontal size={19} />} description="Applies immediately on this browser." />
             <Setting title="Reduce transparency" description="Use more opaque spatial surfaces for easier reading."><Toggle label="Reduce transparency" checked={solid} onChange={() => setSolid(!solid)} /></Setting>
             <Setting title="Match sounds" description="Play a soft sound when a match appears in spatial preview."><Toggle label="Match sounds" checked={sounds} onChange={() => { const next = !sounds; setSounds(next); try { localStorage.setItem("questmatch-sounds", String(next)); setPreferenceError(""); } catch { setPreferenceError("This preference could not be stored on this browser."); } }} /></Setting>
             {preferenceError && <p className="pe-help" role="status">{preferenceError}</p>}
           </section>
-          <section className="pe-panel pe-settings-panel"><PanelHeading title="Data and session" />
+          <section className="pe-panel pe-settings-panel"><PanelHeading title="Data and session" icon={<Database size={19} />} />
             <Setting title="Export your information" description="Download your saved profile and connections as JSON."><Button variant="secondary" onClick={exportData}><Download size={16} />Export</Button></Setting>
             <Setting title="Clear event data" description="Remove saved demo connections and matches, and leave the room. Keep your profile."><Button variant="secondary" disabled={!state.session?.code} busy={busy} onClick={async () => { try { await act("event-data/clear"); notify("Event data cleared. Your profile is still here."); } catch { /* App reports the action error. */ } }}>Clear event data</Button></Setting>
             <Setting title="Sign out" description="Leave your temporary demo session."><Button variant="secondary" busy={busy} onClick={logout}><LogOut size={16} />Sign out</Button></Setting>
@@ -169,14 +169,14 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
           <p className="pe-demo-note">Profiles and sharing choices belong to this local demo. They aren’t a permanent account.</p>
         </>}
       </div>
-      {(section === "about" || section === "focus") && <aside className="pe-preview-rail" aria-label="Nearby profile preview"><div className="pe-rail-heading"><h2>In the room</h2><Glasses size={19} /></div><NearbyProfile profile={draft} /><p className="pe-help">{visible.activeInEvent ? "Your name, headline, and shared interests at a glance." : "You can change room visibility in Settings."}</p><TextAction icon={visible.activeInEvent ? <Eye size={16} /> : <EyeOff size={16} />} iconPosition="start" onClick={openPreview}>Preview full profile</TextAction></aside>}
+      {(section === "about" || section === "focus") && <aside className="pe-preview-rail pe-panel" aria-label="Nearby profile preview"><PanelHeading title="In the room" icon={<Glasses size={19} />} description={visible.activeInEvent ? "Your name, headline, and shared interests at a glance." : "You can change room visibility in Settings."} /><NearbyProfile profile={draft} /><TextAction icon={visible.activeInEvent ? <Eye size={16} /> : <EyeOff size={16} />} iconPosition="start" onClick={openPreview}>Preview full profile</TextAction></aside>}
     </div>
     {preview && <ProfilePreview profile={draft} profiles={state.profiles} dirty={anyDirty} onClose={() => setPreview(false)} />}
   </div>;
 }
 
-function PanelHeading({ title, description }: { title: string; description?: string }) {
-  return <header className="pe-panel-heading"><h2>{title}</h2>{description && <p>{description}</p>}</header>;
+function PanelHeading({ title, description, icon }: { title: string; description?: string; icon: ReactNode }) {
+  return <PanelHeader className="pe-panel-heading" title={title} description={description} icon={icon} />;
 }
 function Setting({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return <div className="pe-setting"><div><h3>{title}</h3><p>{description}</p></div><div className="pe-setting-control">{children}</div></div>;

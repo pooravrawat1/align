@@ -22,10 +22,10 @@
 
 .product-page-heading h1 {
   margin-top: 7px;
-  font-size: clamp(28px, 3vw, 36px);
-  font-weight: 500;
-  line-height: 1.16;
-  letter-spacing: -1.25px;
+  font-size: var(--type-page-title);
+  font-weight: var(--weight-medium);
+  line-height: var(--type-page-line);
+  letter-spacing: var(--tracking-display);
 }
 
 .product-page-heading p {
@@ -39,7 +39,7 @@
 .product-kicker {
   display: block;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--type-label);
   font-weight: 650;
   letter-spacing: 0.09em;
   line-height: 1.4;
@@ -116,7 +116,7 @@
   font-size: 12px;
 }
 .event-browser .event-cover .glass-label {
-  font-size: 11px;
+  font-size: var(--type-label);
 }
 
 .product-home-hero .product-hero-copy h2 {
@@ -141,7 +141,7 @@
   justify-content: space-between;
   gap: 18px;
   color: #eef1e9;
-  font-size: 11px;
+  font-size: var(--type-label);
   text-shadow: 0 1px 8px #000a;
 }
 
@@ -156,7 +156,7 @@
   background: #2c382c8a;
   padding: 8px 12px;
   color: #eef5eb;
-  font-size: 11px;
+  font-size: var(--type-label);
   font-weight: 700;
   letter-spacing: 0.08em;
   backdrop-filter: blur(18px) saturate(115%);
@@ -236,7 +236,7 @@
   border-radius: 5px;
   padding: 4px 7px;
   background: #17201770;
-  font-size: 11px !important;
+  font-size: var(--type-label) !important;
   font-weight: 650;
   letter-spacing: 0.07em;
 }
@@ -302,7 +302,7 @@
   border: 1px solid #ffffff20;
   border-radius: 50%;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--type-label);
   font-weight: 650;
 }
 
@@ -341,7 +341,7 @@
   align-items: center;
   gap: 7px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--type-label);
 }
 
 .product-checklist li > span,
@@ -374,9 +374,9 @@
 }
 
 .product-panel {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel);
 }
 
 .product-connections-panel,
@@ -457,7 +457,7 @@
 .product-connection-copy strong small,
 .product-connection-copy > small {
   color: var(--quiet);
-  font-size: 11px;
+  font-size: var(--type-label);
   font-weight: 450;
 }
 
@@ -581,7 +581,9 @@
 }
 
 .product-event-page .product-event-heading h1 {
-  font-size: clamp(27px, 2.6vw, 32px);
+  font-size: var(--type-page-title);
+  line-height: 1.14;
+  letter-spacing: -0.035em;
 }
 
 .product-phase-control {
@@ -593,7 +595,7 @@
 
 .product-phase-control > span {
   color: var(--quiet);
-  font-size: 11px;
+  font-size: var(--type-label);
 }
 
 .product-phase-control > div {
@@ -612,7 +614,7 @@
   border-radius: 7px;
   background: transparent;
   color: var(--quiet);
-  font-size: 11px;
+  font-size: var(--type-label);
   font-weight: 600;
 }
 
@@ -755,14 +757,14 @@
 .product-room-share > div:last-child > span {
   max-width: 130px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--type-label);
   line-height: 1.45;
 }
 
 .product-room-code-block span {
   display: block;
   color: var(--quiet);
-  font-size: 11px;
+  font-size: var(--type-label);
 }
 
 .product-room-code-block strong {
@@ -835,7 +837,7 @@
   border: 1px solid var(--line);
   border-radius: 50%;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--type-label);
 }
 
 .product-instructions .button {
@@ -896,7 +898,7 @@
   right: 20px;
   bottom: -30px;
   color: var(--quiet);
-  font-size: 11px;
+  font-size: var(--type-label);
 }
 
 .product-during-hero {
@@ -974,7 +976,7 @@
   display: block;
   margin-top: 3px;
   color: #b5bdb0;
-  font-size: 11px;
+  font-size: var(--type-label);
 }
 
 .product-during-grid {
@@ -1005,7 +1007,7 @@
   display: block;
   margin-bottom: 7px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--type-label);
 }
 
 .product-shared-fields .tags {
@@ -1016,7 +1018,7 @@
   display: block;
   margin-top: 18px;
   color: var(--quiet);
-  font-size: 11px;
+  font-size: var(--type-label);
 }
 
 .product-headset-panel ul {
@@ -1059,7 +1061,7 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--type-label);
 }
 
 .product-inline-empty {
@@ -1100,7 +1102,7 @@
 
 .product-recovery summary small {
   color: var(--quiet);
-  font-size: 11px;
+  font-size: var(--type-label);
   font-weight: 400;
 }
 
@@ -1145,7 +1147,7 @@
   display: block;
   margin-top: 4px;
   color: var(--quiet);
-  font-size: 11px;
+  font-size: var(--type-label);
   font-weight: 400;
   line-height: 1.45;
 }
@@ -1157,7 +1159,7 @@
 .product-recovery-note {
   margin: 0 18px 18px;
   color: var(--quiet);
-  font-size: 11px;
+  font-size: var(--type-label);
 }
 
 .product-recap-hero {
@@ -1235,7 +1237,7 @@
   display: block;
   margin-top: 3px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--type-label);
 }
 
 @media (max-width: 1050px) {
@@ -1377,7 +1379,7 @@
   }
 
   .product-event-meta-on-image > span {
-    font-size: 11px;
+    font-size: var(--type-label);
   }
 
   .product-action-row,

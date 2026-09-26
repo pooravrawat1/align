@@ -70,6 +70,9 @@ async function openEntry(page, path = 'login') {
 
   await page.goto(`${origin}/#/${path}`);
   await expect(page.getByRole('heading', { name: 'Create your profile' })).toBeVisible();
+  await page.locator('.login-page').evaluate(async (element) => {
+    await Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished.catch(() => {})));
+  });
   return traffic;
 }
 
@@ -130,10 +133,11 @@ async function expectJourneyControls(page, currentStep) {
 async function expectFormAlignment(page, heading) {
   const form = page.getByRole('form', { name: heading, exact: true });
   const title = page.getByRole('heading', { name: heading, exact: true });
-  const description = page.locator('.login-form > div > p').first();
+  const sectionHeading = page.locator('.login-section-heading');
+  const description = sectionHeading.locator('p');
   const firstField = form.locator('label').first();
   const fieldset = form.locator('.login-fields');
-  const [titleBox, formBox, fieldBox, titleStyle, fieldsetGap] = await Promise.all([
+  const [titleBox, formBox, fieldBox, titleStyle, fieldsetGap, headingBorder] = await Promise.all([
     title.boundingBox(),
     form.boundingBox(),
     firstField.boundingBox(),
@@ -142,25 +146,46 @@ async function expectFormAlignment(page, heading) {
       textAlign: getComputedStyle(element).textAlign,
     })),
     fieldset.evaluate((element) => getComputedStyle(element).rowGap),
+    sectionHeading.evaluate((element) => getComputedStyle(element).borderBottomWidth),
   ]);
-  const descriptionBox = await description.count() ? await description.boundingBox() : null;
+  const descriptionBox = await description.boundingBox();
   expect(titleStyle).toEqual({ fontSize: '36px', textAlign: 'left' });
   if (heading === 'Create your profile') {
     const lineHeight = await title.evaluate((element) => parseFloat(getComputedStyle(element).lineHeight));
     expect(Math.abs(titleBox.height - lineHeight)).toBeLessThan(1);
   }
   expect(titleBox.x).toBe(formBox.x);
-  if (descriptionBox) {
-    expect(await description.evaluate((element) => getComputedStyle(element).textAlign)).toBe('left');
-    expect(descriptionBox.x).toBe(formBox.x);
-  }
+  expect(await description.evaluate((element) => getComputedStyle(element).textAlign)).toBe('left');
+  expect(descriptionBox.x).toBe(formBox.x);
   expect(fieldBox.x).toBe(formBox.x);
   expect(formBox.width).toBeLessThanOrEqual(384);
-  const headerBottom = descriptionBox ? descriptionBox.y + descriptionBox.height : titleBox.y + titleBox.height;
-  expect(Math.round(formBox.y - headerBottom)).toBe(32);
-  expect(fieldsetGap).toBe('24px');
+  const headingBox = await sectionHeading.boundingBox();
+  expect(Math.round(formBox.y - (headingBox.y + headingBox.height))).toBe(24);
+  expect(headingBorder).toBe('1px');
+  expect(fieldsetGap).toBe('16px');
+  const panelBox = await page.locator('.login-form').boundingBox();
+  const contentBox = await page.locator('.login-form > div').boundingBox();
+  expect(Math.abs(contentBox.x + contentBox.width / 2 - panelBox.x - panelBox.width / 2)).toBeLessThan(1);
+  if (contentBox.height <= panelBox.height - 96) {
+    expect(Math.abs(contentBox.y + contentBox.height / 2 - panelBox.y - panelBox.height / 2)).toBeLessThan(1);
+  }
+  const selector = form.locator('.login-demo-switch');
+  if (await selector.count()) {
+    const selectorBox = await selector.boundingBox();
+    expect(selectorBox.x).toBe(formBox.x);
+    expect(selectorBox.height).toBe(40);
+    const selectorBackground = await selector.evaluate((element) => getComputedStyle(element).backgroundColor);
+    expect(selectorBackground).toBe(await form.locator('input').first().evaluate((element) => getComputedStyle(element).backgroundColor));
+    expect(await fieldset.evaluate((element) => getComputedStyle(element).borderTopWidth)).toBe('0px');
+  }
   for (const group of await form.locator('.entry-field-group').all()) {
     expect(await group.evaluate((element) => getComputedStyle(element).rowGap)).toBe('8px');
+  }
+  for (const hint of await form.locator('.entry-hint').all()) {
+    expect(await hint.evaluate((element) => ({
+      size: getComputedStyle(element).fontSize,
+      style: getComputedStyle(element).fontStyle,
+    }))).toEqual({ size: '12px', style: 'italic' });
   }
   return { title: titleBox, description: descriptionBox, form: formBox };
 }
@@ -265,20 +290,22 @@ async function replaceChips(page, groupName, inputName, values) {
   await expectChips(page, groupName, values);
 }
 
-async function expectPillChip(page, groupName, value) {
+async function expectSharedProfilePill(page, groupName, value) {
   const group = chipGroup(page, groupName);
   const tag = group.getByRole('button', { name: `Remove ${value}`, exact: true }).locator('..');
   const style = await tag.evaluate((element) => {
     const computed = getComputedStyle(element);
     return {
-      background: computed.backgroundColor,
+      backgroundColor: computed.backgroundColor,
       height: element.getBoundingClientRect().height,
       radius: parseFloat(computed.borderRadius),
+      surfaceToken: getComputedStyle(document.documentElement).getPropertyValue('--chip-surface').trim(),
     };
   });
   expect(style.radius).toBeGreaterThanOrEqual(999);
-  expect(style.height).toBeLessThanOrEqual(30);
-  expect(style.background).toBe('rgba(0, 0, 0, 0)');
+  expect(style.height).toBe(32);
+  expect(style.surfaceToken).toBe('#101113');
+  expect(style.backgroundColor).toBe('rgb(16, 17, 19)');
   await expect(tag).toHaveClass(/chip--editable/);
 }
 
@@ -311,8 +338,8 @@ for (const viewport of [
     await expectJourneyControls(page, 2);
     const workAlignment = await expectFormAlignment(page, 'What are you working on?');
     expect(workAlignment.title.x).toBe(initialAlignment.title.x);
-    expect(workAlignment.title.y).toBe(initialAlignment.title.y);
-    expect(workAlignment.description).toBeNull();
+    expect(workAlignment.description).not.toBeNull();
+    await expect(page.getByText("Share what you're building and what you bring.", { exact: true })).toBeVisible();
     expect(workAlignment.form.x).toBe(initialAlignment.form.x);
     expect(work.panel.overflowY).toBe('auto');
     expect(work.panel.scrollTop).toBe(0);
@@ -347,7 +374,6 @@ for (const viewport of [
     await expectJourneyControls(page, 3);
     const meetAlignment = await expectFormAlignment(page, 'Who would you love to meet?');
     expect(meetAlignment.title.x).toBe(initialAlignment.title.x);
-    expect(meetAlignment.title.y).toBe(initialAlignment.title.y);
     expect(meetAlignment.description.x).toBe(initialAlignment.description.x);
     expect(meetAlignment.form.x).toBe(initialAlignment.form.x);
     expect(meet.panel.scrollTop).toBe(0);
@@ -431,7 +457,7 @@ for (const viewport of viewports) {
       'Building a wearable navigation system that makes the world easier to explore.',
     );
     await expectChips(page, 'I can help with', ['Embedded systems', 'C++', 'Electronics']);
-    await expectPillChip(page, 'I can help with', 'Embedded systems');
+    await expectSharedProfilePill(page, 'I can help with', 'Embedded systems');
     await expect(chipGroup(page, 'I can help with').getByRole('textbox', { name: 'Add a skill', exact: true })).toBeVisible();
     await expect(page.getByLabel('LinkedIn profile', { exact: true })).toHaveValue('');
     await expect(page.getByText('A little context makes a better introduction.', { exact: true })).toHaveCount(0);
@@ -442,15 +468,17 @@ for (const viewport of viewports) {
     await expect(selector).toHaveCount(0);
     await expectDesktopStepWithinViewport(page, 'Who would you love to meet?', 'Go to Home');
     await expectChips(page, 'Interests', ['Assistive technology', 'Robotics', 'Open source']);
-    await expectPillChip(page, 'Interests', 'Assistive technology');
+    await expectSharedProfilePill(page, 'Interests', 'Assistive technology');
     await expect(chipGroup(page, 'Interests').getByRole('textbox', { name: 'Add an interest', exact: true })).toBeVisible();
     await expectChips(page, "I'm looking for help with", ['Computer vision']);
-    await expectPillChip(page, "I'm looking for help with", 'Computer vision');
+    await expectSharedProfilePill(page, "I'm looking for help with", 'Computer vision');
     await expect(chipGroup(page, "I'm looking for help with").getByRole('textbox', { name: 'Add what you need', exact: true })).toBeVisible();
     const addedInterest = chipGroup(page, 'Interests').getByRole('textbox', { name: 'Add an interest', exact: true });
+    await addedInterest.focus();
+    expect(await addedInterest.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe('none');
     await addedInterest.fill('Human factors');
     await addedInterest.press('Enter');
-    await expectPillChip(page, 'Interests', 'Human factors');
+    await expectSharedProfilePill(page, 'Interests', 'Human factors');
     await chipGroup(page, 'Interests').getByRole('button', { name: 'Remove Human factors', exact: true }).click();
     await expect(chipGroup(page, 'Interests').getByRole('button', { name: 'Remove Human factors', exact: true })).toHaveCount(0);
     await expect(page.getByText('The Builders Room', { exact: true })).toBeVisible();

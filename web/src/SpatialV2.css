@@ -345,10 +345,13 @@
     margin-bottom: 12px;
     border-radius: 14px;
   }
-  .qmv2-setup-panel .qmv2-setup-symbol svg,
+  .qmv2-setup-panel .qmv2-setup-symbol .mark,
   .qmv2-setup-panel .qmv2-ready-symbol svg {
     width: 26px;
     height: 26px;
+  }
+  .qmv2-setup-panel .qmv2-setup-symbol .mark {
+    height: 17px;
   }
   .qmv2-setup-panel h2 {
     font-size: 28px;

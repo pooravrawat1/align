@@ -6,7 +6,7 @@ const seed = JSON.parse(await readFile(new URL('../../shared/demo-data.json', im
 
 test.use({ screenshot: 'off', video: 'off', trace: 'off' });
 
-test('opening a profile keeps portraits stationary and expands into a centered contained card', async ({ page }) => {
+test('opening a profile keeps portraits stationary and opens a centered contained card', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await openNetwork(page);
   await page.getByRole('button', { name: 'Map', exact: true }).click();
@@ -20,16 +20,14 @@ test('opening a profile keeps portraits stationary and expands into a centered c
   expect(Math.abs(after.x - before.x)).toBeLessThan(1);
   expect(Math.abs(after.y - before.y)).toBeLessThan(1);
   expect(Math.abs(mapAfter.width - mapBefore.width)).toBeLessThan(1);
-  await page.getByRole('button', { name: 'Explore profile' }).click();
   const dialog = page.getByRole('dialog', { name: 'Jordan Lee — full profile' });
+  await expect(dialog).toBeVisible();
   const card = await dialog.boundingBox();
   expect(card.width).toBeLessThanOrEqual(940);
   expect(card.height).toBeLessThanOrEqual(820);
   expect(Math.abs(card.x + card.width / 2 - 720)).toBeLessThan(2);
   expect(Math.abs(card.y + card.height / 2 - 500)).toBeLessThan(2);
-  await page.getByRole('button', { name: "Close Jordan Lee's profile" }).click();
-  await expect(page.getByRole('dialog', { name: 'Jordan Lee — profile preview' })).toBeVisible();
-  await page.getByRole('button', { name: "Close Jordan Lee's profile" }).click();
+  await page.getByRole('button', { name: 'Back to network' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(Math.abs((await self.boundingBox()).x - before.x)).toBeLessThan(1);
 });
@@ -46,7 +44,7 @@ test('selecting and closing a portrait preserves a short viewport map position',
   expect(beforeScroll).toBeGreaterThan(0);
 
   await page.getByRole('button', { name: 'View Jordan Lee, Creative technologist' }).click();
-  await expect(page.getByRole('dialog', { name: 'Jordan Lee — profile preview' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Jordan Lee — full profile' })).toBeVisible();
   await expect.poll(() => page.evaluate(() => scrollY)).toBe(beforeScroll);
   const opened = await self.boundingBox();
   expect(Math.abs(opened.x - before.x)).toBeLessThan(1);
@@ -139,7 +137,7 @@ for (const viewport of [
   { name: 'desktop', width: 1440, height: 1000 },
   { name: 'mobile', width: 390, height: 844 },
 ]) {
-  test(`map selection, expansion and browser history preserve camera and draft on ${viewport.name}`, async ({ page }) => {
+  test(`map selection and browser history preserve the camera on ${viewport.name}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await openNetwork(page);
     await page.getByRole('button', { name: 'Map', exact: true }).click();
@@ -152,31 +150,21 @@ for (const viewport of [
     expect(changedZoom).not.toBe('100%');
 
     await page.getByRole('button', { name: 'View Jordan Lee, Creative technologist' }).click();
-    await expect(page.getByRole('dialog', { name: 'Jordan Lee — profile preview' })).toBeVisible();
-    await expect(zoom).toHaveText(changedZoom);
-
-    await page.getByRole('button', { name: 'Explore profile' }).click();
     const fullProfile = page.getByRole('dialog', { name: 'Jordan Lee — full profile' });
     await expect(fullProfile).toBeVisible();
+    await expect(zoom).toHaveText(changedZoom);
+
     const expandedCard = await fullProfile.boundingBox();
     expect(expandedCard.height).toBeLessThanOrEqual(viewport.height * 0.8 + 2);
     expect(Math.abs(expandedCard.x + expandedCard.width / 2 - viewport.width / 2)).toBeLessThan(2);
     expect(Math.abs(expandedCard.y + expandedCard.height / 2 - viewport.height / 2)).toBeLessThan(2);
+    await page.getByText('Your follow-up', { exact: true }).click();
     await page.getByText('Draft a message', { exact: true }).click();
     const draft = page.getByLabel('Message draft', { exact: true });
     await draft.fill('Jordan — let’s compare prototypes after the event.');
     await page.getByRole('button', { name: 'Copy message' }).click();
     await expect.poll(() => page.evaluate(() => window.testCopiedMessage)).toBe('Jordan — let’s compare prototypes after the event.');
 
-    await page.getByRole('button', { name: 'Back to network' }).click();
-    await expect(page.getByRole('dialog', { name: 'Jordan Lee — profile preview' })).toBeVisible();
-    await expect(zoom).toHaveText(changedZoom);
-    await page.getByRole('button', { name: 'Explore profile' }).click();
-    await expect(draft).toHaveValue('Jordan — let’s compare prototypes after the event.');
-
-    await page.goBack();
-    await expect(page.getByRole('dialog', { name: 'Jordan Lee — profile preview' })).toBeVisible();
-    await expect(zoom).toHaveText(changedZoom);
     await page.goBack();
     await expect(page).toHaveURL(/#\/network$/);
     await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -191,13 +179,14 @@ test('Discover selection saves through the mock state and appears in Your networ
   const maya = page.locator('.nx-discover-card').filter({ hasText: 'Maya Chen' });
   await expect(maya).toBeVisible();
   await maya.click();
-  await expect(page.getByRole('dialog', { name: 'Maya Chen — profile preview' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Maya Chen — full profile' })).toBeVisible();
   await page.getByRole('button', { name: 'Save connection' }).click();
   await expect(page.getByRole('button', { name: 'Saved' })).toBeDisabled();
 
   const saveRequests = traffic.filter((request) => request.path === '/api/connections' && request.method === 'POST');
   expect(saveRequests).toEqual([{ path: '/api/connections', method: 'POST', body: { participantId: 'maya' } }]);
 
+  await page.getByRole('button', { name: "Close Maya Chen's profile" }).click();
   await page.locator('.nx-destinations > button').filter({ hasText: 'Your network' }).click();
   await expect(page.getByRole('button', { name: "View Maya Chen's profile" })).toBeVisible();
   await expect(page.locator('.nx-destinations > button').filter({ hasText: 'Your network' })).toContainText('4');
@@ -254,6 +243,17 @@ test('a filter with zero matches offers a clear path back to the map', async ({ 
   });
   await page.getByRole('button', { name: 'Map', exact: true }).click();
   await page.getByRole('button', { name: 'Filters' }).click();
+  const filterPills = page.locator('.nx-filter-pill');
+  await expect(filterPills).toHaveCount(3);
+  const pillStyles = await filterPills.evaluateAll(nodes => nodes.map(node => ({
+    height: node.getBoundingClientRect().height,
+    radius: getComputedStyle(node).borderRadius,
+  })));
+  expect(pillStyles).toEqual([
+    { height: 38, radius: '999px' },
+    { height: 38, radius: '999px' },
+    { height: 38, radius: '999px' },
+  ]);
   await page.getByRole('checkbox', { name: 'Needs follow-up' }).check();
   await expect(page.getByRole('heading', { name: 'No people in this view' })).toBeVisible();
   await expect(page.locator('.nm-map')).toHaveCount(0);
@@ -292,11 +292,10 @@ test('hidden profile fields never leak into common ground or sample AI copy', as
   });
 
   await page.getByRole('button', { name: "View Leo Park's profile" }).click();
-  await expect(page.locator('.np-preview-section')).toContainText('No shared interests are visible yet.');
+  await expect(page.getByRole('heading', { name: 'Common ground' })).toBeVisible();
+  await expect(page.getByText('No shared interests are visible yet.')).toBeVisible();
   for (const token of privateTokens) await expect(page.getByText(token, { exact: false })).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'Explore profile' }).click();
-  await expect(page.getByRole('heading', { name: 'Common ground' })).toBeVisible();
   await page.getByText('AI insight', { exact: true }).click();
   const guardedSurfaces = page.locator('.np-main, .np-compatibility');
   const renderedCopy = await guardedSurfaces.allTextContents();
@@ -327,8 +326,11 @@ for (const width of [1440, 390]) {
     await expect(page.locator('.nx-page')).not.toContainText(/sample|demo|interactive preview/i);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await row.click();
-    await expect(page.getByRole('dialog', { name: 'Leo Park — profile preview' })).toBeVisible();
-    await page.getByRole('button', { name: 'Explore profile' }).click();
-    await expect(page.getByRole('dialog', { name: 'Leo Park — full profile' })).toBeVisible();
+    const profile = page.getByRole('dialog', { name: 'Leo Park — full profile' });
+    await expect(profile).toBeVisible();
+    const profileCard = await profile.boundingBox();
+    const viewport = page.viewportSize();
+    expect(Math.abs(profileCard.x + profileCard.width / 2 - viewport.width / 2)).toBeLessThan(2);
+    expect(Math.abs(profileCard.y + profileCard.height / 2 - viewport.height / 2)).toBeLessThan(2);
   });
 }

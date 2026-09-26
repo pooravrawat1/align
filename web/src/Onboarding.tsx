@@ -15,7 +15,11 @@ type Person = "alex" | "maya";
 type Entry = { selected: Person; step: number; drafts: Record<Person, Draft> };
 export const entryDraftKey = "align-entry-v1";
 const headings = ["Create your profile", "What are you working on?", "Who would you love to meet?"];
-const descriptions = ["Your introduction starts here.", "", "Find people with something in common—or something you need."];
+const descriptions = [
+  "Your introduction starts here.",
+  "Share what you're building and what you bring.",
+  "Find people with something in common—or something you need.",
+];
 const stepNames = ["Introduce yourself", "Share what you bring", "Find common ground"];
 const { stringLimits, topicLimit, topicItemLimit } = profileContract;
 
@@ -157,7 +161,10 @@ export function Onboarding({ profiles, initialProfileId, busy, onComplete, error
       </div>
     </section>
     <section className="login-form" id="entry-panel" ref={formPanel} aria-label="Profile setup"><div>
-      <h2 ref={title} tabIndex={-1}>{headings[step]}</h2>{descriptions[step] && <p>{descriptions[step]}</p>}
+      <header className="login-section-heading">
+        <h2 ref={title} tabIndex={-1}>{headings[step]}</h2>
+        <p>{descriptions[step]}</p>
+      </header>
       <form className="login-profile-form" aria-label={headings[step]} onSubmit={(event) => { event.preventDefault(); void advance(); }}>
         {step === 0 && <div className="login-demo-switch" data-selected={selected} role="group" aria-label="Autofill a demo person">
           {(["alex", "maya"] as const).map((id) => <button key={id} type="button" aria-pressed={selected === id} disabled={busy}

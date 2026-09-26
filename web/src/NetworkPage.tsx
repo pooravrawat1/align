@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, Check, Compass, List, Network, Search, SlidersHorizontal, Users, X } from "lucide-react";
-import { Avatar, Button } from "./ui";
+import { Avatar, Button, PageHeader, PanelHeader } from "./ui";
 import type { Action, Profile, State } from "./types";
 import { networkPerson, type NetworkPerson } from "./networkModel";
 import { NetworkMap } from "./NetworkMap";
@@ -21,11 +21,8 @@ export function NetworkProduct({ state, user, act, busy, notify }: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sort, setSort] = useState("recent");
   const [selectedId, setSelectedId] = useState<string | null>(() => params().get("person"));
-  const [expanded, setExpanded] = useState(() => params().get("details") === "1");
-  const [mobile, setMobile] = useState(() => matchMedia("(max-width: 760px)").matches);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const selectionTrigger = useRef<HTMLElement | null>(null);
-  const fullEntry = useRef<string | null>(null);
   const selectionEntry = useRef<string | null>(null);
   const people = useMemo(() => state.profiles.filter(person => person.id !== user.id).map(person => networkPerson(state, user, person)), [state, user]);
   const saved = people.filter(person => person.connection);
@@ -53,79 +50,58 @@ export function NetworkProduct({ state, user, act, busy, notify }: Props) {
   useEffect(() => {
     const change = () => {
       setSelectedId(params().get("person"));
-      setExpanded(params().get("details") === "1");
       setDestination(params().get("tab") === "discover" ? "discover" : "network");
       if (!params().get("person")) selectionEntry.current = null;
-      if (params().get("details") !== "1") fullEntry.current = null;
     };
-    const media = matchMedia("(max-width: 760px)");
-    const resize = () => setMobile(media.matches);
     addEventListener("hashchange", change);
-    media.addEventListener("change", resize);
-    return () => { removeEventListener("hashchange", change); media.removeEventListener("change", resize); };
+    return () => removeEventListener("hashchange", change);
   }, []);
 
-  const navigate = (id: string | null, full = false, target = destination, replace = false) => {
+  const navigate = (id: string | null, target = destination, replace = false) => {
     const next = new URLSearchParams();
     if (target === "discover") next.set("tab", "discover");
     if (id) next.set("person", id);
-    if (id && full) next.set("details", "1");
     const hash = `#/network${next.size ? `?${next}` : ""}`;
     if (replace) history.replaceState(history.state, "", hash);
     else location.hash = hash;
     setSelectedId(id);
-    setExpanded(full);
     setDestination(target);
   };
   const select = (id: string) => {
     selectionTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (!selectedId) selectionEntry.current = location.hash;
-    fullEntry.current = null;
-    navigate(id, false, destination, !!selectedId);
+    navigate(id, destination, !!selectedId);
   };
   const close = () => {
-    const depth = Number(!!selectionEntry.current) + Number(!!fullEntry.current);
-    if (depth) {
+    if (selectionEntry.current) {
       const afterBack = () => {
-        if (params().get("person")) navigate(null, false, destination, true);
+        if (params().get("person")) navigate(null, destination, true);
         selectionTrigger.current?.focus();
       };
       addEventListener("hashchange", afterBack, { once: true });
-      history.go(-depth);
-    } else navigate(null, false, destination, true);
-    fullEntry.current = null;
+      history.back();
+    } else navigate(null, destination, true);
     selectionEntry.current = null;
     requestAnimationFrame(() => selectionTrigger.current?.focus());
-  };
-  const toggleExpanded = () => {
-    if (expanded) {
-      if (fullEntry.current) { fullEntry.current = null; history.back(); }
-      else navigate(selectedId, false, destination, true);
-    } else {
-      fullEntry.current = location.hash;
-      navigate(selectedId, true);
-    }
   };
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog || !selected) return;
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const modal = expanded || mobile;
     const oldOverflow = document.body.style.overflow;
-    if (dialog.open) dialog.close();
-    if (modal) { dialog.showModal(); document.body.style.overflow = "hidden"; }
-    else dialog.show();
-    if (modal) dialog.querySelector<HTMLButtonElement>("button")?.focus();
+    if (!dialog.open) dialog.showModal();
+    document.body.style.overflow = "hidden";
+    (dialog.querySelector<HTMLElement>("[data-profile-focus]") ?? dialog.querySelector<HTMLButtonElement>("button"))?.focus();
     return () => {
       if (dialog.open) dialog.close();
-      if (modal) document.body.style.overflow = oldOverflow;
+      document.body.style.overflow = oldOverflow;
       if (trigger?.isConnected) trigger.focus();
     };
-  }, [selected?.profile.id, expanded, mobile]);
+  }, [selected?.profile.id]);
 
   const switchDestination = (target: "network" | "discover") => {
     setTopic("all"); setEventFilter("all"); setFollowUp(false);
-    navigate(null, false, target);
+    navigate(null, target);
   };
   const resetFilters = () => { setQuery(""); setTopic("all"); setEventFilter("all"); setFollowUp(false); };
   const savePerson = async () => {
@@ -138,10 +114,7 @@ export function NetworkProduct({ state, user, act, busy, notify }: Props) {
 
   return (
     <div className="nx-page">
-      <header className="nx-heading">
-        <div><h1>Your network</h1><p>A little common ground. A world of possibility.</p></div>
-        <label className="nx-search"><Search size={17} aria-hidden="true" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Find a person, skill, or interest" aria-label="Search network" />{query && <button aria-label="Clear search" onClick={() => setQuery("")}><X size={14} /></button>}</label>
-      </header>
+      <PageHeader className="nx-heading" title="Your network" description="A little common ground. A world of possibility." action={<label className="nx-search"><Search size={17} aria-hidden="true" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Find a person, skill, or interest" aria-label="Search network" />{query && <button aria-label="Clear search" onClick={() => setQuery("")}><X size={14} /></button>}</label>} />
       <div className="nx-navigation">
         <div className="nx-destinations" role="group" aria-label="Network destination">
           <button aria-pressed={destination === "network"} onClick={() => switchDestination("network")}><Users size={16} />Your network<span>{saved.length}</span></button>
@@ -153,17 +126,14 @@ export function NetworkProduct({ state, user, act, busy, notify }: Props) {
         </div>
       </div>
       {filtersOpen && <div id="network-filters" className="nx-filters">
-        {destination === "network" && <label>Event<select aria-label="Filter by event" value={eventFilter} onChange={event => setEventFilter(event.target.value)}><option value="all">All events</option>{eventIds.map(id => <option key={id} value={id}>{state.events.find(event => event.id === id)?.name ?? "Your shared room"}</option>)}</select></label>}
-        <label>Interest<select aria-label="Filter by interest" value={topic} onChange={event => setTopic(event.target.value)}><option value="all">All interests</option>{topics.map(value => <option key={value}>{value}</option>)}</select></label>
-        {destination === "network" && <label className="nx-check"><input type="checkbox" checked={followUp} onChange={event => setFollowUp(event.target.checked)} />Needs follow-up</label>}
+        {destination === "network" && <label className="nx-filter-pill nx-filter-select"><span>Event</span><select aria-label="Filter by event" value={eventFilter} onChange={event => setEventFilter(event.target.value)}><option value="all">All events</option>{eventIds.map(id => <option key={id} value={id}>{state.events.find(event => event.id === id)?.name ?? "Your shared room"}</option>)}</select></label>}
+        <label className="nx-filter-pill nx-filter-select"><span>Interest</span><select aria-label="Filter by interest" value={topic} onChange={event => setTopic(event.target.value)}><option value="all">All interests</option>{topics.map(value => <option key={value}>{value}</option>)}</select></label>
+        {destination === "network" && <label className="nx-filter-pill nx-check"><input type="checkbox" checked={followUp} onChange={event => setFollowUp(event.target.checked)} /><span className="nx-filter-checkmark" aria-hidden="true"><Check size={12} /></span><span>Needs follow-up</span></label>}
         {(activeFilters > 0 || query) && <button className="nx-text-button" onClick={resetFilters}>Clear filters</button>}
       </div>}
-      <div className={`nx-workspace ${destination === "network" && view === "people" ? "nx-workspace-people" : ""} ${selected ? "nx-has-preview" : ""}`}>
+      <div className={`nx-workspace ${destination === "network" && view === "people" ? "nx-workspace-people" : ""}`}>
         <section className="nx-browser" aria-label={destination === "network" ? "Saved people" : "Discover people"}>
-          <div className="nx-browser-header">
-            <div><strong>{destination === "discover" ? "A reason to say hello" : view === "map" ? "People worth knowing" : "Your people"}</strong><span>{destination === "discover" ? "People with something in common" : `${visible.length} ${visible.length === 1 ? "person" : "people"}${query || activeFilters ? " in this view" : " in your network"}`}</span></div>
-            {destination === "network" && (view === "map" ? <label className="nx-group-label">Group by<select aria-label="Group map by" value={groupBy} onChange={event => setGroupBy(event.target.value as typeof groupBy)}><option value="connections">Connections</option><option value="event">Event</option><option value="interest">Shared interests</option></select></label> : <select aria-label="Sort people" value={sort} onChange={event => setSort(event.target.value)}><option value="recent">Recently saved</option><option value="compatibility">Compatibility</option><option value="name">Name</option></select>)}
-          </div>
+          <PanelHeader className="nx-browser-header" title={destination === "discover" ? "Discover people" : "Your people"} description={destination === "discover" ? "People with something in common" : `${visible.length} ${visible.length === 1 ? "person" : "people"}${query || activeFilters ? " in this view" : " in your network"}`} action={destination === "network" ? (view === "map" ? <label className="nx-group-label">Group by<select aria-label="Group map by" value={groupBy} onChange={event => setGroupBy(event.target.value as typeof groupBy)}><option value="connections">Connections</option><option value="event">Event</option><option value="interest">Shared interests</option></select></label> : <select aria-label="Sort people" value={sort} onChange={event => setSort(event.target.value)}><option value="recent">Recently saved</option><option value="compatibility">Compatibility</option><option value="name">Name</option></select>) : undefined} />
           {!visible.length ? <div className="nx-empty"><div className="nx-empty-symbol"><Users size={27} /></div><h2>{query || activeFilters ? "No people in this view" : destination === "network" ? "Your next connection starts here" : "You’re all caught up"}</h2><p>{query || activeFilters ? "Try another name, skill, or interest—or clear your filters." : destination === "network" ? "Explore the people in your room. Save someone you’d like to get to know." : "You’ve explored the people in your room. Your saved people are waiting in your network."}</p><Button onClick={query || activeFilters ? resetFilters : () => switchDestination(destination === "network" ? "discover" : "network")}>{query || activeFilters ? "Clear filters" : destination === "network" ? "Discover people" : "View your network"}<ArrowRight size={16} /></Button></div>
           : destination === "network" && view === "map" ? <NetworkMap user={user} people={visible.map(person => person.profile)} selectedId={selectedId} onSelect={select} groupBy={groupBy} eventNames={eventNames} sharedTopics={sharedTopics} />
           : destination === "discover" ? <div className="nx-discover-grid">{visible.map(person => <DiscoverCard key={person.profile.id} person={person} selected={person.profile.id === selectedId} onSelect={() => select(person.profile.id)} />)}</div>
@@ -177,13 +147,14 @@ export function NetworkProduct({ state, user, act, busy, notify }: Props) {
                     <small>{person.sharedInterests.length ? `In common: ${person.sharedInterests.join(", ")}` : person.reason}</small>
                   </span>
                   <FitLabel person={person} />
+                  <ArrowRight className="nx-row-arrow" size={17} aria-hidden="true" />
                 </button>
               ))}
             </div>}
           {visible.length > 0 && destination === "network" && view === "map" && <footer className="nx-browser-footer"><span><span className="nx-line-key" />People you’ve saved</span><span>Select a portrait to explore</span></footer>}
         </section>
-        {selected && <dialog ref={dialogRef} className={`nx-profile-layer ${expanded ? "nx-profile-expanded" : "nx-profile-preview"}`} aria-label={expanded ? `${selected.profile.name} — full profile` : `${selected.profile.name} — profile preview`} onCancel={event => { event.preventDefault(); expanded ? toggleExpanded() : close(); }} onClick={event => { if (event.target === event.currentTarget && (expanded || mobile)) expanded ? toggleExpanded() : close(); }}>
-          <NetworkProfile key={`${user.id}:${selected.profile.id}`} person={selected} user={user} state={state} act={act} busy={busy} notify={notify} expanded={expanded} onExpand={toggleExpanded} onClose={close} onSave={() => void savePerson()} />
+        {selected && <dialog ref={dialogRef} className="nx-profile-layer nx-profile-expanded" aria-label={`${selected.profile.name} — full profile`} onCancel={event => { event.preventDefault(); close(); }} onClick={event => { if (event.target === event.currentTarget) close(); }}>
+          <NetworkProfile key={`${user.id}:${selected.profile.id}`} person={selected} user={user} state={state} act={act} busy={busy} notify={notify} onClose={close} onSave={() => void savePerson()} />
         </dialog>}
       </div>
       {selectedId && !selected && <p className="nx-unavailable" role="status">This profile is no longer available. <button onClick={close}>Back to your network</button></p>}

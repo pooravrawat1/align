@@ -28,7 +28,7 @@ import type {
   Profile,
   State,
 } from "./types";
-import { Avatar, Button, Chip, Tags, TextAction } from "./ui";
+import { Avatar, Button, Chip, PageHeader, PanelHeader, Tags, TextAction } from "./ui";
 import "./ProductPages.css";
 import "./Home.css";
 import { ContactLinks } from "./ProfileContactLinks";
@@ -335,7 +335,7 @@ function ConnectionRows({
             <div className="product-connection-row" key={identity}>
               <a
                 className="home-connection-profile"
-                href={`#/network?person=${encodeURIComponent(person.id)}&details=1`}
+                href={`#/network?person=${encodeURIComponent(person.id)}`}
                 aria-label={`View connection with ${person.name}`}
               >
                 {content}
@@ -397,9 +397,7 @@ export function HomeProduct(props: ProductProps) {
 
   return (
     <div className="home-page">
-      <header className="home-heading">
-        <h1>Good to see you, {firstName(user)}.</h1>
-      </header>
+      <PageHeader className="home-heading" title={<>Good to see you, {firstName(user)}.</>} />
 
       <section className="home-event" aria-labelledby="home-event-title">
         <img
@@ -448,12 +446,9 @@ export function HomeProduct(props: ProductProps) {
 
       <div className="product-home-grid">
         <section className="product-panel home-focus-panel" aria-labelledby="home-focus-title">
-          <div className="card-header">
-            <h2 className="home-section-title" id="home-focus-title">Your focus</h2>
-            <a className="home-focus-edit" href="#/profile?section=focus" aria-label="Edit focus">
+          <PanelHeader title="Your focus" headingId="home-focus-title" headingClassName="home-section-title" action={<a className="home-focus-edit" href="#/profile?section=focus" aria-label="Edit focus">
               <Pencil size={16} aria-hidden="true" />
-            </a>
-          </div>
+            </a>} />
           {user.bio.trim() ? (
             <>
               <p className="home-focus-statement">{user.bio}</p>
@@ -481,14 +476,11 @@ export function HomeProduct(props: ProductProps) {
           )}
         </section>
         <section className="product-panel product-connections-panel">
-          <div className="card-header">
-            <h2 className="home-section-title">Recent connections</h2>
-            {connections.length > 0 && (
+          <PanelHeader title="Recent connections" headingClassName="home-section-title" action={connections.length > 0 ? (
               <TextAction onClick={() => navigate("network")}>
                 View network
               </TextAction>
-            )}
-          </div>
+            ) : undefined} />
           {connections.length > 0 ? (
             <ConnectionRows
               state={state}
@@ -511,10 +503,7 @@ export function HomeProduct(props: ProductProps) {
       </div>
 
       <section className="product-panel home-explore" aria-labelledby="home-explore-title">
-        <div className="card-header">
-          <h2 className="home-section-title" id="home-explore-title">Other events</h2>
-          <TextAction href="#/event">All events</TextAction>
-        </div>
+        <PanelHeader title="Other events" headingId="home-explore-title" headingClassName="home-section-title" action={<TextAction href="#/event">All events</TextAction>} />
         <div className="home-explore-list">
           {otherEvents.map((space) => (
             <a className="home-space" key={space.id} href={`#/event?event=${encodeURIComponent(space.id)}`}>
@@ -771,12 +760,7 @@ export function EventProduct({
   if (browsing)
     return (
       <div className="page-content event-browser">
-        <div className="page-heading">
-          <div>
-            <h1>Find your room.</h1>
-            <p>Small rooms. Interesting people. Space for something new.</p>
-          </div>
-        </div>
+        <PageHeader className="page-heading" title="Find your room." description="Small rooms. Interesting people. Space for something new." />
         <div className="join-row surface">
           <div>
             <h2>
@@ -821,7 +805,6 @@ export function EventProduct({
         </button>
         <div className="section-title">
           <h2>Spaces to explore</h2>
-          <span className="subtle">Illustrative events</span>
         </div>
         <div className="event-grid">
           {state.events.map((item) => (
@@ -867,14 +850,13 @@ export function EventProduct({
       >
         All event spaces
       </TextAction>
-      <header className="product-page-heading product-event-heading">
-        <div>
-          <span className="product-eyebrow">{joinedCurrentRoom ? "Your demo room" : "Sample event"}</span>
-          <h1>{event.name}</h1>
-          <p>{event.description}</p>
-        </div>
-        <PhaseTabs phase={phase} setPhase={setPhase} />
-      </header>
+      <PageHeader
+        className="product-page-heading product-event-heading"
+        eyebrow={joinedCurrentRoom ? "Your demo room" : "Sample event"}
+        title={event.name}
+        description={event.description}
+        action={<PhaseTabs phase={phase} setPhase={setPhase} />}
+      />
 
       {phase === "before" && (
         <div className="product-phase-page product-before-page">
