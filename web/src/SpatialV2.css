@@ -8,9 +8,7 @@
   --qv2-jade-ink: #17351f;
   --qv2-line: rgb(255 255 255 / 16%);
   --qv2-glass: var(--spatial-glass);
-  --qv2-sage-glass: var(--spatial-glass);
-  --qv2-match-glass: var(--spatial-match-glass);
-  --qv2-sage-text: #e8eddf;
+  --qv2-glass-text: #f2f3f5;
   --qv2-shadow: 0 18px 50px rgb(0 0 0 / 30%);
   --qv2-ease: cubic-bezier(0.16, 1, 0.3, 1);
   color: var(--qv2-white);
@@ -40,8 +38,8 @@
   outline-offset: 3px;
 }
 .qmv2 ::selection {
-  color: var(--qv2-jade-ink);
-  background: var(--qv2-jade);
+  color: var(--qv2-graphite);
+  background: var(--qv2-white);
 }
 
 .qmv2-page-heading {
@@ -167,9 +165,10 @@
   border: 1px solid rgb(255 255 255 / 18%);
   border-radius: 13px;
   color: var(--qv2-white);
-  background: rgb(27 28 31 / 78%);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
-  backdrop-filter: blur(18px) saturate(115%);
+  background: var(--qv2-glass);
+  box-shadow: var(--spatial-glass-shadow);
+  backdrop-filter: var(--spatial-glass-filter);
+  -webkit-backdrop-filter: var(--spatial-glass-filter);
 }
 .qmv2-event-button > span:nth-child(2) {
   font-weight: 600;
@@ -229,30 +228,25 @@
 .qmv2-setup-panel {
   width: min(100%, 420px);
   padding: 22px 26px;
-  border: 1px solid rgb(255 255 255 / 18%);
+  border: 1px solid var(--spatial-glass-edge);
   border-radius: 27px;
   overflow: hidden;
   clip-path: inset(0 round 27px);
   text-align: center;
-  background: var(--qv2-sage-glass);
-  box-shadow:
-    inset 0 1px 0 #f0ffed38,
-    inset 0 -1px 0 #00000025,
-    var(--qv2-shadow);
-  backdrop-filter: blur(24px) saturate(0.85);
-  -webkit-backdrop-filter: blur(24px) saturate(0.85);
+  background: var(--spatial-setup-glass);
+  box-shadow: var(--spatial-glass-shadow);
+  backdrop-filter: var(--spatial-glass-filter);
+  -webkit-backdrop-filter: var(--spatial-glass-filter);
   animation: qmv2-materialize 420ms var(--qv2-ease) both;
 }
 @keyframes qmv2-materialize {
   from {
     opacity: 0.3;
     transform: translateY(10px) scale(0.985);
-    backdrop-filter: blur(12px);
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-    backdrop-filter: blur(30px);
   }
 }
 .qmv2-progress {
@@ -268,7 +262,7 @@
   background: #ffffff24;
 }
 .qmv2-progress span.is-complete {
-  background: var(--qv2-jade);
+  background: var(--qv2-white);
 }
 .qmv2-setup-symbol,
 .qmv2-ready-symbol {
@@ -278,7 +272,7 @@
   margin: 0 auto 24px;
   place-items: center;
   border: 1px solid #ffffff2b;
-  border-radius: 16px;
+  border-radius: 19px;
   color: var(--qv2-white);
   background: #ffffff0f;
 }
@@ -301,7 +295,7 @@
 }
 .qmv2-setup-panel > p,
 .qmv2-setup-panel .qmv2-helper {
-  color: var(--qv2-sage-text);
+  color: var(--qv2-glass-text);
 }
 .qmv2-setup-panel .setup-profile {
   padding-block: 28px 22px;
@@ -316,7 +310,7 @@
   font-size: 11px;
 }
 .qmv2-setup-panel .profile-visibility {
-  color: var(--qv2-sage-text);
+  color: var(--qv2-glass-text);
   font-size: 12px;
   margin: 8px 0 24px;
 }
@@ -349,7 +343,15 @@
   }
   .qmv2-setup-panel .qmv2-setup-symbol,
   .qmv2-setup-panel .qmv2-ready-symbol {
-    display: none;
+    width: 44px;
+    height: 44px;
+    margin-bottom: 12px;
+    border-radius: 14px;
+  }
+  .qmv2-setup-panel .qmv2-setup-symbol svg,
+  .qmv2-setup-panel .qmv2-ready-symbol svg {
+    width: 26px;
+    height: 26px;
   }
   .qmv2-setup-panel h2 {
     font-size: 28px;
@@ -419,7 +421,7 @@
   border: 1px solid #ffffff33;
   border-radius: 12px;
   color: var(--qv2-white);
-  background: #11121678;
+  background: #1b2a2255;
   font-size: 22px;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
@@ -609,14 +611,14 @@
 .qmv2-card {
   position: absolute;
   display: block;
-  border: 1px solid #ffffff33;
-  border-radius: 14px;
+  border: 1px solid var(--spatial-glass-edge);
+  border-radius: 19px;
   color: var(--qv2-white);
   background: var(--qv2-glass);
   box-shadow: var(--spatial-glass-shadow);
   text-align: left;
-  backdrop-filter: blur(30px) saturate(115%);
-  -webkit-backdrop-filter: blur(30px) saturate(115%);
+  backdrop-filter: var(--spatial-glass-filter);
+  -webkit-backdrop-filter: var(--spatial-glass-filter);
   pointer-events: auto;
   transition:
     transform 300ms var(--qv2-ease),
@@ -635,15 +637,13 @@
   pointer-events: none;
 }
 .qmv2-card--matched {
-  background: var(--qv2-match-glass);
-  border-color: #c8f7cb99;
-  box-shadow:
-    inset 0 1px 0 #e1fce367,
-    0 8px 36px #203c3440;
+  background: var(--qv2-glass);
+  border-color: rgb(105 230 166 / 66%);
+  box-shadow: var(--spatial-glass-shadow);
 }
 .qmv2-card--matched .qmv2-card-detail p,
 .qmv2-card--matched .qmv2-card-person span {
-  color: var(--qv2-sage-text);
+  color: var(--qv2-glass-text);
 }
 .qmv2-card--matched::before {
   border-color: var(--qv2-jade-strong);
@@ -782,9 +782,10 @@
   border: 1px solid #b8e4c147;
   border-radius: 999px;
   color: var(--qv2-white);
-  background: var(--qv2-sage-glass);
+  background: var(--qv2-glass);
   box-shadow: 0 12px 30px #0000003d;
-  backdrop-filter: blur(18px);
+  backdrop-filter: var(--spatial-glass-filter);
+  -webkit-backdrop-filter: var(--spatial-glass-filter);
   transform: translateX(-50%);
 }
 
@@ -799,11 +800,12 @@
   padding: 6px;
   border: 1px solid #ffffff42;
   border-radius: 20px;
-  background: var(--qv2-sage-glass);
+  background: var(--qv2-glass);
   box-shadow:
     inset 0 1px 0 #ffffff24,
     0 18px 45px #00000047;
-  backdrop-filter: blur(24px);
+  backdrop-filter: var(--spatial-glass-filter);
+  -webkit-backdrop-filter: var(--spatial-glass-filter);
   transform: translateX(-50%);
 }
 .qmv2-dock button {
@@ -816,7 +818,7 @@
   padding: 8px 13px;
   border: 0;
   border-radius: 11px;
-  color: var(--qv2-sage-text);
+  color: var(--qv2-glass-text);
   background: transparent;
 }
 .qmv2-dock button:hover,
@@ -851,7 +853,8 @@
   color: var(--qv2-white);
   background: var(--qv2-glass);
   box-shadow: var(--qv2-shadow);
-  backdrop-filter: blur(30px);
+  backdrop-filter: var(--spatial-glass-filter);
+  -webkit-backdrop-filter: var(--spatial-glass-filter);
   scrollbar-color: #8d8f9666 transparent;
 }
 .qmv2-drawer-header {
@@ -864,7 +867,7 @@
 .qmv2-drawer-header > div > span {
   display: inline-flex;
   margin-bottom: 5px;
-  color: var(--qv2-jade);
+  color: var(--qv2-muted);
   font-size: 12px;
   font-weight: 600;
 }
@@ -884,7 +887,7 @@
 }
 .qmv2-profile-drawer {
   border-radius: 22px;
-  background: var(--qv2-sage-glass);
+  background: var(--qv2-glass);
   border-color: #f1f3e84d;
   box-shadow:
     inset 0 1px 0 #ffffff40,
@@ -898,12 +901,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #e3f3d8;
+  color: var(--qv2-jade);
   font-size: 12px;
 }
 .qmv2-profile-drawer .qmv2-icon-button {
   border: 0;
-  color: var(--qv2-sage-text);
+  color: var(--qv2-glass-text);
 }
 .qmv2-profile-drawer .qmv2-profile-lead {
   flex-direction: column;
@@ -920,7 +923,7 @@
 .qmv2-profile-drawer .qmv2-profile-bio,
 .qmv2-profile-drawer .qmv2-reason p,
 .qmv2-profile-drawer .qmv2-profile-section p {
-  color: var(--qv2-sage-text);
+  color: var(--qv2-glass-text);
 }
 .qmv2-profile-drawer .qmv2-reason {
   padding: 18px 0;
@@ -934,7 +937,7 @@
   line-height: 1.75;
 }
 .qmv2-profile-drawer .tag {
-  color: var(--qv2-sage-text);
+  color: var(--qv2-glass-text);
   background: #ffffff12;
   border-color: #ffffff1f;
 }
@@ -945,7 +948,7 @@
   margin-top: 20px;
   padding: 8px 0;
   border: 0;
-  color: var(--qv2-sage-text);
+  color: var(--qv2-glass-text);
   background: transparent;
   font-size: 12px;
 }
@@ -1188,7 +1191,8 @@
   border-radius: 15px;
   background: var(--qv2-glass);
   box-shadow: 0 16px 44px #00000040;
-  backdrop-filter: blur(24px);
+  backdrop-filter: var(--spatial-glass-filter);
+  -webkit-backdrop-filter: var(--spatial-glass-filter);
 }
 .qmv2-conversation-person {
   display: flex;
@@ -1246,7 +1250,8 @@
   background: var(--qv2-glass);
   box-shadow: var(--qv2-shadow);
   text-align: center;
-  backdrop-filter: blur(28px);
+  backdrop-filter: var(--spatial-glass-filter);
+  -webkit-backdrop-filter: var(--spatial-glass-filter);
   transform: translate(-50%, -50%);
 }
 .qmv2-reliability > svg,
@@ -1555,9 +1560,9 @@
   }
 }
 .solid-surfaces .qmv2 {
-  --qv2-glass: #484a4e;
-  --qv2-match-glass: #436b50;
-  --qv2-sage-glass: #484a4e;
+  --qv2-glass: #34363a;
+  --spatial-setup-glass: #34363a;
+  --spatial-glass-filter: none;
 }
 .solid-surfaces .qmv2-card,
 .solid-surfaces .qmv2-drawer,
@@ -1566,9 +1571,9 @@
 }
 @media (prefers-reduced-transparency: reduce) {
   .qmv2 {
-    --qv2-glass: #484a4e;
-    --qv2-match-glass: #436b50;
-    --qv2-sage-glass: #484a4e;
+    --qv2-glass: #34363a;
+    --spatial-setup-glass: #34363a;
+    --spatial-glass-filter: none;
   }
   .qmv2-card,
   .qmv2-drawer,

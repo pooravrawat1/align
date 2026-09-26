@@ -13,8 +13,8 @@ colors:
   control-border: "#FFFFFF20"
   jade: "#69E6A6"
   jade-ink: "#103622"
-  spatial-sage: "#B8E4C1"
-  spatial-sage-text: "#E8EDDF"
+  spatial-glass-highlight: "#72756B72"
+  spatial-glass-shadow: "#343B3499"
 typography:
   display:
     fontFamily: "Geist Variable, Inter Variable, sans-serif"
@@ -90,7 +90,7 @@ components:
 
 Align combines a neutral, Linear-like application shell with the intimacy of a modern salon. The interface stays compact, quiet, and operational until a room image or spatial scene earns atmosphere. The approved hybrid preserves the original v1 proportions and nested containers while using the sharper v2 typography, login, header, preview, and interaction language.
 
-Reference fidelity is additive, not a license to redesign: retain the old Event two-column photo cards and compact Home, Network, and Profile composition; use the final v2 type and shell; reveal Before / During / After only after an event is opened. Silver-sage glass is inherited from the archived spatial material and belongs over imagery or inside the spatial experience.
+Reference fidelity is additive, not a license to redesign: retain the old Event two-column photo cards and compact Home, Network, and Profile composition; use the final v2 type and shell; reveal Before / During / After only after an event is opened. Achromatic frosted glass belongs only over imagery or inside the spatial experience.
 
 **Key Characteristics:**
 
@@ -102,7 +102,7 @@ Reference fidelity is additive, not a license to redesign: retain the old Event 
 
 ## Colors
 
-The palette is neutral charcoal and cool gray; sage appears in spatial material, while bright jade is reserved for meaningful state.
+The website palette is neutral charcoal, white, and cool gray, including branding, selected profiles, navigation, and focus states. Jade signals connections and live presence; it is not a general accent. Spatial cards restore the original v1 material exactly, retaining its subtle environmental tint and brighter diffusion over room imagery.
 
 ### Primary
 
@@ -156,8 +156,9 @@ The app shell is flat and tonal by default. Opaque surfaces separate through cha
 
 - **Cinematic ambient:** `0 22px 70px #070A071F` for image-led event frames.
 - **Spatial panel:** `0 18px 50px rgb(0 0 0 / 30%)` with inset light and dark edges.
-- **Matched glass:** original v1 `linear-gradient(120deg, #89A78CAA, #436B50C7)` with a pale jade edge and white text.
-- **Neutral glass:** `linear-gradient(140deg, #C0C2C742, #292C32B8)` for setup panels, neutral identities, drawers, and the dock. Neutral surfaces have no green tint. Profile and live-room cards share these material tokens.
+- **Spatial glass:** restore v1's `linear-gradient(135deg, #72756b72, #343b3499)`, `blur(30px) saturate(115%)`, `#ffffff38` border, and `inset 0 1px 0 #ffffff30, inset 1px 0 0 #ffffff10, 0 14px 38px #080e0b26` shadow. Landing identities, the login illustration card, Profile preview, spatial identities, drawers, dock, and conversation/recovery panels share this recipe. Do not desaturate or darken the backdrop.
+- **Setup glass:** v1's denser `linear-gradient(135deg, #5a6157b8, #2d372ede)` supports reading and input. Preserve the hierarchy: progress, inset icon, heading, supporting copy, recessed field, white primary action, helper. Use 27px corners and compact spacing so actions fit the viewport.
+- **Matched glass:** the same original card material with a restrained jade edge, symbol, and explanation. The fill does not turn green.
 
 **The Earned Glass Rule.** Use glass only over imagery, within the room stage, or for a short spatial overlay. Forms and long reading surfaces stay opaque.
 
@@ -171,7 +172,7 @@ Controls use 7–12px radii, ordinary panels 14px, cinematic frames 16–18px, a
 
 - Minimum height is 44px with 13–14px medium-weight text.
 - Primary actions are warm-white on graphite; jade buttons are reserved for stateful spatial actions.
-- Secondary buttons use a translucent neutral fill and hairline border. Hover raises contrast gently; focus uses a 2px jade outline with 4px offset.
+- Secondary buttons use a translucent neutral fill and hairline border. Hover raises contrast gently; focus uses a 2px white outline with 4px offset.
 
 ### Cards / Containers
 
@@ -185,7 +186,7 @@ Inputs are opaque charcoal, at least 44px tall, with 14px text and 9–10px corn
 
 ### Navigation
 
-Home, Event, Network, and Profile are the primary destinations. Preview and Map remain secondary. Active navigation uses a quiet neutral fill, light text, and a jade icon detail—never a large colored rail.
+Home, Event, Network, and Profile are the primary destinations. Preview and Map remain secondary. Active navigation uses a quiet neutral fill, white text, and white icons.
 
 ### Event Phase Control
 
@@ -193,7 +194,7 @@ Before / During / After is a compact segmented control labeled “Preview event 
 
 ### Spatial Setup Panel
 
-The setup panel is centered silver-sage glass, no wider than 420px, with compact responsive variants for short viewports. Keep every setup step and primary action visible without an internal scrollbar.
+The setup panel uses the original v1 frosted material, centered and no wider than 420px, with compact responsive variants for short viewports. Keep the inset icon, setup step, and primary action visible without an internal scrollbar.
 
 ## Do's and Don'ts
 
@@ -201,7 +202,7 @@ The setup panel is centered silver-sage glass, no wider than 420px, with compact
 
 - **Do** preserve the approved hybrid: v1 proportions and nested structure with v2 typography and interactions.
 - **Do** keep room imagery prominent while maintaining readable contrast and honest demo labels.
-- **Do** use silver-sage glass for spatial context and neutral opaque surfaces for product work.
+- **Do** use achromatic frosted glass for spatial context and neutral opaque surfaces for product work.
 - **Do** keep event browsing separate from the opened-event phase preview.
 - **Do** keep setup content fully visible at supported viewport heights.
 

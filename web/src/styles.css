@@ -49,7 +49,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid var(--jade);
+  outline: 2px solid var(--text);
   outline-offset: 4px;
 }
 a {
@@ -73,8 +73,8 @@ p {
   line-height: 1.65;
 }
 ::selection {
-  background: #bddcc0;
-  color: #17221a;
+  background: #d8dade;
+  color: #17181b;
 }
 ::-webkit-scrollbar {
   width: 7px;
@@ -89,7 +89,7 @@ p {
 }
 input,
 textarea {
-  caret-color: var(--jade);
+  caret-color: var(--text);
 }
 svg {
   flex-shrink: 0;
@@ -126,7 +126,7 @@ svg {
   letter-spacing: -0.9px;
 }
 .brand-dot {
-  color: #b5d3b3;
+  color: var(--text);
 }
 .mark {
   width: 35px;
@@ -794,12 +794,12 @@ svg {
 }
 .login-example span {
   display: block;
-  color: #d3decb;
+  color: var(--muted);
   font-size: 10px;
   margin-top: 4px;
 }
 .login-art-caption {
-  color: #d4dfc9;
+  color: var(--muted);
   font-size: 9px;
   margin-top: 24px;
 }
@@ -823,7 +823,7 @@ svg {
   width: 100%;
 }
 .login-form .mark {
-  color: #b8cdb0;
+  color: var(--text);
   width: 36px;
   margin-bottom: 25px;
 }
@@ -854,8 +854,8 @@ svg {
   text-align: left;
 }
 .preset.selected {
-  background: #303a2d;
-  border-color: #6a806058;
+  background: var(--raised);
+  border-color: #ffffff66;
 }
 .preset > span:not(.radio-dot) {
   flex: 1;
@@ -876,8 +876,8 @@ svg {
   place-items: center;
 }
 .selected .radio-dot {
-  background: #bad4b2;
-  color: #263921;
+  background: var(--text);
+  color: var(--bg);
 }
 .login-disclosure {
   border-top: 1px solid var(--line);
@@ -1604,7 +1604,7 @@ textarea {
 }
 .segmented > button.active {
   background: #303238;
-  color: #e2e9da;
+  color: var(--text);
 }
 .search-field {
   display: flex;
@@ -1872,13 +1872,13 @@ textarea {
   background: #191a1d;
 }
 .chip-input:focus-within {
-  border-color: #b1c79d80;
+  border-color: #ffffff80;
 }
 .editable-tag {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #ccd9c0;
+  color: var(--text);
   background: #ffffff09;
   padding: 6px 8px;
   border-radius: 4px;
@@ -1890,7 +1890,7 @@ textarea {
   background: transparent;
   border: 0;
   padding: 2px;
-  color: #aebc9e;
+  color: var(--muted);
 }
 .chip-input input {
   background: none;
@@ -1920,7 +1920,7 @@ textarea {
   border: 0;
   padding: 3px 0;
   font-size: 8px;
-  color: #a7b99b;
+  color: var(--muted);
 }
 .save-profile {
   border-top: 1px solid var(--line);

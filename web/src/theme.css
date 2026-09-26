@@ -15,9 +15,12 @@
   --line: #ffffff14;
   --jade: #69e6a6;
   --jade-ink: #103622;
-  --spatial-glass: linear-gradient(140deg, #c0c2c742, #292c32b8);
-  --spatial-match-glass: linear-gradient(120deg, #89a78caa, #436b50c7);
-  --spatial-glass-shadow: inset 0 1px 0 #ffffff30, inset 1px 0 0 #ffffff10, 0 14px 38px #080e0b26;
+  --spatial-glass: linear-gradient(135deg, #72756b72, #343b3499);
+  --spatial-setup-glass: linear-gradient(135deg, #5a6157b8, #2d372ede);
+  --spatial-glass-edge: #ffffff38;
+  --spatial-glass-filter: blur(30px) saturate(115%);
+  --spatial-glass-shadow:
+    inset 0 1px 0 #ffffff30, inset 1px 0 0 #ffffff10, 0 14px 38px #080e0b26;
   --glass: linear-gradient(140deg, #c0c2c742, #292c32b8);
   --glass-edge: #f0f2f536;
   --glass-shadow:
@@ -31,7 +34,7 @@ h2,
   font-family: "Geist Variable", "Inter Variable", sans-serif;
 }
 .brand-dot {
-  color: var(--jade);
+  color: var(--text);
 }
 .button {
   min-height: 44px;
@@ -60,7 +63,7 @@ h2,
 .button:focus-visible,
 select:focus-visible,
 summary:focus-visible {
-  outline: 2px solid var(--jade);
+  outline: 2px solid var(--text);
   outline-offset: 4px;
 }
 .glass {
@@ -69,6 +72,13 @@ summary:focus-visible {
   box-shadow: var(--glass-shadow);
   backdrop-filter: blur(24px) saturate(0.85);
   -webkit-backdrop-filter: blur(24px) saturate(0.85);
+}
+.login-example.glass {
+  background: var(--spatial-glass);
+  border-color: var(--spatial-glass-edge);
+  box-shadow: var(--spatial-glass-shadow);
+  backdrop-filter: var(--spatial-glass-filter);
+  -webkit-backdrop-filter: var(--spatial-glass-filter);
 }
 .surface {
   background: var(--surface);
@@ -122,7 +132,7 @@ summary:focus-visible {
   background: #ffffff09;
 }
 .sidebar nav a.active svg {
-  color: var(--jade);
+  color: var(--text);
 }
 .sidebar .tiny-tag {
   font-size: 9px;
@@ -269,8 +279,8 @@ summary:focus-visible {
   min-height: 73px;
 }
 .preset.selected {
-  background: #17291f;
-  border-color: #69e6a64d;
+  background: var(--raised);
+  border-color: #ffffff66;
 }
 .preset > span {
   font-size: 14px;
@@ -282,8 +292,8 @@ summary:focus-visible {
   border-color: #ffffff2b;
 }
 .preset.selected .radio-dot {
-  background: var(--jade);
-  color: #0b2214;
+  background: var(--text);
+  color: var(--bg);
 }
 .login-disclosure {
   font-size: 11px;
@@ -403,7 +413,10 @@ summary:focus-visible {
   font-size: 12px;
 }
 .toggle.on {
-  background: #69e6a6;
+  background: var(--text);
+}
+.toggle.on > span {
+  background: var(--bg);
 }
 .error-banner {
   margin: 16px 40px;
@@ -414,13 +427,13 @@ summary:focus-visible {
 }
 .toast {
   background: #24272df2;
-  border: 1px solid #69e6a644;
+  border: 1px solid #ffffff28;
   font-size: 13px;
   max-width: calc(100vw - 32px);
 }
 .toast-check {
-  background: #69e6a62b;
-  color: var(--jade);
+  background: #ffffff16;
+  color: var(--text);
 }
 .skip-link {
   position: fixed;
@@ -438,6 +451,13 @@ summary:focus-visible {
 .solid-surfaces .glass {
   background: #292c32fa;
   backdrop-filter: none;
+}
+.solid-surfaces .login-example.glass,
+.solid-surfaces .salon-identity.glass,
+.solid-surfaces .salon-distant.glass {
+  background: #34363a;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .solid-surfaces .salon-identity {
   background: #292c32;

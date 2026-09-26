@@ -133,7 +133,7 @@
 }
 .salon-identity {
   position: absolute;
-  border-radius: 22px;
+  border-radius: 19px;
   text-align: left;
   pointer-events: auto;
   transition:
@@ -142,8 +142,16 @@
     box-shadow 0.45s;
   padding: 21px;
   color: var(--text);
-  backdrop-filter: blur(26px) saturate(0.8);
-  -webkit-backdrop-filter: blur(26px) saturate(0.8);
+  backdrop-filter: var(--spatial-glass-filter);
+  -webkit-backdrop-filter: var(--spatial-glass-filter);
+}
+.salon-identity.glass,
+.salon-distant.glass {
+  background: var(--spatial-glass);
+  border-color: var(--spatial-glass-edge);
+  box-shadow: var(--spatial-glass-shadow);
+  backdrop-filter: var(--spatial-glass-filter);
+  -webkit-backdrop-filter: var(--spatial-glass-filter);
 }
 .salon-identity h2 {
   font-size: 23px;
@@ -178,14 +186,12 @@
   top: 65%;
   width: 268px;
   transform: rotate(-3deg);
-  background: linear-gradient(135deg, #b9bdc736, #4448516e);
 }
 .salon-maya {
   right: 8%;
   top: 45%;
   width: 322px;
   transform: rotate(2deg);
-  background: linear-gradient(130deg, #bbc1cd3b, #292d369c);
   border: 1px solid #f5fff54a;
 }
 .salon-maya:hover {
@@ -255,11 +261,8 @@
 .salon-maya.reason-visible {
   transform: rotate(0);
   border-color: #8ceeaf8a;
-  box-shadow:
-    inset 0 1px 0 #d5ffe780,
-    0 0 50px #69e6a613,
-    0 16px 50px #00130744;
-  background: linear-gradient(130deg, #77978266, #1a372bed);
+  box-shadow: var(--spatial-glass-shadow);
+  background: var(--spatial-glass);
 }
 .is-revealed .salon-alex {
   border-color: #8ceeaf62;
