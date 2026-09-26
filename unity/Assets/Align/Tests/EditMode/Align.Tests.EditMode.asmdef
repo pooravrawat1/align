@@ -1,0 +1,14 @@
+{
+  "name": "Align.Tests.EditMode",
+  "rootNamespace": "Align.Tests",
+  "references": [
+    "Align.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "autoReferenced": false
+}

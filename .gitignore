@@ -32,3 +32,13 @@ coverage/
 *.db
 tmp/
 .cache/
+
+# Unity generated artifacts
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/

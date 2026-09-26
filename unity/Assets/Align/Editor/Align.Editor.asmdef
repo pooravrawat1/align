@@ -1,0 +1,13 @@
+{
+  "name": "Align.Editor",
+  "rootNamespace": "Align.Editor",
+  "references": [
+    "Align.Runtime",
+    "Unity.TextMeshPro",
+    "UnityEngine.UI"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": true
+}

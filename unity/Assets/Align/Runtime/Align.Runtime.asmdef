@@ -1,0 +1,9 @@
+{
+  "name": "Align.Runtime",
+  "rootNamespace": "Align",
+  "references": [
+    "Unity.TextMeshPro",
+    "UnityEngine.UI"
+  ],
+  "autoReferenced": true
+}

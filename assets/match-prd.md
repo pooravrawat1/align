@@ -27,6 +27,8 @@ The MVP must:
 - Align users within one shared physical coordinate system.
 - Display a profile card above each participant's physical head.
 - Synchronize headset positions in real time.
+- Use synchronized headset pose—not computer vision—to locate Quest 2 participants.
+- Show cards only for connected, calibrated participants who are in range, in view, and transmitting a recent tracked pose.
 - Compare participant profiles using an AI-backed matching system.
 - Turn both participants' profile cards green when they match.
 - Display a short explanation of why the participants should talk.
@@ -37,6 +39,7 @@ The MVP must:
 The hackathon MVP will not include:
 
 - Facial recognition
+- Raw passthrough-camera computer vision or person identification on Quest 2
 - Support for people who are not wearing headsets
 - Precise full-body tracking
 - Production-grade authentication
@@ -76,13 +79,14 @@ A judge who needs to understand the product within one minute and see the comple
 4. The user previews and saves the profile for the current session. Alex and Maya are available as editable demo defaults.
 5. The user completes spatial calibration.
 6. The user enters the shared passthrough experience.
-7. The user sees profile cards above nearby participants.
-8. The backend evaluates the profiles.
-9. If two users are compatible:
+7. The application receives calibrated headset poses from other connected participants.
+8. The user sees cards above nearby participants who are in range and within their viewing direction.
+9. The backend evaluates the profiles.
+10. If two users are compatible:
    - Both profile cards turn green.
    - Both users see the match explanation.
    - An optional sound indicates that a match was found.
-10. The users approach each other and begin a conversation.
+11. The users approach each other and begin a conversation.
 
 ## 7. User experience
 
@@ -151,6 +155,9 @@ Nonmatching users remain neutral. The application will not display:
 
 To reduce visual clutter:
 
+- Only connected headset users in the same room are eligible for a card.
+- A card remains hidden until both users are calibrated and the remote pose is recent and tracked.
+- Cards outside the configured distance range or viewing direction are hidden.
 - Distant participants show only their name.
 - Nearby participants show their name, bio, and tags.
 - Match explanations appear only for compatible users.
@@ -184,9 +191,11 @@ To reduce visual clutter:
 ### FR-4: Position synchronization
 
 - Each headset must transmit its head position and rotation.
+- Each pose update must include tracking validity and a timestamp or network tick.
 - Remote head transforms must update continuously.
 - Movement should appear sufficiently smooth for a profile card to remain above the user.
 - The system should interpolate network updates to reduce jitter.
+- The system must stop rendering a participant when their pose becomes stale or invalid.
 
 ### FR-5: Profile rendering
 
@@ -195,6 +204,9 @@ To reduce visual clutter:
 - Make the card face the local viewer.
 - Do not show the local user a duplicate card above their own head.
 - Display supplied social handles or links only in the nearby/expanded profile state to avoid visual clutter.
+- Position the card approximately 20–30 cm above the synchronized remote headset pose.
+- Gate visibility using room membership, calibration state, pose freshness, distance, and the local view direction.
+- Do not claim that Quest 2 has visually detected or identified the physical person.
 
 ### FR-6: Matching
 
@@ -314,6 +326,19 @@ The application must include precomputed compatibility results. If the AI servic
 - TextMeshPro
 - World-space Unity canvases
 
+### Quest 2 participant-location strategy
+
+Quest 2 passthrough is used only to show the physical environment. The MVP does not request or process raw passthrough-camera frames. Every spatial participant must wear a connected Quest 2 headset.
+
+Each client reads its locally tracked XR head pose through an `IHeadPoseProvider`, converts that pose into the manually calibrated shared coordinate system, and transmits it through the multiplayer session. Remote cards are anchored above those synchronized poses.
+
+Two pose-provider implementations are required:
+
+- `SimulatedHeadPoseProvider` for keyboard-controlled editor and desktop testing without hardware.
+- `QuestHeadPoseProvider` for the tracked Quest XR camera transform.
+
+The rest of the application must not depend directly on either provider. This allows networking, calibration, matching, and card rendering to be completed before the devices arrive.
+
 ### Multiplayer
 
 Preferred:
@@ -363,6 +388,7 @@ If time permits, replace manual calibration with Meta Shared Spatial Anchors. Ma
 - Support at least four visible participants.
 - Keep perceived profile-card tracking latency below 250 ms.
 - Send position updates approximately 10–20 times per second.
+- Hide a remote card when pose updates exceed the configured stale-pose timeout.
 - Complete matching within 10 seconds when possible.
 - Keep the application usable while matching is pending.
 - Use minimal scene geometry and lighting.
@@ -373,6 +399,8 @@ If time permits, replace manual calibration with Meta Shared Spatial Anchors. Ma
 - Make social links optional, visibly user-provided, and editable before joining a room.
 - Do not send social links or handles to the AI matching service.
 - Do not perform facial recognition.
+- Do not request or process raw Quest 2 passthrough images for person detection.
+- Do not present pose-based placement as visual identification.
 - Do not infer sensitive characteristics.
 - Store profiles only for the current event or demonstration.
 - Tell users that their profile is visible to other participants.
@@ -391,6 +419,7 @@ The hackathon MVP succeeds when:
 - Two Quest 2 users can join the same room.
 - Each user sees the other person through passthrough.
 - A profile card remains visibly attached above the other headset.
+- No card appears for a user who is disconnected, uncalibrated, out of range, outside the viewing direction, or no longer transmitting a valid pose.
 - The card stays reasonably aligned while the person walks.
 - The system produces a compatibility result.
 - Both users see the green match state.
@@ -415,6 +444,7 @@ The hackathon MVP succeeds when:
 - Synchronize head position and rotation.
 - Represent each remote headset with a cube.
 - Add interpolation.
+- Include tracking validity and pose freshness.
 
 **Exit condition:** Each participant sees a cube following the other participant's head.
 
@@ -439,6 +469,7 @@ The hackathon MVP succeeds when:
 - Replace cubes with profile cards.
 - Add distance-based detail.
 - Add viewer-facing behavior.
+- Gate cards on connection, calibration, valid recent pose, distance, and view direction.
 
 **Exit condition:** Each participant sees the correct profile above the correct person.
 
@@ -508,6 +539,8 @@ For a smaller team, combine the Quest and multiplayer roles first. Add the AI in
 | Headsets use different coordinate systems | Critical | Implement manual calibration before advanced features |
 | Multiplayer setup takes too long | High | Use a Photon sample and test with cubes first |
 | Profile cards jitter | Medium | Interpolate remote transforms and reduce update noise |
+| Stale tracking leaves a floating card | High | Timestamp poses and hide the card after a short configurable timeout |
+| Quest 2 cannot provide raw passthrough frames for CV | Critical | Use connected headset poses; require every spatial participant to wear a headset |
 | Alignment drifts | Medium | Keep the demo area small and provide one-click recalibration |
 | AI response is slow | Medium | Start matching immediately and cache results |
 | AI API fails | High | Include precomputed demo matches |
@@ -551,6 +584,7 @@ For a smaller team, combine the Quest and multiplayer roles first. Add the AI in
 ## 20. Stretch goals
 
 - Shared Spatial Anchors
+- Quest 3/3S person detection using supported passthrough-camera access
 - Voice-based profile creation
 - Hand gesture to request a connection
 - Mutual acceptance before showing the full explanation
@@ -572,6 +606,8 @@ For a smaller team, combine the Quest and multiplayer roles first. Add the AI in
 - [ ] Alex and Maya remain available as editable demo defaults.
 - [ ] Manual calibration works.
 - [ ] Remote head transforms are synchronized.
+- [ ] Cards appear only for connected, calibrated, in-range, in-view participants with a recent valid pose.
+- [ ] Quest 2 participant placement does not request or process passthrough camera frames.
 - [ ] Profile cards appear above the correct participants.
 - [ ] Text is readable on Quest 2.
 - [ ] AI or fallback matching produces a result.

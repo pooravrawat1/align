@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "com.unity.test-framework": "1.4.5",
+    "com.unity.textmeshpro": "3.0.6",
+    "com.unity.ugui": "2.0.0",
+    "com.unity.xr.management": "4.5.0",
+    "com.unity.xr.meta-openxr": "2.4.0",
+    "com.unity.xr.openxr": "1.15.1"
+  }
+}
