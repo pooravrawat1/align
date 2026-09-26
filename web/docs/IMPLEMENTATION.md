@@ -1,6 +1,6 @@
-# Align — unified implementation contract
+# Catalyst — unified implementation contract
 
-V1 and the pre-unification V2 archive remain preserved in the original local workspace. The approved unified implementation lives in `web/` in the Align repository and uses 4320/4321. GitHub publication was explicitly authorized after the final reference corrections on September 26.
+V1 and the pre-unification V2 archive remain preserved in the original local workspace. The approved unified implementation lives in `web/` in the Catalyst repository and uses 4320/4321. GitHub publication was explicitly authorized after the final reference corrections on September 26.
 
 ## Direction
 

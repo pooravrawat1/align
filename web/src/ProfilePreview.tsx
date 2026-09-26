@@ -1,0 +1,62 @@
+import { useEffect, useRef, useState } from "react";
+import { EyeOff, X } from "lucide-react";
+import type { Profile } from "./types";
+import { Avatar, Tags } from "./ui";
+import { ContactLinks } from "./ProfileContactLinks";
+import { sharedContactLinks } from "./contactDestinations";
+import { homeCollaborators, isProfileFieldVisible } from "./collaboratorSuggestions";
+import { visibilityOf } from "./profileEditor";
+
+export function NearbyProfile({ profile }: { profile: Profile }) {
+  const visible = visibilityOf(profile);
+  return <div className="pe-room-scene">
+    {visible.activeInEvent ? <div className="pe-room-card">
+      <div className="pe-person"><Avatar profile={profile} /><div><strong>{profile.name.trim().split(/\s/)[0] || "Your name"}</strong><span>{profile.role || "Your headline"}</span></div></div>
+      {visible.interests && profile.interests.length > 0 && <Tags items={profile.interests} limit={3} />}
+    </div> : <div className="pe-room-card pe-paused"><EyeOff size={22} /><p>Your profile is hidden in rooms.</p></div>}
+  </div>;
+}
+
+export function ProfilePreview({ profile, profiles, dirty, onClose }: { profile: Profile; profiles: Profile[]; dirty: boolean; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const [audience, setAudience] = useState<"room" | "connection">("room");
+  const [distance, setDistance] = useState<"distant" | "nearby" | "matched">("nearby");
+  const visible = visibilityOf(profile);
+  const example = homeCollaborators(profiles, profile).find(person => person.reason);
+  useEffect(() => {
+    const dialog = dialogRef.current!;
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialog.showModal();
+    closeRef.current?.focus();
+    return () => { document.body.style.overflow = overflow; dialog.close(); trigger?.focus(); };
+  }, []);
+  const introduction = <div className="pe-preview-details">
+    {isProfileFieldVisible(profile, "bio") && profile.bio && <section><h3>Current focus</h3><p>{profile.bio}</p></section>}
+    {([ ["interests", "Interests"], ["skills", "I can help with"], ["lookingFor", "Looking for help with"] ] as const).map(([field, label]) => isProfileFieldVisible(profile, field) && profile[field].length > 0 && <section key={field}><h3>{label}</h3><Tags items={profile[field]} /></section>)}
+  </div>;
+  return <dialog ref={dialogRef} className="pe-dialog" aria-labelledby="pe-preview-title" onCancel={event => { event.preventDefault(); onClose(); }} onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
+    <div className="pe-drawer">
+      <header className="pe-drawer-header"><h2 id="pe-preview-title">Profile preview</h2><button ref={closeRef} className="pe-icon-button" type="button" aria-label="Close profile preview" onClick={onClose}><X size={20} /></button></header>
+      <p className="pe-help pe-preview-status">{dirty ? "Showing your draft. Save changes to update your shared profile." : "Showing your saved profile."}</p>
+      <div className="pe-segmented" role="group" aria-label="Preview audience">
+        <button type="button" aria-pressed={audience === "room"} onClick={() => setAudience("room")}>In a room</button>
+        <button type="button" aria-pressed={audience === "connection"} onClick={() => setAudience("connection")}>Saved connection</button>
+      </div>
+      {audience === "room" ? <>
+        <NearbyProfile profile={profile} />
+        {visible.activeInEvent && introduction}
+        <details className="pe-spatial-options"><summary>Spatial preview</summary>
+          <div className="pe-segmented" role="group" aria-label="Spatial distance">{(["distant", "nearby", "matched"] as const).map(item => <button key={item} type="button" aria-pressed={distance === item} onClick={() => setDistance(item)}>{item[0].toUpperCase() + item.slice(1)}</button>)}</div>
+          {!visible.activeInEvent ? <p className="pe-help">Your profile is hidden at every distance.</p> : distance === "distant" ? <div className="pe-distance-name">{profile.name.trim().split(/\s/)[0] || "Your name"}<span>A name marker at a distance.</span></div> : distance === "nearby" ? <p className="pe-help">Nearby people see your name, headline, and up to three shared interests, as shown above.</p> : <div className="pe-match-example"><h3>{example ? `Example with ${example.profile.name}` : "No sample match yet"}</h3><p>{example?.reason || "A reason to meet appears when shared interests or complementary skills overlap."}</p><span className="pe-help">Based on eligible sample profiles and your current sharing choices.</span></div>}
+        </details>
+      </> : <div className="pe-connection-preview">
+        <div className="pe-person"><Avatar profile={profile} size="large" /><div><strong>{profile.name || "Your name"}</strong><span>{profile.role || "Your headline"}</span></div></div>
+        {!visible.previousConnections ? <p className="pe-help">Your profile details and contact links are hidden from saved connections.</p> : <>{introduction}<section className="pe-preview-contact"><h3>Contact</h3><ContactLinks profile={profile} showLabels />{visible.contact && profile.contact && <p>{profile.contact}</p>}{!sharedContactLinks(profile).length && !(visible.contact && profile.contact) && <p className="pe-help">No contact information is shared.</p>}</section></>}
+      </div>}
+      <p className="pe-demo-note">Demo preview. Sharing choices apply to the local demo experience.</p>
+    </div>
+  </dialog>;
+}

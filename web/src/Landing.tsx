@@ -3,7 +3,7 @@ import { ArrowDown, ArrowRight, ArrowUpRight, Check, Bookmark } from 'lucide-rea
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
-import { Brand } from './ui';
+import { Brand, Button } from './ui';
 import { VisorScene, type VisorHandle } from './VisorScene';
 import { JOURNEY, JOURNEY_TRACKS, ROOM_IMAGE } from './visorGeometry';
 import { createCheckpointScroll, type CheckpointScroll } from './checkpointScroll';
@@ -117,7 +117,7 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
   }
 
   return <main className="qv-landing" ref={root} id="main-content" tabIndex={-1}>
-    <section className="qv-runway" ref={runway} id="qv-experience" aria-label="The Align experience">
+    <section className="qv-runway" ref={runway} id="qv-experience" aria-label="The Catalyst experience">
       <div className="qv-stage">
         <VisorScene ref={scene}>
           <div className="qv-scene-shade" />
@@ -134,10 +134,10 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
         <header className="qv-header">
           <Brand />
           <nav aria-label="Website navigation"><button onClick={() => jumpTo('discover')}>The experience</button><button onClick={() => jumpTo('network')}>The connection</button></nav>
-          <div className="qv-header-actions"><button className="qv-enter" onClick={onEnter}>Step inside<ArrowUpRight size={15} /></button></div>
+          <div className="qv-header-actions"><Button className="qv-enter" onClick={onEnter}>Step inside<ArrowUpRight size={15} /></Button></div>
         </header>
-        <div className="qv-hero-copy"><h1>Your people.<br className="qv-mobile-break" /> In plain sight<span>.</span></h1><p>A little context. A real connection.</p><div className="qv-hero-actions"><button className="qv-primary" onClick={onEnter}>Try the demo<ArrowUpRight size={17} /></button><button className="qv-how" onClick={() => jumpTo('discover')}>See how it works<ArrowDown size={14} /></button></div></div>
-        <span className="qv-lens-caption">Through Alex’s eyes<span />Align</span>
+        <div className="qv-hero-copy"><h1>Your people.<br className="qv-mobile-break" /> In plain sight<span>.</span></h1><p>A little context. A real connection.</p><div className="qv-hero-actions"><Button className="qv-primary" onClick={onEnter}>Try the demo<ArrowUpRight size={17} /></Button><Button variant="secondary" className="qv-how" onClick={() => jumpTo('discover')}>See how it works<ArrowDown size={14} /></Button></div></div>
+        <span className="qv-lens-caption">Through Alex’s eyes<span />Catalyst</span>
         <button className="qv-scroll-cue" onClick={() => jumpTo('discover')}><span>Scroll to find your people</span><ArrowDown size={23} strokeWidth={1.3} /></button>
         <div className="qv-chapter qv-discover-copy"><span className="qv-eyebrow">01 / Find the common ground</span><h2>You bring the hardware.<br /><span>She brings the vision.</span></h2><p>Different skills. The same thing you care about.<br />Now you have a reason to say hello.</p></div>
         <div className="qv-conversation-copy"><span className="qv-eyebrow">02 / Make it human</span><h2>We found the common ground.<br /><span>The conversation is yours.</span></h2></div>
@@ -153,7 +153,7 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
       <div className="qv-invitation-mark" aria-hidden="true"><span /><span /></div>
       <h2>Who could you<br /><span>build with?</span></h2>
       <p>Bring what you know. Find what you’re missing.</p>
-      <div className="qv-invitation-actions"><button className="qv-primary" onClick={onEnter}>Try the demo<ArrowUpRight size={17} /></button><button className="qv-back" onClick={() => jumpTo('start')}>Back to the room<ArrowRight size={15} /></button></div>
+      <div className="qv-invitation-actions"><Button className="qv-primary" onClick={onEnter}>Try the demo<ArrowUpRight size={17} /></Button><Button variant="secondary" className="qv-back" onClick={() => jumpTo('start')}>Back to the room<ArrowRight size={15} /></Button></div>
       <small>No headset needed for this preview.</small>
     </section>
     <footer className="qv-footer"><Brand compact /><span>Made for meeting in person.</span></footer>

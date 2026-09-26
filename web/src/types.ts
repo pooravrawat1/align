@@ -10,12 +10,18 @@ export interface Profile {
   location: string;
   distance: number;
   contact?: string;
+  linkedin?: string;
+  website?: string;
+  email?: string;
   visibility?: {
     bio: boolean;
     interests: boolean;
     skills: boolean;
     lookingFor: boolean;
     contact: boolean;
+    linkedin?: boolean;
+    website?: boolean;
+    email?: boolean;
     previousConnections: boolean;
     activeInEvent: boolean;
   };

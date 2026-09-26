@@ -319,20 +319,26 @@
   -webkit-backdrop-filter: var(--spatial-glass-filter);
 }
 .profile-product .preview-floating.match {
-  background: var(--spatial-glass);
-  border-color: rgb(105 230 166 / 66%);
-  box-shadow: var(--spatial-glass-shadow);
+  background: var(--spatial-match-glass);
+  border-color: var(--spatial-match-edge);
+  box-shadow: var(--spatial-match-shadow);
 }
 .solid-surfaces .profile-product .profile-preview-scene .glass {
   background: #34363a;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
+.solid-surfaces .profile-product .profile-preview-scene .preview-floating.match {
+  background: #3f5a48;
+}
 @media (prefers-reduced-transparency: reduce) {
   .profile-product .profile-preview-scene .glass {
     background: #34363a;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+  }
+  .profile-product .profile-preview-scene .preview-floating.match {
+    background: #3f5a48;
   }
 }
 .preview-floating .match-label {
@@ -440,14 +446,7 @@
   font-size: 10px;
 }
 .header-enter {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--raised);
-  color: var(--text);
   padding: 7px 12px;
-  border: 0;
-  border-radius: 5px;
   font-size: 9px;
 }
 .app-header .shared-event-indicator .status-dot {

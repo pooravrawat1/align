@@ -1,0 +1,59 @@
+.connection-message-card {
+  padding: 20px;
+  border: 1px solid var(--divider-subtle);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+}
+.connection-message-card .card-header h2 {
+  margin: 0;
+  font-size: var(--type-card-title);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+.connection-message-person {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.connection-message-card .connection-message-person > .avatar { width: 52px; height: 52px; }
+.connection-message-person > div { min-width: 0; overflow-wrap: anywhere; }
+.connection-message-card .connection-message-person h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.connection-message-card .connection-message-person p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: var(--type-metadata);
+}
+.connection-extra .connection-message-card label {
+  display: block;
+  margin: 20px 0 8px;
+  color: var(--muted);
+  font-size: var(--type-metadata);
+}
+.connection-extra .connection-message-card textarea {
+  width: 100%;
+  min-height: 0;
+  margin: 0 0 12px;
+  padding: 12px;
+  border: 1px solid var(--divider-subtle);
+  border-radius: var(--radius-control);
+  background: #ffffff04;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.55;
+  resize: vertical;
+}
+.connection-extra .connection-message-card .button { width: 100%; margin: 0; }
+.connection-message-card textarea:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.connection-message-tool { margin: 20px 0; }
+.connection-message-tool > summary {
+  padding: 12px 0;
+  cursor: pointer;
+  color: var(--text);
+  font-size: var(--type-supporting);
+}
+.connection-message-tool > summary:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }

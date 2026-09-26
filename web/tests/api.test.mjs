@@ -15,12 +15,18 @@ const defaultVisibility = {
   skills: true,
   lookingFor: true,
   contact: false,
+  linkedin: false,
+  website: false,
+  email: false,
   previousConnections: true,
   activeInEvent: true,
 };
 const seededProfiles = seed.profiles.map((profile) => ({
   ...profile,
   contact: '',
+  linkedin: '',
+  website: '',
+  email: '',
   visibility: defaultVisibility,
 }));
 const seededConnections = seed.connections.map((connection) => ({
@@ -248,6 +254,119 @@ test('profile contact and visibility are validated and invalidate private matchi
     body: { visibility: { activeInEvent: 'yes' } },
   });
   assert.equal(invalidVisibility.status, 400);
+});
+
+test('profile contact channels save, clear, and toggle visibility independently', async () => {
+  const loggedIn = await login();
+  const sessionId = loggedIn.session.id;
+  const initial = currentProfile(loggedIn);
+  assert.equal(initial.linkedin, '');
+  assert.equal(initial.website, '');
+  assert.equal(initial.email, '');
+  assert.equal(initial.visibility.linkedin, false);
+  assert.equal(initial.visibility.website, false);
+  assert.equal(initial.visibility.email, false);
+
+  const saved = await api('/api/profile', {
+    method: 'PATCH',
+    sessionId,
+    body: {
+      linkedin: '  https://www.linkedin.com/in/alex-morgan  ',
+      website: '  http://alex.example/about  ',
+      email: '  alex@example.com  ',
+      visibility: { linkedin: true, website: true, email: true },
+    },
+  });
+  assert.equal(saved.status, 200, JSON.stringify(saved.value));
+  assert.deepEqual(
+    {
+      linkedin: currentProfile(saved.value).linkedin,
+      website: currentProfile(saved.value).website,
+      email: currentProfile(saved.value).email,
+    },
+    {
+      linkedin: 'https://www.linkedin.com/in/alex-morgan',
+      website: 'http://alex.example/about',
+      email: 'alex@example.com',
+    },
+  );
+  assert.equal(currentProfile(saved.value).visibility.linkedin, true);
+  assert.equal(currentProfile(saved.value).visibility.website, true);
+  assert.equal(currentProfile(saved.value).visibility.email, true);
+
+  const cleared = await api('/api/profile', {
+    method: 'PATCH',
+    sessionId,
+    body: {
+      linkedin: '  ',
+      website: '',
+      email: '\t',
+      visibility: { linkedin: false, website: false, email: false },
+    },
+  });
+  assert.equal(cleared.status, 200);
+  assert.equal(currentProfile(cleared.value).linkedin, '');
+  assert.equal(currentProfile(cleared.value).website, '');
+  assert.equal(currentProfile(cleared.value).email, '');
+  assert.equal(currentProfile(cleared.value).visibility.linkedin, false);
+  assert.equal(currentProfile(cleared.value).visibility.website, false);
+  assert.equal(currentProfile(cleared.value).visibility.email, false);
+});
+
+test('profile contact channel validation rejects unsafe values atomically', async () => {
+  const loggedIn = await login();
+  const sessionId = loggedIn.session.id;
+  const invalidPatches = [
+    { linkedin: 'https://example.com/in/alex' },
+    { linkedin: 'https://notlinkedin.com/in/alex' },
+    { linkedin: 'ftp://linkedin.com/in/alex' },
+    { linkedin: 'https://user:secret@linkedin.com/in/alex' },
+    { linkedin: 'https://linked\tin.com/in/alex' },
+    { linkedin: 'https://linkedin.com/in/alex\nadmin' },
+    { website: 'example.com' },
+    { website: 'javascript:alert(1)' },
+    { website: 'https://user:secret@example.com' },
+    { website: 'https://example.com/about\radmin' },
+    { email: 'alex example.com' },
+    { email: 'alex@example.com,maya@example.com' },
+    { email: 'alex@example.com\r\nBcc:maya@example.com' },
+    { linkedin: `https://linkedin.com/${'x'.repeat(500)}` },
+    { website: `https://example.com/${'x'.repeat(500)}` },
+    { email: `${'a'.repeat(243)}@example.com` },
+  ];
+
+  for (const body of invalidPatches) {
+    const result = await api('/api/profile', {
+      method: 'PATCH',
+      sessionId,
+      body: { bio: 'must not be saved', ...body },
+    });
+    assert.equal(result.status, 400, JSON.stringify(body));
+  }
+
+  const unchanged = await api('/api/bootstrap', { sessionId });
+  assert.equal(currentProfile(unchanged.value).bio, seed.profiles[0].bio);
+  assert.equal(currentProfile(unchanged.value).linkedin, '');
+  assert.equal(currentProfile(unchanged.value).website, '');
+  assert.equal(currentProfile(unchanged.value).email, '');
+});
+
+test('legacy contact remains supported alongside structured contact channels', async () => {
+  const loggedIn = await login();
+  const updated = await api('/api/profile', {
+    method: 'PATCH',
+    sessionId: loggedIn.session.id,
+    body: {
+      contact: '  alex on Matrix  ',
+      email: 'alex@example.com',
+      visibility: { contact: true, email: true },
+    },
+  });
+  assert.equal(updated.status, 200, JSON.stringify(updated.value));
+  assert.equal(currentProfile(updated.value).contact, '  alex on Matrix  ');
+  assert.equal(currentProfile(updated.value).email, 'alex@example.com');
+  assert.equal(currentProfile(updated.value).visibility.contact, true);
+  assert.equal(currentProfile(updated.value).visibility.email, true);
 });
 
 test('matching is deterministic, symmetric, canonical, cached, and deduplicated', async () => {

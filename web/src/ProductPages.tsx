@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import {
   ArrowLeft,
@@ -8,13 +8,12 @@ import {
   Check,
   CheckCircle2,
   Clipboard,
-  Clock3,
   Copy,
   Download,
   Glasses,
   MapPin,
-  MessageCircle,
   Network,
+  Pencil,
   RefreshCw,
   RotateCcw,
   Sparkles,
@@ -31,6 +30,9 @@ import type {
 } from "./types";
 import { Avatar, Button, Tags } from "./ui";
 import "./ProductPages.css";
+import "./Home.css";
+import { ContactLinks } from "./ProfileContactLinks";
+import { HomeCollaborators } from "./HomeCollaborators";
 
 type ProductProps = {
   state: State;
@@ -53,6 +55,18 @@ const FALLBACK_EVENT: QuestEvent = {
   time: "10:00 AM – 6:00 PM",
   status: "Demo event",
 };
+
+function eventPhoto(event: QuestEvent) {
+  return event.id === "spatial"
+    ? {
+        src: "/assets/event-audience.webp",
+        alt: "Attendees listening to a conference session — illustrative event photo",
+      }
+    : {
+        src: "/assets/home-conference.webp",
+        alt: "Conference venue with round tables and projection screens — illustrative venue photo",
+      };
+}
 
 const readinessFields = [
   { key: "name", label: "Name" },
@@ -156,17 +170,11 @@ function connectionVisibility(profile: Profile) {
   };
 }
 
-function visibleConnectionInterests(profile: Profile) {
-  const visibility = connectionVisibility(profile);
-  return visibility.previousConnections && visibility.interests
-    ? profile.interests
-    : [];
-}
-
 function explicitConnectionReason(
   user: Profile,
   person: Profile,
   connection: Connection,
+  format: "sentence" | "summary" = "sentence",
 ) {
   const visibility = connectionVisibility(person);
   if (!visibility.previousConnections) {
@@ -186,6 +194,9 @@ function explicitConnectionReason(
     ]),
   ];
   if (sharedInterests.length > 0) {
+    if (format === "summary") {
+      return `In common: ${sharedInterests.slice(0, 2).join(", ")}`;
+    }
     return `You both care about ${sharedInterests.slice(0, 2).join(" and ")}.`;
   }
 
@@ -279,11 +290,13 @@ function ConnectionRows({
   user,
   connections,
   limit,
+  variant = "default",
 }: {
   state: State;
   user: Profile;
   connections: Connection[];
   limit?: number;
+  variant?: "default" | "home";
 }) {
   return (
     <div className="product-connection-list">
@@ -291,26 +304,53 @@ function ConnectionRows({
         const person = otherProfile(state, connection, user.id);
         if (!person) return null;
         const followUp = followUpLabel(connection);
-        return (
-          <button
-            className="product-connection-row"
-            key={connectionIdentity(connection)}
-            onClick={() =>
-              navigate(`network?person=${encodeURIComponent(person.id)}`)
-            }
-          >
+        const identity = connectionIdentity(connection);
+        const content = (
+          <>
             <Avatar profile={person} />
             <span className="product-connection-copy">
               <strong>
                 {person.name}
                 <small>{person.role}</small>
               </strong>
-              <span>{explicitConnectionReason(user, person, connection)}</span>
-              <small>
-                {connectionEventName(state, connection)}
-                {followUp ? ` · ${followUp}` : ""}
-              </small>
+              <span>
+                {explicitConnectionReason(
+                  user,
+                  person,
+                  connection,
+                  variant === "home" ? "summary" : "sentence",
+                )}
+              </span>
+              {variant !== "home" && (
+                <small>
+                  {connectionEventName(state, connection)}
+                  {followUp ? ` · ${followUp}` : ""}
+                </small>
+              )}
             </span>
+          </>
+        );
+        if (variant === "home") {
+          return (
+            <div className="product-connection-row" key={identity}>
+              <a
+                className="home-connection-profile"
+                href={`#/network?person=${encodeURIComponent(person.id)}&details=1`}
+                aria-label={`View connection with ${person.name}`}
+              >
+                {content}
+              </a>
+              <ContactLinks profile={person} />
+            </div>
+          );
+        }
+        return (
+          <button
+            className="product-connection-row"
+            key={identity}
+            onClick={() => navigate(`network?person=${encodeURIComponent(person.id)}`)}
+          >
+            {content}
             <ArrowUpRight size={17} />
           </button>
         );
@@ -320,98 +360,135 @@ function ConnectionRows({
 }
 
 export function HomeProduct(props: ProductProps) {
-  const { state, user, connected, busy } = props;
+  const { state, user, connected, busy, act } = props;
+  const [expandedFocus, setExpandedFocus] = useState(false);
+  const [previewPeople, setPreviewPeople] = useState(() =>
+    new URLSearchParams(location.hash.split("?")[1]).get("people") === "1",
+  );
+  useEffect(() => {
+    const sync = () => setPreviewPeople(
+      new URLSearchParams(location.hash.split("?")[1]).get("people") === "1",
+    );
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, []);
   const event = currentEvent(state);
   const readiness = profileReadiness(user);
-  const connections = userConnections(state, user, connected);
-  const nextPerson = connections.length
-    ? otherProfile(state, connections[0], user.id)
-    : undefined;
+  const connections = userConnections(state, user, connected)
+    .filter((connection) => otherProfile(state, connection, user.id));
+  const joinedEvent = state.session?.code?.toUpperCase() === event.code.toUpperCase();
+  const otherEvents = state.events.filter((item) => item.id !== event.id).slice(0, 2);
+  const lookingFor = user.lookingFor.filter((item) => item.trim());
+  const enterRoom = async () => {
+    if (!readiness.complete) {
+      navigate("profile?section=focus");
+      return;
+    }
+    try {
+      if (!joinedEvent) await act("room", { code: event.code });
+      navigate("spatial");
+    } catch {
+      // The action owner presents service errors without losing the current view.
+    }
+  };
+  const missingFields = readiness.items
+    .filter((item) => !item.ready)
+    .map((item) => item.label.toLowerCase());
 
   return (
-    <div className="product-page product-home-page">
-      <header className="product-page-heading">
-        <div>
-          <span className="product-eyebrow">Your next room</span>
-          <h1>Good to see you, {firstName(user)}.</h1>
-          <p>Everything you need for one useful conversation.</p>
-        </div>
-        <button
-          className="product-quiet-link"
-          onClick={() => navigate("profile")}
-        >
-          Edit profile <ArrowUpRight size={16} />
-        </button>
+    <div className="home-page">
+      <header className="home-heading">
+        <h1>Good to see you, {firstName(user)}.</h1>
       </header>
 
-      <section className="product-cinematic product-home-hero">
-        <div className="product-scene-photo" />
-        <div className="product-scene-wash" />
-        <div className="product-hero-topline">
-          <span className="product-live-badge">
-            <span /> SAMPLE LIVE
-          </span>
-          <span>{state.profiles.length} sample participants</span>
+      <section className="home-event" aria-labelledby="home-event-title">
+        <img
+          className="home-event-image"
+          src="/assets/home-conference.webp"
+          alt=""
+          fetchPriority="high"
+        />
+        <div className="home-event-topline">
+          <span>{event.date} <span aria-hidden="true">·</span> {event.location}</span>
+          <span className="home-room-code">{joinedEvent ? "Your demo room" : "Available demo"}</span>
         </div>
-        <div className="product-hero-content">
-          <div className="product-hero-copy">
-            <span className="product-kicker">Current demo event</span>
-            <h2>{event.name}</h2>
-            <p>{event.description}</p>
-            <div className="product-event-meta product-event-meta-on-image">
-              <span>
-                <CalendarDays size={15} /> {event.date}
-              </span>
-              <span>
-                <Clock3 size={15} /> {event.time}
-              </span>
-              <span>
-                <MapPin size={15} /> {event.location}
-              </span>
-              <span className="product-code-pill">Code {event.code}</span>
-            </div>
-            <div className="product-action-row">
+        <div className="home-event-content">
+          <div className="home-event-copy">
+            <h2 id="home-event-title">{event.name}</h2>
+            <div className="home-event-actions">
               <Button
                 busy={busy}
-                onClick={() =>
-                  navigate(readiness.complete ? "spatial" : "profile")
-                }
+                onClick={() => void enterRoom()}
               >
-                {readiness.complete ? "Enter experience" : "Finish profile"}
+                {readiness.complete ? "Enter room" : "Finish profile"}
                 <ArrowRight size={17} />
               </Button>
-              <button
-                className="product-image-button"
-                onClick={() => navigate("events")}
-              >
-                View event
+              <button className="home-text-action" onClick={() => navigate(`event?event=${encodeURIComponent(event.id)}`)}>
+                Event details
               </button>
             </div>
           </div>
-          <ReadinessCard user={user} />
+          <button
+            className="home-profile-card"
+            onClick={() => navigate("profile")}
+            aria-label={`Edit your profile${readiness.complete ? "" : `: add ${missingFields.join(", ")}`}`}
+          >
+            <span className="home-person">
+              <Avatar profile={user} size="large" />
+              <span className="home-person-copy">
+                <strong>{user.name}</strong>
+                <span>{user.role || "Add your role"}</span>
+                {!readiness.complete && <span className="home-profile-missing">Complete profile</span>}
+              </span>
+              <span className="home-profile-edit" aria-hidden="true"><Pencil size={14} /></span>
+            </span>
+          </button>
         </div>
       </section>
 
-      <details className="product-mobile-readiness">
-        <summary>
-          Your introduction · {readiness.complete ? "ready" : "needs details"}
-        </summary>
-        <ReadinessCard user={user} />
-      </details>
-
       <div className="product-home-grid">
+        <section className="product-panel home-focus-panel" aria-labelledby="home-focus-title">
+          <div className="card-header">
+            <h2 className="home-section-title" id="home-focus-title">Your focus</h2>
+            <a className="home-focus-edit" href="#/profile?section=focus" aria-label="Edit focus">
+              <Pencil size={16} aria-hidden="true" />
+            </a>
+          </div>
+          {user.bio.trim() ? (
+            <>
+              <p className="home-focus-statement">{user.bio}</p>
+              {lookingFor.length > 0 && (
+                <div className="home-focus-topics">
+                  <p>Looking for</p>
+                  <div className="home-focus-pills" id="home-focus-topics">
+                    {lookingFor.slice(0, expandedFocus ? undefined : 2).map((item) => <span key={item}>{item}</span>)}
+                    {lookingFor.length > 2 && (
+                      <button aria-expanded={expandedFocus} aria-controls="home-focus-topics" onClick={() => setExpandedFocus(!expandedFocus)}>
+                        {expandedFocus ? "Show less" : `+${lookingFor.length - 2} more`}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+              <Button className="home-focus-action" onClick={() => navigate("home?people=1")}>Find collaborators</Button>
+            </>
+          ) : (
+            <>
+              <p className="home-focus-statement">What are you working on?</p>
+              <p className="home-focus-hint">Share what you’re building and who you’d like to meet.</p>
+              <Button className="home-focus-action" onClick={() => navigate("profile?section=focus")}>Set your focus</Button>
+            </>
+          )}
+        </section>
         <section className="product-panel product-connections-panel">
-          <div className="product-section-heading">
-            <div>
-              <span className="product-eyebrow">Your saved connections</span>
-              <h2>Recent connections</h2>
-            </div>
+          <div className="card-header">
+            <h2 className="home-section-title">Recent connections</h2>
             {connections.length > 0 && (
               <button
                 className="product-quiet-link"
                 onClick={() => navigate("network")}
               >
-                View network <ArrowUpRight size={15} />
+                View network
               </button>
             )}
           </div>
@@ -421,59 +498,51 @@ export function HomeProduct(props: ProductProps) {
               user={user}
               connections={connections}
               limit={3}
+              variant="home"
             />
           ) : (
-            <div className="product-empty-state">
-              <span className="product-empty-icon">
-                <Network size={21} />
-              </span>
+            <div className="home-connections-empty">
               <h3>Your network starts in the room.</h3>
-              <p>Join the sample event to meet people and save a connection.</p>
-              <Button variant="secondary" onClick={() => navigate("events")}>
-                Join event <ArrowRight size={16} />
+              <p>Meet someone, find common ground, and save their profile here.</p>
+              <Button variant="secondary" busy={busy} onClick={() => void enterRoom()}>
+                {readiness.complete ? "Enter room" : "Finish profile"}
               </Button>
             </div>
           )}
         </section>
 
-        <aside className="product-panel product-next-panel">
-          <span className="product-eyebrow">Next conversation</span>
-          {nextPerson ? (
-            <>
-              <div className="product-next-person">
-                <Avatar profile={nextPerson} size="large" />
-                <div>
-                  <h2>{nextPerson.name}</h2>
-                  <p>{nextPerson.role}</p>
-                </div>
-              </div>
-              <p className="product-next-reason">
-                {explicitConnectionReason(user, nextPerson, connections[0])}
-              </p>
-              <Tags items={visibleConnectionInterests(nextPerson)} limit={3} />
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  navigate(
-                    `network?person=${encodeURIComponent(nextPerson.id)}`,
-                  )
-                }
-              >
-                Open conversation <MessageCircle size={16} />
-              </Button>
-            </>
-          ) : (
-            <div className="product-next-empty">
-              <Users size={28} />
-              <h2>Find your first person.</h2>
-              <p>The sample event is ready when you are.</p>
-              <Button variant="secondary" onClick={() => navigate("events")}>
-                Join event <ArrowRight size={16} />
-              </Button>
-            </div>
-          )}
-        </aside>
       </div>
+
+      <section className="product-panel home-explore" aria-labelledby="home-explore-title">
+        <div className="card-header">
+          <h2 className="home-section-title" id="home-explore-title">Other events</h2>
+          <a className="product-quiet-link" href="#/event">All events</a>
+        </div>
+        <div className="home-explore-list">
+          {otherEvents.map((space) => (
+            <a className="home-space" key={space.id} href={`#/event?event=${encodeURIComponent(space.id)}`}>
+              <span className="home-space-icon" aria-hidden="true"><CalendarDays size={22} /></span>
+              <span className="home-space-copy">
+                <span className="home-space-meta">{space.status} · {space.date}</span>
+                <strong>{space.name}</strong>
+                <span>{space.description}</span>
+                <span className="home-space-meta">{space.location}</span>
+              </span>
+            </a>
+          ))}
+          {otherEvents.length === 0 && <p className="home-focus-hint">Find a space with an event code in All events.</p>}
+        </div>
+      </section>
+      {previewPeople && (
+        <HomeCollaborators
+          profiles={state.profiles}
+          user={user}
+          eventName={event.name}
+          busy={busy}
+          onClose={() => location.replace("#/home")}
+          onEnter={() => void enterRoom()}
+        />
+      )}
     </div>
   );
 }
@@ -530,15 +599,15 @@ function downloadCalendar(event: QuestEvent) {
   const content = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Align//Demo Event//EN",
+    "PRODID:-//Catalyst//Demo Event//EN",
     "CALSCALE:GREGORIAN",
     "BEGIN:VEVENT",
-    `UID:${event.id}-2026@align.demo`,
+    `UID:${event.id}-2026@catalyst.demo`,
     "DTSTAMP:20260926T120000Z",
     `DTSTART;TZID=America/New_York:${start}`,
     `DTEND;TZID=America/New_York:${end}`,
     `SUMMARY:${escapeIcs(event.name)}`,
-    `DESCRIPTION:${escapeIcs(`${event.description} Sample Align demo event. Room code: ${event.code}.`)}`,
+    `DESCRIPTION:${escapeIcs(`${event.description} Sample Catalyst demo event. Room code: ${event.code}.`)}`,
     `LOCATION:${escapeIcs(event.location)}`,
     "STATUS:CONFIRMED",
     "END:VEVENT",
@@ -593,11 +662,28 @@ export function EventProduct({
   busy,
   notify,
 }: ProductProps) {
-  const [browsing, setBrowsing] = useState(true);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const requestedEvent = () => state.events.find((item) =>
+    item.id === new URLSearchParams(location.hash.split("?")[1]).get("event"),
+  );
+  const [browsing, setBrowsing] = useState(() => !requestedEvent());
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(() => requestedEvent()?.id ?? null);
   const event =
     state.events.find((e) => e.id === selectedEventId) || currentEvent(state);
-  const [phase, setPhase] = useState<EventPhase>("during");
+  const [phase, setPhase] = useState<EventPhase>(() =>
+    requestedEvent() && state.session?.code !== requestedEvent()?.code.toUpperCase() ? "before" : "during",
+  );
+  useEffect(() => {
+    const sync = () => {
+      const selected = state.events.find((item) =>
+        item.id === new URLSearchParams(location.hash.split("?")[1]).get("event"),
+      );
+      setSelectedEventId(selected?.id ?? null);
+      setBrowsing(!selected);
+      if (selected) setPhase(state.session?.code === selected.code.toUpperCase() ? "during" : "before");
+    };
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, [state.events, state.session?.code]);
   const [roomCode, setRoomCode] = useState(() => {
     const query = location.hash.split("?")[1] ?? "";
     return new URLSearchParams(query).get("code")?.toUpperCase() ?? "";
@@ -627,9 +713,9 @@ export function EventProduct({
     try {
       const code = roomCode.trim().toUpperCase();
       const result = await act("room", { code, create: creatingRoom });
-      setSelectedEventId(
-        result.events.find((e) => e.code === code)?.id || null,
-      );
+      const joined = result.events.find((item) => item.code === code) ?? currentEvent(result);
+      setSelectedEventId(joined.id);
+      navigate(`event?event=${encodeURIComponent(joined.id)}`);
       setBrowsing(false);
       setPhase("during");
       window.scrollTo(0, 0);
@@ -668,18 +754,8 @@ export function EventProduct({
     if (!joinedCurrentRoom) await act("room", { code: event.code });
   };
 
-  const selectEvent = async (selectedEvent: QuestEvent) => {
-    try {
-      await act("room", { code: selectedEvent.code });
-      setSelectedEventId(selectedEvent.id);
-      setRoomCode(selectedEvent.code);
-      setPhase(selectedEvent.code === "DEMO" ? "during" : "before");
-      setBrowsing(false);
-      window.scrollTo(0, 0);
-      notify(`Joined sample room ${selectedEvent.code}.`);
-    } catch {
-      // The parent action owner presents API errors consistently.
-    }
+  const selectEvent = (selectedEvent: QuestEvent) => {
+    navigate(`event?event=${encodeURIComponent(selectedEvent.id)}`);
   };
 
   const enterExperience = async () => {
@@ -751,14 +827,11 @@ export function EventProduct({
           <span className="subtle">Illustrative events</span>
         </div>
         <div className="event-grid">
-          {state.events.map((item, index) => (
+          {state.events.map((item) => (
             <article className="event-card surface" key={item.id}>
-              <div className={`event-cover cover-${index}`}>
-                <div className="scene-photo" />
+              <div className="event-cover">
+                <img className="event-preview-photo" {...eventPhoto(item)} />
                 <span className="glass-label">{item.status}</span>
-                {index > 0 && (
-                  <Glasses className="event-cover-icon" size={66} />
-                )}
               </div>
               <div className="event-card-body">
                 <div className="event-date">
@@ -773,7 +846,7 @@ export function EventProduct({
                   {item.location}
                 </span>
                 <Button
-                  variant="secondary"
+                  variant="primary"
                   busy={busy}
                   onClick={() => void selectEvent(item)}
                 >
@@ -791,17 +864,14 @@ export function EventProduct({
     <div className="product-page product-event-page">
       <button
         className="product-quiet-link product-back-events"
-        onClick={() => {
-          setBrowsing(true);
-          window.scrollTo(0, 0);
-        }}
+        onClick={() => navigate("event")}
       >
         <ArrowLeft size={15} />
         All event spaces
       </button>
       <header className="product-page-heading product-event-heading">
         <div>
-          <span className="product-eyebrow">Current event · sample</span>
+          <span className="product-eyebrow">{joinedCurrentRoom ? "Your demo room" : "Sample event"}</span>
           <h1>{event.name}</h1>
           <p>{event.description}</p>
         </div>
@@ -812,11 +882,11 @@ export function EventProduct({
         <div className="product-phase-page product-before-page">
           <section className="product-panel product-event-overview">
             <div className="product-overview-image">
-              <div className="product-scene-photo" />
+              <img className="event-preview-photo" {...eventPhoto(event)} />
               <div className="product-scene-wash" />
               <span className="product-sample-label">SAMPLE EVENT</span>
               <div>
-                <span>Hosted by the Align demo team · sample host</span>
+                <span>Hosted by the Catalyst demo team · sample host</span>
                 <h2>{event.name}</h2>
               </div>
             </div>
@@ -953,7 +1023,7 @@ export function EventProduct({
       {phase === "during" && (
         <div className="product-phase-page product-during-page">
           <section className="product-cinematic product-during-hero">
-            <div className="product-scene-photo" />
+            <img className="event-preview-photo" {...eventPhoto(event)} />
             <div className="product-scene-wash" />
             <div className="product-hero-topline">
               <span className="product-live-badge">

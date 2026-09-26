@@ -1,0 +1,26 @@
+{
+  "stringLimits": {
+    "name": 80,
+    "role": 120,
+    "bio": 500,
+    "location": 120,
+    "contact": 160,
+    "linkedin": 512,
+    "website": 512,
+    "email": 254
+  },
+  "topicLimit": 20,
+  "topicItemLimit": 80,
+  "defaultVisibility": {
+    "bio": true,
+    "interests": true,
+    "skills": true,
+    "lookingFor": true,
+    "contact": false,
+    "linkedin": false,
+    "website": false,
+    "email": false,
+    "previousConnections": true,
+    "activeInEvent": true
+  }
+}

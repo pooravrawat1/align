@@ -1,7 +1,7 @@
 .qv-landing { --qv-bg: #0b100e; --qv-text: #f3f5f0; --qv-muted: #adbbb2; --qv-jade: #a5dcba; background: var(--qv-bg); color: var(--qv-text); font-family: 'Inter Variable', sans-serif; overflow: clip; outline: none; }
 .qv-landing ::selection { background: #a5dcba; color: #10251a; }
 .qv-landing h1, .qv-landing h2 { font-family: 'Geist Variable', sans-serif; font-weight: 430; letter-spacing: -.04em; }
-.qv-landing button:focus-visible, .qv-landing a:focus-visible { outline: 2px solid #b8f1ce; outline-offset: 5px; }
+.qv-landing button:not(.button):focus-visible, .qv-landing a:focus-visible { outline: 2px solid #b8f1ce; outline-offset: 5px; }
 .qv-runway { position: relative; height: 410svh; }
 .qv-stage { position: sticky; top: 0; height: 100svh; isolation: isolate; overflow: hidden; background: #0b100e; }
 .qv-scene, .qv-optics, .qv-canvas, .qv-rim, .qv-hud { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -23,22 +23,18 @@
 .qv-header .brand .mark { display: none; }
 .qv-header .brand-dot { color: #a5dcba; }
 .qv-header nav { display: flex; gap: 32px; margin-left: auto; }
-.qv-header nav button, .qv-back { padding: 12px 0; border: 0; background: none; color: #e0e9e2; font-size: 12px; min-height: 44px; }
-.qv-header nav button:hover, .qv-back:hover { color: #b8f1ce; }
+.qv-header nav button { padding: 12px 0; border: 0; background: none; color: #e0e9e2; font-size: 12px; min-height: 44px; }
+.qv-header nav button:hover { color: #b8f1ce; }
 .qv-header-actions { display: flex; align-items: center; gap: 26px; }
 .qv-version-link { font-size: 11px; color: #d0dcd2; padding: 14px 0; }
-.qv-enter { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 42px; padding: 0 19px; color: #f4f7f2; background: #1221194d; border: 1px solid #ecfff23b; border-radius: 24px; backdrop-filter: blur(15px); font-size: 12px; }
-.qv-enter:hover { background: #a5dcba; color: #153322; border-color: #a5dcba; }
+.qv-enter { min-height: 42px; padding: 0 19px; font-size: 12px; }
 .qv-hero-copy { position: absolute; z-index: 7; left: 3.5%; bottom: 7.5%; }
 .qv-hero-copy h1 { font-size: clamp(44px, 4.15vw, 78px); line-height: 1.04; white-space: nowrap; }
 .qv-hero-copy h1 > span { color: #a5dcba; }
 .qv-hero-copy > p { margin-top: 13px; font-size: 13px; color: #d3ded7; }
 .qv-hero-actions { display: flex; align-items: center; gap: 28px; margin-top: 24px; }
-.qv-primary { display: inline-flex; align-items: center; justify-content: center; gap: 25px; min-height: 50px; padding: 0 24px; border: 1px solid #fff; border-radius: 28px; background: #fff; color: #14251b; font-size: 13px; font-weight: 550; transition: background .18s, transform .18s; }
-.qv-primary:hover { background: #e8f1eb; transform: translateY(-2px); }
-.qv-primary:active { transform: translateY(0); }
-.qv-how { display: inline-flex; align-items: center; gap: 11px; min-height: 48px; padding: 0; border: 0; background: none; color: #edf4ee; font-size: 12px; }
-.qv-how:hover { color: #a5dcba; }
+.qv-primary { gap: 25px; min-height: 50px; padding: 0 24px; font-size: 13px; font-weight: 550; }
+.qv-how { min-height: 48px; padding: 0 20px; font-size: 12px; }
 .qv-mobile-break { display: none; }
 .qv-lens-caption { position: absolute; z-index: 7; top: 17.4%; left: 16%; display: flex; align-items: center; gap: 10px; font-size: 10px; color: #f5faf5; opacity: .82; letter-spacing: .025em; }
 .qv-lens-caption > span { width: 3px; height: 3px; border-radius: 50%; background: #e5f1e7; }
@@ -109,7 +105,7 @@
 .qv-invitation h2 > span { color: #b5e4c5; }
 .qv-invitation > p { color: #acbeb0; font-size: 14px; margin-top: 27px; }
 .qv-invitation-actions { display: flex; align-items: center; gap: 30px; margin-top: 37px; }
-.qv-back { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; }
+.qv-back { min-height: 44px; padding: 0 18px; font-size: 12px; }
 .qv-invitation > small { margin-top: 20px; color: #9cad9f; font-size: 10px; }
 .qv-footer { min-height: 100px; padding: 25px 4%; display: flex; align-items: center; gap: 35px; color: #a7b9ad; font-size: 11px; }
 .qv-footer .brand { margin-right: auto; color: #d9e6dd; font-size: 16px; gap: 7px; }
@@ -183,5 +179,5 @@
 }
 @media (prefers-reduced-transparency: reduce) {
   .qv-match { background: #183626; backdrop-filter: none; }
-  .qv-jordan, .qv-enter { background: #28372e; backdrop-filter: none; }
+  .qv-jordan { background: #28372e; backdrop-filter: none; }
 }

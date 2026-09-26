@@ -31,7 +31,7 @@
 .qmv2 select {
   font: inherit;
 }
-.qmv2 button:focus-visible,
+.qmv2 button:not(.button):focus-visible,
 .qmv2 input:focus-visible,
 .qmv2 select:focus-visible {
   outline: 2px solid #d8dade;
@@ -434,21 +434,7 @@
 }
 .qmv2 .button {
   min-height: 46px;
-  border-radius: 12px;
   font-size: 14px;
-}
-.qmv2 .button.primary {
-  color: #111214;
-  background: #f2f3f5;
-}
-.qmv2 .button.green {
-  color: var(--qv2-jade-ink);
-  background: var(--qv2-jade);
-}
-.qmv2 .button.secondary {
-  color: var(--qv2-white);
-  border-color: #ffffff33;
-  background: #ffffff12;
 }
 .qmv2-helper,
 .qmv2-source-note {
@@ -637,9 +623,9 @@
   pointer-events: none;
 }
 .qmv2-card--matched {
-  background: var(--qv2-glass);
-  border-color: rgb(105 230 166 / 66%);
-  box-shadow: var(--spatial-glass-shadow);
+  background: var(--spatial-match-glass);
+  border-color: var(--spatial-match-edge);
+  box-shadow: var(--spatial-match-shadow);
 }
 .qmv2-card--matched .qmv2-card-detail p,
 .qmv2-card--matched .qmv2-card-person span {
@@ -660,8 +646,8 @@
     filter: brightness(1);
   }
 }
-.qmv2-card--saved::before {
-  border-color: #b8e4c18a;
+.qmv2-card--saved .qmv2-card-label {
+  color: var(--qv2-white);
 }
 .qmv2-card--far {
   min-width: 138px;
@@ -1562,6 +1548,7 @@
 .solid-surfaces .qmv2 {
   --qv2-glass: #34363a;
   --spatial-setup-glass: #34363a;
+  --spatial-match-glass: #3f5a48;
   --spatial-glass-filter: none;
 }
 .solid-surfaces .qmv2-card,
@@ -1573,6 +1560,7 @@
   .qmv2 {
     --qv2-glass: #34363a;
     --spatial-setup-glass: #34363a;
+    --spatial-match-glass: #3f5a48;
     --spatial-glass-filter: none;
   }
   .qmv2-card,

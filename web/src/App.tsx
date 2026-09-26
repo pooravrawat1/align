@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  ArrowLeft,
-  ArrowRight,
   ArrowUpRight,
   CalendarDays,
   Check,
@@ -25,7 +23,9 @@ import { Spatial } from "./Spatial";
 import { Landing } from "./Landing";
 import { HomeProduct, EventProduct } from "./ProductPages";
 import { NetworkProduct, ProfileProduct } from "./PersonalPages";
-import type { Action, Profile, State } from "./types";
+import { clearSessionProfileDrafts, useProfileEditor } from "./useProfileEditor";
+import type { Action, State } from "./types";
+import { Onboarding, entryDraftKey, type OnboardingDetails } from "./Onboarding";
 
 const initial: State = { ...seed, matches: [], session: null, demo: true };
 const route = () => {
@@ -35,7 +35,6 @@ const route = () => {
 export const go = (path: string) => {
   location.hash = path === "landing" ? "/" : `/${path}`;
 };
-const first = (p: Profile) => p.name.split(" ")[0];
 function readSession() {
   try {
     return sessionStorage.getItem("questmatch-session");
@@ -62,6 +61,9 @@ export default function App() {
   const [toast, setToast] = useState("");
   const [error, setError] = useState("");
   const [menu, setMenu] = useState(false);
+  const [entryActive, setEntryActive] = useState(false);
+  const [entrySaving, setEntrySaving] = useState(false);
+  const entrySubmission = useRef(false);
   useEffect(() => {
     if (!menu) return;
     const close = (event: KeyboardEvent) => {
@@ -122,6 +124,12 @@ export default function App() {
           }
           return stateRef.current;
         } catch (e) {
+          if (e instanceof Error && "status" in e && e.status === 401) {
+            clearSessionProfileDrafts(sessionId.current);
+            sessionId.current = null;
+            putState({ ...stateRef.current, session: null });
+            try { sessionStorage.removeItem("questmatch-session"); } catch { /* Session is cleared in memory. */ }
+          }
           setError(
             e instanceof TypeError
               ? "The local demo service is unavailable. Start npm run dev, then try again."
@@ -140,6 +148,7 @@ export default function App() {
   useEffect(() => {
     const change = () => {
       setPage(route());
+      setEntryActive(false);
       setMenu(false);
       setError("");
       window.scrollTo(0, 0);
@@ -162,6 +171,7 @@ export default function App() {
             "status" in failure &&
             failure.status === 401
           ) {
+            clearSessionProfileDrafts(sessionId.current);
             sessionId.current = null;
             try {
               sessionStorage.removeItem("questmatch-session");
@@ -198,31 +208,56 @@ export default function App() {
   const user =
     state.profiles.find((p) => p.id === state.session?.userId) ||
     state.profiles[0];
+  const { editor: profileEditor, snapshot: profileSnapshot } = useProfileEditor(user, state.session?.id ?? null);
   const connected = state.connections
     .filter((c) => (c.ownerId ? c.ownerId === user.id : c.userA === user.id))
     .map((c) => c.participantId || (c.userA === user.id ? c.userB : c.userA));
-  const login = async (id: string, target = "home") => {
+  const login = async (id: string, details: OnboardingDetails): Promise<boolean> => {
+    if (entrySubmission.current) return false;
+    entrySubmission.current = true;
+    setEntrySaving(true);
+    setEntryActive(true);
+    const entryRoute = location.hash;
     try {
-      const destination =
-        target === "home" && !["landing", "login"].includes(page)
-          ? location.hash.replace("#/", "")
-          : target;
-      await act("login", { profileId: id });
-      go(destination);
-    } catch {
-      /* Inline error. */
+      if (stateRef.current.session?.userId !== id) {
+        await act("login", { profileId: id });
+      }
+      await act("profile", details, "PATCH");
+      if (stateRef.current.session?.code !== "DEMO") {
+        await act("room", { code: "DEMO" });
+      }
+      if (location.hash === entryRoute) {
+        setEntryActive(false);
+        go("spatial");
+      }
+      return true;
+    } catch (failure) {
+      if (failure instanceof Error && "status" in failure && failure.status === 401) {
+        sessionId.current = null;
+        putState({ ...stateRef.current, session: null });
+        try { sessionStorage.removeItem("questmatch-session"); } catch { /* Memory reference is cleared. */ }
+        setError("Your demo session expired. Your draft is safe—try again.");
+      }
+      return false;
+    } finally {
+      entrySubmission.current = false;
+      setEntrySaving(false);
     }
   };
   const logout = async () => {
     try {
       await act("logout");
+      clearSessionProfileDrafts(sessionId.current);
       sessionId.current = null;
       try {
         sessionStorage.removeItem("questmatch-session");
+        sessionStorage.removeItem(entryDraftKey);
       } catch {
         /* Memory cleared below. */
       }
       putState(initial);
+      setEntryActive(false);
+      setPage("landing");
       go("landing");
     } catch {
       /* Inline error. */
@@ -235,7 +270,11 @@ export default function App() {
   const sharedProps = { state, user, connected, act, busy, notify: setToast };
   const event = state.events.find((e) => e.code === state.session?.code);
   const isPublic = ["landing", "login"].includes(page);
-  const activePage = !isPublic && !state.session && ready ? "login" : page;
+  useEffect(() => {
+    // Keep an unfinished entry refreshable even after a partial session creation.
+    if (ready && !bootstrapError && !state.session && !isPublic) go("login");
+  }, [ready, bootstrapError, state.session, isPublic]);
+  const activePage = entryActive || (!isPublic && !state.session && ready) ? "login" : page;
   const nav = [
     { id: "home", name: "Home", icon: Home },
     { id: "event", name: "Event", icon: CalendarDays },
@@ -276,13 +315,14 @@ export default function App() {
       ) : activePage === "landing" ? (
         <Landing
           profiles={state.profiles}
-          onEnter={() => (state.session ? go("home") : go("login"))}
+          onEnter={() => go("login")}
         />
       ) : activePage === "login" ? (
-        <Login
+        <Onboarding
           profiles={state.profiles}
-          busy={busy || !ready}
-          onLogin={login}
+          initialProfileId={state.session?.userId ?? "alex"}
+          busy={busy || entrySaving || !ready}
+          onComplete={login}
           error={error}
         />
       ) : (
@@ -290,14 +330,13 @@ export default function App() {
           className={`app-layout ${page === "spatial" ? "spatial-layout" : ""}`}
         >
           <aside className={`sidebar ${menu ? "open" : ""}`}>
-            <Brand compact />
+            <Brand compact showLogo />
             <div className="workspace-label">
               <span className="workspace-monogram">B</span>
               <span>
                 {event?.name || "The Builders Room"}
                 <small>Your shared space</small>
               </span>
-              <ChevronDown size={14} />
             </div>
             <nav aria-label="Main navigation">
               {nav.map(({ id, name, icon: Icon }) => (
@@ -376,15 +415,19 @@ export default function App() {
                 </strong>
               </div>
               <div>
+                {page !== "home" && (
+                  <>
                 <span className="header-live">
                   <span className="status-dot" />
                   {event
                     ? event.name + " · demo live"
                     : "The Builders Room · demo available"}
                 </span>
-                <button className="header-enter" onClick={() => go("spatial")}>
+                <Button className="header-enter" onClick={() => go("spatial")}>
                   Enter <ArrowUpRight size={12} />
-                </button>
+                </Button>
+                  </>
+                )}
                 <button
                   className="icon-button"
                   aria-label="Open your profile"
@@ -413,6 +456,8 @@ export default function App() {
               <ProfileProduct
                 key={user.id}
                 {...sharedProps}
+                editor={profileEditor}
+                snapshot={profileSnapshot}
                 solid={solid}
                 setSolid={setSolid}
                 logout={logout}
@@ -465,114 +510,6 @@ export default function App() {
   );
 }
 
-function Login({
-  profiles,
-  busy,
-  onLogin,
-  error,
-}: {
-  profiles: Profile[];
-  busy: boolean;
-  onLogin: (id: string, target?: string) => void;
-  error: string;
-}) {
-  const [selected, setSelected] = useState("alex");
-  return (
-    <main className="login-page" id="main-content" tabIndex={-1}>
-      <section className="login-visual">
-        <div className="scene-photo" />
-        <div className="login-wash" />
-        <Brand />
-        <div className="login-quote">
-          <h1>
-            Your next great idea
-            <br />
-            starts with a hello.
-          </h1>
-          <p>
-            A shared interest. A complementary skill.
-            <br />A conversation you wouldn’t have found otherwise.
-          </p>
-        </div>
-        <div className="login-example glass">
-          <Sparkles size={19} />
-          <p>
-            “You’re both building assistive technology.”
-            <span>A small nudge. A world of possibility.</span>
-          </p>
-        </div>
-        <span className="login-art-caption">Illustrative environment</span>
-      </section>
-      <section className="login-form">
-        <a className="back-link" href="#/">
-          <ArrowLeft size={16} />
-          Back to Align
-        </a>
-        <div>
-          <Mark />
-          <h2>
-            Make room for
-            <br />
-            new connections.
-          </h2>
-          <p>
-            Choose a profile to explore the experience.
-            <br />
-            You can make it your own once you’re inside.
-          </p>
-          <div className="preset-list" aria-label="Demo profile selection">
-            {profiles.slice(0, 3).map((p) => (
-              <button
-                key={p.id}
-                className={`preset ${selected === p.id ? "selected" : ""}`}
-                aria-pressed={selected === p.id}
-                onClick={() => setSelected(p.id)}
-              >
-                <Avatar profile={p} />
-                <span>
-                  {p.name}
-                  <small>{p.role}</small>
-                </span>
-                <span className="radio-dot">
-                  {selected === p.id && <Check size={12} />}
-                </span>
-              </button>
-            ))}
-          </div>
-          {error && (
-            <p className="field-error" role="alert">
-              {error}
-            </p>
-          )}
-          <Button
-            className="full-width"
-            busy={busy}
-            onClick={() => onLogin(selected)}
-          >
-            Continue as {first(profiles.find((p) => p.id === selected)!)}
-            <ArrowRight size={16} />
-          </Button>
-          <button
-            className="plain-button full-width"
-            disabled={busy}
-            onClick={() => onLogin(selected, "profile")}
-          >
-            Make this profile my own
-            <ArrowUpRight size={14} />
-          </button>
-          <div className="login-disclosure">
-            Demo sign-in. No password or email required.
-            <br />
-            Profiles and connections are temporary sample data.
-          </div>
-        </div>
-        <span className="login-footer">
-          Be yourself. There’s someone here for that.
-        </span>
-      </section>
-    </main>
-  );
-}
 
 function PageHeading({
   title,

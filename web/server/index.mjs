@@ -6,6 +6,15 @@ import { pathToFileURL } from 'node:url';
 const HOST = '127.0.0.1';
 const DEFAULT_PORT = 4311;
 const MAX_BODY_BYTES = 16 * 1024;
+const profileContract = JSON.parse(
+  readFileSync(new URL('../shared/profile-contract.json', import.meta.url), 'utf8'),
+);
+const {
+  stringLimits: STRING_LIMITS,
+  topicLimit: ARRAY_LIMIT,
+  topicItemLimit: ARRAY_ITEM_LIMIT,
+  defaultVisibility: DEFAULT_VISIBILITY,
+} = profileContract;
 const PROFILE_FIELDS = new Set([
   'name',
   'role',
@@ -15,36 +24,13 @@ const PROFILE_FIELDS = new Set([
   'lookingFor',
   'location',
   'contact',
+  'linkedin',
+  'website',
+  'email',
   'visibility',
 ]);
-const STRING_LIMITS = {
-  name: 80,
-  role: 120,
-  bio: 500,
-  location: 120,
-  contact: 160,
-};
-const ARRAY_LIMIT = 20;
-const ARRAY_ITEM_LIMIT = 80;
 const FOLLOW_UP_VALUES = new Set(['needed', 'contacted', 'none']);
-const VISIBILITY_FIELDS = new Set([
-  'bio',
-  'interests',
-  'skills',
-  'lookingFor',
-  'contact',
-  'previousConnections',
-  'activeInEvent',
-]);
-const DEFAULT_VISIBILITY = {
-  bio: true,
-  interests: true,
-  skills: true,
-  lookingFor: true,
-  contact: false,
-  previousConnections: true,
-  activeInEvent: true,
-};
+const VISIBILITY_FIELDS = new Set(Object.keys(DEFAULT_VISIBILITY));
 const DEMO_REASON =
   'You are both building assistive technology. Maya brings computer-vision expertise, while Alex can help deploy it on wearable hardware.';
 
@@ -74,6 +60,9 @@ function withProfileDefaults(profile) {
   return {
     ...profile,
     contact: profile.contact ?? '',
+    linkedin: profile.linkedin ?? '',
+    website: profile.website ?? '',
+    email: profile.email ?? '',
     visibility: {
       ...DEFAULT_VISIBILITY,
       ...(profile.visibility ?? {}),
@@ -217,11 +206,11 @@ function requireSession(request, sessions) {
   return sessions.get(sessionId);
 }
 
-function validateString(field, value, limit, { nonBlank = false } = {}) {
+function validateString(field, value, limit, { nonBlank = false, trimmed = false } = {}) {
   if (typeof value !== 'string') {
     throw apiError(400, `${field} must be a string`);
   }
-  if (value.length > limit) {
+  if ((trimmed ? value.trim() : value).length > limit) {
     throw apiError(400, `${field} must be ${limit} characters or fewer`);
   }
   if (nonBlank && value.trim().length === 0) {
@@ -240,6 +229,43 @@ function validateStringArray(field, value) {
   }
 }
 
+function validateContactUrl(field, value, { linkedin = false } = {}) {
+  const normalized = value.trim();
+  if (normalized === '') return;
+  if (/[\u0000-\u001f\u007f]/u.test(normalized)) {
+    throw apiError(400, `${field} must not contain control characters`);
+  }
+
+  let url;
+  try {
+    url = new URL(normalized);
+  } catch {
+    throw apiError(400, `${field} must be an empty string or a valid http(s) URL`);
+  }
+
+  if (
+    (url.protocol !== 'http:' && url.protocol !== 'https:') ||
+    url.username !== '' ||
+    url.password !== ''
+  ) {
+    throw apiError(400, `${field} must be an http(s) URL without credentials`);
+  }
+  if (linkedin && url.hostname !== 'linkedin.com' && !url.hostname.endsWith('.linkedin.com')) {
+    throw apiError(400, 'linkedin must use linkedin.com or one of its subdomains');
+  }
+}
+
+function validateEmail(value) {
+  const normalized = value.trim();
+  if (normalized === '') return;
+  if (
+    /[\u0000-\u001f\u007f]/u.test(normalized) ||
+    !/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/u.test(normalized)
+  ) {
+    throw apiError(400, 'email must be empty or a single valid email address');
+  }
+}
+
 function validateProfilePatch(body) {
   for (const field of Object.keys(body)) {
     if (!PROFILE_FIELDS.has(field)) {
@@ -249,13 +275,20 @@ function validateProfilePatch(body) {
 
   for (const [field, limit] of Object.entries(STRING_LIMITS)) {
     if (field in body) {
-      validateString(field, body[field], limit, { nonBlank: field === 'name' });
+      validateString(field, body[field], limit, {
+        nonBlank: field === 'name',
+        trimmed: field === 'linkedin' || field === 'website' || field === 'email',
+      });
     }
   }
 
   for (const field of ['interests', 'skills', 'lookingFor']) {
     if (field in body) validateStringArray(field, body[field]);
   }
+
+  if ('linkedin' in body) validateContactUrl('linkedin', body.linkedin, { linkedin: true });
+  if ('website' in body) validateContactUrl('website', body.website);
+  if ('email' in body) validateEmail(body.email);
 
   if ('visibility' in body) {
     if (!body.visibility || typeof body.visibility !== 'object' || Array.isArray(body.visibility)) {

@@ -1,8 +1,9 @@
 ---
-name: Align Spatial Salon
+name: Catalyst Spatial Salon
 description: A compact spatial networking app with Linear-like discipline and restrained salon depth.
 colors:
   graphite-background: "#101113"
+  deep-canvas: "#050606"
   surface: "#191A1D"
   raised: "#222428"
   text: "#F2F3F5"
@@ -82,13 +83,13 @@ components:
     rounded: "{rounded.pill}"
 ---
 
-# Design System: Align Spatial Salon
+# Design System: Catalyst Spatial Salon
 
 ## Overview
 
 **Creative North Star: "Spatial Salon"**
 
-Align combines a neutral, Linear-like application shell with the intimacy of a modern salon. The interface stays compact, quiet, and operational until a room image or spatial scene earns atmosphere. The approved hybrid preserves the original v1 proportions and nested containers while using the sharper v2 typography, login, header, preview, and interaction language.
+Catalyst combines a neutral, Linear-like application shell with the intimacy of a modern salon. The interface stays compact, quiet, and operational until a room image or spatial scene earns atmosphere. The approved hybrid preserves the original v1 proportions and nested containers while using the sharper v2 typography, login, header, preview, and interaction language.
 
 Reference fidelity is additive, not a license to redesign: retain the old Event two-column photo cards and compact Home, Network, and Profile composition; use the final v2 type and shell; reveal Before / During / After only after an event is opened. Achromatic frosted glass belongs only over imagery or inside the spatial experience.
 
@@ -102,7 +103,17 @@ Reference fidelity is additive, not a license to redesign: retain the old Event 
 
 ## Colors
 
+### Demo entry
+
+The entry screen uses the supplied split-layout reference with Catalyst's shared geometry: 10px controls and 14px panels. The outer frame uses the same `product-panel` class as Home and Event. The artwork is flush with the frame, with square right corners at the column seam. A deep emerald gradient with softly diffused teal light and three journey steps sits on the left. The first step is white with a dark-green number circle; steps two and three have a subtle white translucent fill without an outline. This artwork is a scoped exception, not a global accent.
+
+The right side is a three-step demo-entry form, not real account creation: “Create your profile,” “What are you working on?”, then “Who would you love to meet?” Use left-aligned 36px headings (30px on small phones), 14px supporting copy, shared raised charcoal inputs, and a white CTA. Headings, supporting text, and fields share a left edge and consistent top origin. Field groups use 24px spacing, with helpers kept 8px from their own field. The Alex/Maya pill appears only on step one; each person has a separate prefilled draft. Step two collects a short bio, offered skills, and an optional LinkedIn link. Step three collects interests and sought expertise, with The Builders Room selected. All three numbered journey cards are full-card buttons for direct forward/back navigation; the current step is white and the others frosted. Navigation and refresh preserve drafts, including unfinished tags. Only “Enter the room” validates the complete draft, saves the confirmed profile, and joins DEMO, then opens spatial setup. Invalid skipped fields return to the corresponding step before any API writes. Failures stay inline with the draft intact; retries reuse the current person's session and do not rejoin an already joined room. Successful completion clears the entry draft. LinkedIn is a saved link, not an import; sharing remains controlled by Profile visibility. Résumé parsing and live two-device synchronization are separate follow-ups, with no dead upload or OAuth controls. The landing page's Step inside action always opens entry, including for returning visitors. The upper-right X returns to the landing page. On mobile the artwork becomes a compact, edge-to-edge header above the form.
+
 The website palette is neutral charcoal, white, and cool gray, including branding, selected profiles, navigation, and focus states. Jade signals connections and live presence; it is not a general accent. Spatial cards restore the original v1 material exactly, retaining its subtle environmental tint and brighter diffusion over room imagery.
+
+The onboarding project question writes the existing profile `bio`, which Home presents as “Your focus.” The expertise sought in step three writes `lookingFor`, which supplies the card's “Looking for” pills and collaborator matching. Keep these shared fields authoritative rather than adding a separate onboarding project record.
+
+Keep the entry copy compact: “Create your profile” fits a single desktop line. Step two omits its introductory subtitle and the LinkedIn helper; the demo-mode footer is removed from all steps. LinkedIn remains optional. Form top padding is 48px, with scrolling retained for expanded content. Interests and sought expertise use the same outlined neutral pill treatment as Home; Enter or comma adds a typed item and × removes it. Skills retain their existing chip styling.
 
 ### Primary
 
@@ -110,7 +121,8 @@ The website palette is neutral charcoal, white, and cool gray, including brandin
 
 ### Neutral
 
-- **Graphite Background** (`#101113`): app canvas and deepest layer.
+- **Deep Canvas** (`#050606`): signed-in page canvas, header, and outer login-page background.
+- **Graphite Background** (`#101113`): the surrounding public-page backdrop.
 - **Charcoal Surface** (`#191A1D`): cards, forms, and primary work surfaces.
 - **Raised Charcoal** (`#222428`): selected segments and nested controls.
 - **Primary Text** (`#F2F3F5`): headings and high-priority interface copy.
@@ -121,6 +133,8 @@ The website palette is neutral charcoal, white, and cool gray, including brandin
 **The State Color Rule.** Jade communicates readiness, live state, a compatible reason to meet, selection, or completion. It is never decorative and never implies public ranking.
 
 **The Neutral Base Rule.** Opaque backgrounds remain graphite or neutral charcoal; do not turn the application shell olive or dark green.
+
+**Shared entry/dashboard hierarchy.** Both use a near-black outer canvas with the same charcoal panel background, hairline border, and rounded geometry. Login reuses the regular website surface classes, not Home's special image-overlay glass. Form inputs and the selected demo-person segment use the shared raised surface token. The white CTA and current journey step stay white. Translucency is limited to the artwork's inactive journey steps; the form stays opaque and neutral. On desktop the centered login frame keeps the same viewport-bounded height across all three steps. Only the right-hand form scrolls; the left artwork, journey cards, and close control stay in place. Each step opens at the top of its form. Mobile keeps the stacked layout with natural page scrolling. The separate Back control is removed in favor of the numbered journey cards. Spatial glass recipes and green match states are unchanged.
 
 ## Typography
 
@@ -142,7 +156,7 @@ The website palette is neutral charcoal, white, and cool gray, including brandin
 
 Desktop uses a 230px sidebar, an 80px header, and a content canvas capped near 1420–1450px with approximately 40px page padding. Layouts use restrained nested grids rather than dashboard metric blocks.
 
-- **Home:** a 340px photographic launch hero over a compact two-column connections/readiness composition. Preserve v1 proportions.
+- **Home:** a 290px photographic launch hero above Recent connections and Your focus in two columns, with quiet Other events previews below. Use natural hero height on phones.
 - **Event browse:** room-code entry followed by the original two-column photographic event cards. Before / During / After controls are absent until an event is opened.
 - **Event detail:** compact title and phase control; Before uses a `1.45fr / 0.65fr` overview and readiness split; During keeps a 340px scene with its setup card fully visible; After uses a restrained recap plus two-column detail panels.
 - **Network and Profile:** preserve compact v1 nested-panel proportions while using the v2 type, preview, and control treatments.
@@ -156,9 +170,10 @@ The app shell is flat and tonal by default. Opaque surfaces separate through cha
 
 - **Cinematic ambient:** `0 22px 70px #070A071F` for image-led event frames.
 - **Spatial panel:** `0 18px 50px rgb(0 0 0 / 30%)` with inset light and dark edges.
-- **Spatial glass:** restore v1's `linear-gradient(135deg, #72756b72, #343b3499)`, `blur(30px) saturate(115%)`, `#ffffff38` border, and `inset 0 1px 0 #ffffff30, inset 1px 0 0 #ffffff10, 0 14px 38px #080e0b26` shadow. Landing identities, the login illustration card, Profile preview, spatial identities, drawers, dock, and conversation/recovery panels share this recipe. Do not desaturate or darken the backdrop.
+- **Spatial glass:** restore v1's `linear-gradient(135deg, #72756b72, #343b3499)`, `blur(30px) saturate(115%)`, `#ffffff38` border, and `inset 0 1px 0 #ffffff30, inset 1px 0 0 #ffffff10, 0 14px 38px #080e0b26` shadow. Landing identities, Profile preview, spatial identities, drawers, dock, and conversation/recovery panels share this recipe. Do not desaturate or darken the backdrop.
 - **Setup glass:** v1's denser `linear-gradient(135deg, #5a6157b8, #2d372ede)` supports reading and input. Preserve the hierarchy: progress, inset icon, heading, supporting copy, recessed field, white primary action, helper. Use 27px corners and compact spacing so actions fit the viewport.
-- **Matched glass:** the same original card material with a restrained jade edge, symbol, and explanation. The fill does not turn green.
+- **Matched glass:** when a reason to meet resolves, the whole card shifts to v1's sage material: `linear-gradient(120deg, #89a78caa, #436b50c7)`, a `#c8f7cb99` jade edge, and `inset 0 1px 0 #e1fce367, 0 8px 36px #203c3440` shadow. The jade label and explanation confirm why it changed.
+- **Card state edges:** neutral and saved cards inherit only the subtle silver material edge; saved state never adds another outline. Only `Reason to meet` cards use a jade outline and jade state label.
 
 **The Earned Glass Rule.** Use glass only over imagery, within the room stage, or for a short spatial overlay. Forms and long reading surfaces stay opaque.
 
@@ -179,6 +194,22 @@ Controls use 7–12px radii, ordinary panels 14px, cinematic frames 16–18px, a
 - Product panels use `#191A1D`, a 14px radius, a hairline border, and 20–24px padding.
 - Event browse retains two large photo cards with 22–24px titles and 12–13px supporting copy.
 - Nested Network/Profile surfaces remain compact and clearly subordinate to the page shell.
+
+### Card headers and dividers
+
+Home's Recent connections and Your focus, and Network's optional Keep in touch composer use the shared `.card-header` pattern: header, inset hairline, content, and an optional action. Standard headers reserve a 32px action row, followed by 8px of space (`--card-header-gap`), a 1px divider, and 16px before the content. The `.card-header--compact` variant uses the label's natural line height without the action-row minimum or a bottom margin; its parent supplies the 16px content gap.
+
+- `--divider-subtle` follows `--line` for opaque panels; `--divider-on-glass` is white at approximately 17% opacity for photo-backed glass.
+- The Home profile badge is capped at 250px, with 14px padding, an 18px radius, and a 48px portrait. It uses `--glass-milky` over a lighter neutral base and `--glass-stroke` for a fine glass edge. Name and role sit beside a circular pencil affordance; the whole badge opens Profile. Omit the status header and divider, and show Complete profile only when incomplete. Opaque page and connection panels retain their existing material.
+- Shared type roles: card titles 20px/500, person names 14px/600, supporting text 13px/400, and metadata 12px/400. Saved-person names use 15px/600 with 52px portraits. Home headings use Geist; names and supporting text use Inter.
+- Home connects event participation, relationship memory, and personal intent. Recent connections sits beside Your focus, which reads the saved bio and looking-for topics directly. Focus comes first in the mobile reading order. Other events uses one full-width panel with the shared header hairline and flat, softly highlighted event rows. It shows up to two other event records without inventing dates or attendance; specific event details open without joining. There is no Home message composer. Rows show name, role, and concise shared context, without follow-up status or repeated event names. One invitation appears when there are no saved people.
+- Your focus uses a 16px statement, up to two rounded topic pills with inline expansion, targeted Profile editing, and a white Find collaborators action. Its modal preview uses explicit visible skills/interests, excludes inactive participants, and restores keyboard focus between list/detail and on close. Opening a preview never saves a person or joins a room.
+- Rows link directly to expanded Network connection details. A faint rounded hover extends 12px into the panel's existing inset, preserving text alignment and giving portraits comfortable space. There is no persistent selection, appearing action label, or repeated arrow. Keyboard focus remains visible.
+- Optional LinkedIn, website, and email icons sit alongside saved people only when the person explicitly shares each field and permits access for previous connections. These use labeled links with tooltips; no fictional contact destinations are added to demo profiles. Network details shows the same destinations with text labels. The expandable Other contact field preserves free-text contact entry and editing.
+- Profile's contact fields are optional and private by default, with independent sharing controls. URL fields accept HTTP(S), LinkedIn links must use its domain, and email accepts a single address. These remain temporary demo-session data, included in the existing profile export.
+- Network's expanded connection details keeps the original composer under **Draft a message**. Opening it reveals Keep in touch, the selected person's portrait, an editable prefilled message, and the white Copy message action. Suggestions use current, visible shared interests; otherwise use a neutral greeting. Drafts reset when the recipient or suggested context changes and are not saved or sent.
+- Draft fields use three rows, 12px padding, a faint fill, a 1px border, and the shared control radius. Leave 12px before the copy action. Fields remain vertically resizable.
+- All events, Event details, and View network use text that brightens and underlines on hover/focus. Keep the forward arrow on Enter room and copy icon on Copy message. Event's existing connection-row presentation remains unchanged.
 
 ### Inputs / Fields
 

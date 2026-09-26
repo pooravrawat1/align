@@ -21,13 +21,21 @@ export function Mark({ small = false }: { small?: boolean }) {
     </svg>
   );
 }
-export function Brand({ compact = false }: { compact?: boolean }) {
+export function Brand({
+  compact = false,
+  showLogo = false,
+}: {
+  compact?: boolean;
+  showLogo?: boolean;
+}) {
   return (
-    <a className="brand" href="#/" aria-label="Align home">
-      <Mark small={compact} />
-      <span>
-        align<span className="brand-dot">.</span>
-      </span>
+    <a className={`brand${compact ? " brand--compact" : ""}${showLogo ? " brand--catalyst" : ""}`} href="#/" aria-label="Catalyst home">
+      {showLogo ? (
+        <img className="brand-logo" src="/assets/catalyst-logo.png" alt="" />
+      ) : (
+        <Mark small={compact} />
+      )}
+      <span>catalyst</span>
     </a>
   );
 }
@@ -47,6 +55,7 @@ export function Button({
       {...props}
       className={`button ${variant} ${className}`}
       disabled={props.disabled || busy}
+      aria-busy={busy || undefined}
     >
       {busy && <LoaderCircle size={16} className="spin" />}
       {children}
@@ -92,6 +101,54 @@ export function Tags({ items, limit }: { items: string[]; limit?: number }) {
     </div>
   );
 }
+export function TextAction({
+  children,
+  icon,
+  iconPosition = "end",
+  href,
+  onClick,
+  disabled,
+  className = "",
+}: {
+  children: ReactNode;
+  icon?: ReactNode;
+  iconPosition?: "start" | "end";
+  href?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  const content = (
+    <>
+      {iconPosition === "start" && icon}
+      <span>{children}</span>
+      {iconPosition === "end" && icon}
+    </>
+  );
+  if (href) {
+    return (
+      <a
+        className={`text-action ${className}`}
+        data-icon-position={iconPosition}
+        href={href}
+        onClick={onClick}
+      >
+        {content}
+      </a>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className={`text-action ${className}`}
+      data-icon-position={iconPosition}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {content}
+    </button>
+  );
+}
 export function TextLink({
   children,
   onClick,
@@ -100,10 +157,9 @@ export function TextLink({
   onClick: () => void;
 }) {
   return (
-    <button className="text-link" onClick={onClick}>
+    <TextAction icon={<ArrowUpRight size={15} />} onClick={onClick}>
       {children}
-      <ArrowUpRight size={15} />
-    </button>
+    </TextAction>
   );
 }
 export function Empty({
