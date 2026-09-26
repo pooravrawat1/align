@@ -13,8 +13,8 @@ Deadline: 24 hours from kickoff
 > are in [align-matching-rubric.md](align-matching-rubric.md). In particular,
 > Q-06/Q-08, D-01 through D-05, D-14, and the custom-profile acceptance items
 > below do **not** apply to this two-headset build. Unity/Photon teammates own
-> the one-caller coordinator and Maya/Sam operator switch. The web UI remains
-> a separate mockup with a preloaded sample match recap on its Network page.
+> the one-caller coordinator and Maya/Sam operator switch. The web UI is not
+> being reworked.
 
 ## Ship target
 

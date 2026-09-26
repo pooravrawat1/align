@@ -98,8 +98,7 @@ The six categories above remain the **networking-fit route**. The Quest demo als
 scores self-declared past experiences so that a useful introduction need not be
 purely transactional. The final percentage is the highest of networking fit,
 professional shared experience, and personal shared experience. A score of 70
-or more is a match. The score is hidden in the headset; a clearly labeled
-post-match sample recap on the separate web companion may show the percentage.
+or more is a match. The score is never shown to attendees.
 
 Only experiences explicitly supplied in a profile count. Do not infer where
 someone has been or count the event the two people are currently attending.

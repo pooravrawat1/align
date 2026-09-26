@@ -1,6 +1,6 @@
 # Align
 
-Align is a colocated mixed-reality networking experience for events. In the two-Quest demo, each wearer sees only the other person's floating name. A compatible pair sees the same green cue and a concise reason to start a conversation; full profiles and scores stay hidden in the headset.
+Align is a colocated mixed-reality networking experience for events. In the two-Quest demo, each wearer sees only the other person's floating name. A compatible pair sees the same green cue and a concise reason to start a conversation; full profiles and scores stay hidden.
 
 The project is being built as a 24-hour hackathon MVP for Meta Quest 2.
 
@@ -19,9 +19,9 @@ Quest/Unity and Photon integration is owned by the headset teammates. The matche
 
 ## Demo profiles and privacy
 
-The Quest demo uses three fictional, self-declared profiles: Alex, Maya, and Sam. They include hidden interests, skills, networking goals, work domains, and past professional/personal experiences. The matcher uses the [team rubric](assets/align-matching-rubric.md), with a 0–100 percentage score and a 70% match threshold. The percentage is available to developers and in a labeled, preloaded web recap, but not in the headset.
+The Quest demo uses three fictional, self-declared profiles: Alex, Maya, and Sam. They include hidden interests, skills, networking goals, work domains, and past professional/personal experiences. The matcher uses the [team rubric](assets/align-matching-rubric.md), with a 0–100 percentage score and a 70% match threshold. The percentage is only for API/debug use.
 
-There is no login, headset profile editor, or web-to-Quest profile transfer in this slice. The web companion remains a separate interactive mockup with a preloaded Alex/Maya recap; it does not receive Quest match events. Matching fields travel through Photon and, only when live AI is enabled, to Gemini; they are hidden from other attendees in the headset view, not kept entirely on-device. Contact and social fields are never sent to Gemini.
+There is no login, headset profile editor, or web-to-Quest profile transfer in this slice. The web companion remains a separate interactive mockup. Matching fields travel through Photon and, when live AI is enabled, to Gemini; they are hidden from other attendees in the headset view, not kept entirely on-device. Contact and social fields are never sent to Gemini.
 
 Social links are displayed as user-provided contact information. They are not used as AI matching inputs.
 

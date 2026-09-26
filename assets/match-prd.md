@@ -15,8 +15,7 @@
 > [matching rubric](align-matching-rubric.md),
 > [demo fixture](quest-demo-fixtures.json), and
 > [matcher contract](../matcher/README.md). These supersede conflicting
-> requirements and examples below; the web companion remains separate and may
-> show a clearly labeled, preloaded Alex/Maya recap without Quest sync.
+> requirements and examples below; the web companion remains unchanged.
 
 ## 1. Product summary
 

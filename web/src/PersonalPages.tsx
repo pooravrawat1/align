@@ -18,7 +18,6 @@ import {
   X,
 } from "lucide-react";
 import { Avatar, Button, Empty, Tags, Toggle } from "./ui";
-import { DemoMatchRecap } from "./DemoMatchRecap";
 import type { Action, Connection, Profile, State } from "./types";
 import "./PersonalPages.css";
 
@@ -179,7 +178,6 @@ export function NetworkProduct({
         title="The people behind the possibilities."
         description="Your conversations, connected. A small constellation of people worth knowing."
       />
-      <DemoMatchRecap viewerId={user.id} />
       <div className="network-toolbar">
         <div className="segmented" role="group" aria-label="Network view">
           <button
