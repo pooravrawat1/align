@@ -12,6 +12,8 @@ colors:
   hairline: "#FFFFFF14"
   control-subtle: "#FFFFFF06"
   control-border: "#FFFFFF20"
+  chip-ink: "#090A0B"
+  chip-border: "#FFFFFF1C"
   jade: "#69E6A6"
   jade-ink: "#103622"
   spatial-glass-highlight: "#72756B72"
@@ -77,9 +79,9 @@ components:
     rounded: "{rounded.control}"
     height: "44px"
   tag:
-    backgroundColor: "{colors.control-subtle}"
-    textColor: "{colors.muted}"
-    typography: "{typography.label}"
+    backgroundColor: "{colors.chip-ink}"
+    textColor: "#D7D9DE"
+    typography: "{typography.body}"
     rounded: "{rounded.pill}"
 ---
 
@@ -212,9 +214,24 @@ Home's Recent connections and Your focus, and Network's optional Keep in touch c
 - Draft fields use three rows, 12px padding, a faint fill, a 1px border, and the shared control radius. Leave 12px before the copy action. Fields remain vertically resizable.
 - All events, Event details, and View network use text that brightens and underlines on hover/focus. Keep the forward arrow on Enter room and copy icon on Copy message. Event's existing connection-row presentation remains unchanged.
 
+### Profile editor
+
+Profile uses four directly addressable tabs: About, Focus, Contact, and Settings. Home-style opaque panels, inset dividers, 20px panel headings, 14px field labels, and 15–16px input text replace the long undifferentiated form. The active section owns its Save changes and Discard changes actions; dirty indicators describe other unsaved sections without a completion score. Drafts survive navigation and tab refresh within the same session.
+
+About includes a portrait with a pencil upload control and a quiet Remove photo action. Uploads preview before saving; the format/size hint replaces the old sample-photo label. Focus uses clear field names and topic controls with a visible Add action. Sharing controls remain beside their fields; browser preferences are separated from saved profile settings.
+
+The compact nearby preview sits beside About and Focus only when space permits. Preview profile opens a focus-managed drawer with room and saved-connection audiences; spatial-distance exploration is optional. On phones, hide the preview rail, stack fields, use 16px input text, and retain the four short tabs. Save controls remain reachable; short viewports use a normal-flow footer. Glass is confined to the image-backed room preview.
+
 ### Inputs / Fields
 
 Inputs are opaque charcoal, at least 44px tall, with 14px text and 9–10px corners. Room codes use uppercase tracking. Focus changes the border to jade with a restrained outer ring.
+
+### Ink chips
+
+- Skills, interests, looking-for topics, shared interests, and profile topics use one pill-shaped Ink Chip. Section labels carry the semantic distinction; chip geometry does not change by topic type.
+- The base chip uses a near-black surface, a fine translucent border, and a soft inset highlight so it stays legible on graphite panels and spatial glass.
+- Removable chips keep the same surface with a circular 32px remove affordance. Suggestion and overflow chips use the interactive variant: they brighten, lift by 1px, and gain a soft shadow on hover or keyboard focus. Reduced motion removes the lift.
+- Status badges, filters, segmented controls, counts, and navigation tabs are separate component families and do not inherit Ink Chip styling.
 
 ### Navigation
 

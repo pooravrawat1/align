@@ -96,12 +96,12 @@
       "css": ".ds-event-card { overflow: hidden; border: 1px solid var(--line, #FFFFFF14); border-radius: 14px; color: var(--text, #F2F3F5); background: var(--surface, #191A1D); font-family: 'Inter Variable', sans-serif; } .ds-event-image { display: flex; min-height: 190px; align-items: flex-start; padding: 16px; background: linear-gradient(0deg, #101113A8, transparent), #55585C; } .ds-event-image span { padding: 7px 10px; border: 1px solid #FFFFFF31; border-radius: 999px; background: #292C32B8; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; } .ds-event-body { padding: 20px; } .ds-event-body small { color: var(--quiet, #93979F); font-size: 12px; } .ds-event-body h2 { margin: 10px 0 7px; font: 500 24px/1.15 'Geist Variable', sans-serif; letter-spacing: -0.025em; } .ds-event-body p { margin: 0 0 18px; color: var(--muted, #A8ABB2); font-size: 13px; line-height: 1.5; }"
     },
     {
-      "name": "Profile Tag",
+      "name": "Ink Chip",
       "kind": "chip",
       "refersTo": "tag",
-      "description": "A quiet metadata chip for interests, skills, and shared topics.",
-      "html": "<span class=\"ds-tag\">Spatial computing</span>",
-      "css": ".ds-tag { display: inline-flex; min-height: 28px; align-items: center; padding: 6px 10px; border: 1px solid #FFFFFF0D; border-radius: 999px; color: #C7CAD0; background: #FFFFFF06; font: 500 11px/1.2 'Inter Variable', sans-serif; } .ds-tag:hover { border-color: #FFFFFF20; color: var(--text, #F2F3F5); } .ds-tag:focus-visible { outline: 2px solid var(--text, #F2F3F5); outline-offset: 3px; }"
+      "description": "The shared near-black pill for skills, interests, looking-for topics, and profile overlap. Statuses and filters remain separate component families.",
+      "html": "<span class=\"ds-chip\">Spatial computing</span><button class=\"ds-chip ds-chip-interactive\">More topics</button>",
+      "css": ".ds-chip { display: inline-flex; min-height: 28px; max-width: 100%; align-items: center; padding: 5px 10px; border: 1px solid #FFFFFF1C; border-radius: 999px; color: #D7D9DE; background: #090A0B; box-shadow: inset 0 1px 0 #FFFFFF0A, 0 1px 2px #00000052; font: 500 12px/1.3 'Inter Variable', sans-serif; overflow-wrap: anywhere; } .ds-chip-interactive { transition: color 160ms cubic-bezier(.16, 1, .3, 1), border-color 160ms cubic-bezier(.16, 1, .3, 1), background 160ms cubic-bezier(.16, 1, .3, 1), transform 160ms cubic-bezier(.16, 1, .3, 1); } .ds-chip-interactive:hover, .ds-chip-interactive:focus-visible { border-color: #FFFFFF3D; color: #F2F3F5; background: #16181B; outline: 2px solid #F2F3F5; outline-offset: 3px; transform: translateY(-1px); }"
     },
     {
       "name": "Spatial Setup Panel",

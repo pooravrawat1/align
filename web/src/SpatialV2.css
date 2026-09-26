@@ -306,9 +306,6 @@
 .qmv2-setup-panel .setup-profile p {
   font-size: 13px;
 }
-.qmv2-setup-panel .setup-profile .tag {
-  font-size: 11px;
-}
 .qmv2-setup-panel .profile-visibility {
   color: var(--qv2-glass-text);
   font-size: 12px;
@@ -485,14 +482,6 @@
 }
 .qmv2-profile-confirmation .tags {
   margin-top: 16px;
-}
-.qmv2 .tag {
-  min-height: 28px;
-  display: inline-flex;
-  align-items: center;
-  color: var(--qv2-muted);
-  background: #ffffff0f;
-  font-size: 12px;
 }
 .qmv2-calibration-visual {
   position: relative;
@@ -913,11 +902,6 @@
 .qmv2-profile-drawer .qmv2-reason p {
   margin: 0;
   line-height: 1.75;
-}
-.qmv2-profile-drawer .tag {
-  color: var(--qv2-glass-text);
-  background: #ffffff12;
-  border-color: #ffffff1f;
 }
 .qmv2-profile-distance {
   display: flex;

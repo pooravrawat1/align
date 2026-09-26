@@ -1,6 +1,13 @@
 # Profile refactor plan
 
-Status: proposed design and implementation plan; no application changes made.
+Status: implemented. The approved plan below records the design rationale; the completion notes describe the delivered behavior and verification.
+
+## Completion notes
+
+- Delivered About, Focus, Contact, and Settings with direct URLs, keyboard tab navigation, Home-style panels, section-specific saves/discard, inline validation, and session-scoped draft recovery.
+- Delivered contextual sharing controls, room/saved-connection draft previews, and shared editor/API validation limits without changing the underlying focus and matching field meanings.
+- Subsequent explicit request: replaced the sample-photo label with a pencil upload control. JPG, PNG, and WebP files up to 10 MB are decoded, center-cropped, and resized to a 512px JPEG (maximum 256 KiB). Upload/removal participates in About drafts and saves; saved images reach profile consumers and JSON export. Images remain temporary demo-session data, not permanent media hosting.
+- Verification: 13 Profile browser tests at desktop/phone sizes; 38 focused editor, profile-contract, API, contact-link, and collaborator tests; TypeScript/Vite build. Browser coverage includes delayed/failed saves, draft reload, sharing previews, keyboard navigation, narrow layouts, photo upload/removal/export, and invalid-image recovery. Separate spec review passed. Real-device/mobile-keyboard and production persistence are not proven by these checks.
 
 Basis: `/Users/casey/align`, `main` at `775b45b049cc91af21b36ac429b67bddf949a04c`, plus the current uncommitted work. Inspected Profile and Home in the running desktop browser and traced their source, API validation, navigation, profile consumers, and existing tests. Mobile recommendations below are design requirements, not verified mobile findings.
 
@@ -46,7 +53,7 @@ Each editor panel follows Home's header, inset divider, content, and action rhyt
 
 | Tab | Content | Field decisions |
 | --- | --- | --- |
-| About | Identity: portrait, name, headline, location | `name` → Name; `role` → Headline, with an example such as “Hardware engineer”; `location` → Location (optional). Only Name is required. Keep the existing portrait/initials fallback; do not imply a working upload flow. |
+| About | Identity: portrait, name, headline, location | `name` → Name; `role` → Headline, with an example such as “Hardware engineer”; `location` → Location (optional). Only Name is required. Portrait now supports upload and removal via the subsequent explicit request; initials remain the fallback. |
 | Focus | Current focus, interests, offered skills, sought skills | `bio` → Current focus; `interests` → Interests; `skills` → I can help with; `lookingFor` → I'm looking for help with. These are the same values used by Home, onboarding, and matching. |
 | Contact | Ways a saved connection can reach the person | LinkedIn, Website, Email, plus collapsed Other contact when empty. Existing Other contact content opens visibly. Each channel includes its own sharing choice. |
 | Settings | Discoverability, access for saved connections, appearance/sound, data/session actions | Keep room visibility and previous-connection access together. Place Reduce transparency and Match sounds in Preferences. Put Export, Clear event data, and Sign out in a separate Data and session panel. |
@@ -124,10 +131,10 @@ Use a dedicated `ProfilePage.tsx` and `ProfilePage.css`, plus a small editor hoo
 - Focused tests cover editor state, API field/visibility contracts, and browser tasks. Existing Home/contact/matching regressions run after connected changes. Run the TypeScript/Vite build once the substantive integration is complete.
 - A separate adversarial review at implementation completion checks ownership, stale drafts, identity separation, partial saves, preview truth, field migration, and shared-style regressions.
 
-Planning evidence is current desktop inspection and source review. No application code was changed, no save/sharing/data action was executed in the inspected session, and no build or test suite was run for this plan. Production persistence, cross-account enforcement, multi-device behavior, and Quest behavior remain separate evidence classes.
+The original planning evidence was desktop inspection and source review. Implementation verification is recorded in Completion notes above. Production persistence, cross-account enforcement, multi-device behavior, and Quest behavior remain separate evidence classes.
 
 ## Deliberate follow-ups
 
-Editable photos are useful, but a real upload needs a supported field, file validation, storage/lifetime, replacement/removal, and export behavior. Keep the existing portrait with an honest demo label and initials fallback until that complete capability is implemented. A dead Change photo button would make this refactor worse.
+Permanent photo storage/media hosting remains a separate capability. The explicitly requested demo-session upload, validation, replacement/removal, and export flow is implemented.
 
 GitHub and other structured contact channels can be added as a coherent model/API/visibility/renderer/export slice after the editor is established. Preserve existing free-text Other contact immediately. Do not quietly infer links or import data from a LinkedIn URL.

@@ -538,12 +538,6 @@ svg {
 .floating-profile .tags {
   margin-top: 14px;
 }
-.floating-profile .tag {
-  background: #ffffff21;
-  color: white;
-  border-color: #ffffff0b;
-  font-size: 9px;
-}
 .card-tether {
   position: absolute;
   left: 50%;
@@ -1419,10 +1413,6 @@ svg {
 .intro-profile .tags {
   margin-top: 15px;
 }
-.intro-profile .tag {
-  font-size: 8px;
-  padding: 4px 6px;
-}
 .intro-profile > .intro-bio {
   line-height: 1.7;
   margin: 17px 0 20px;
@@ -1844,10 +1834,6 @@ textarea {
   color: #d7dece;
   margin: 23px 0 9px;
 }
-.network-detail .tag {
-  font-size: 8px;
-  padding: 5px 7px;
-}
 .network-detail > p.detail-bio {
   font-size: 11px;
   line-height: 1.8;
@@ -1911,9 +1897,6 @@ textarea {
   font-size: 9px;
   color: var(--muted);
   margin-top: 5px;
-}
-.connection-list .tag {
-  font-size: 8px;
 }
 
 /* Shared settings control */
@@ -2284,11 +2267,6 @@ textarea {
   justify-content: center;
   margin-top: 16px;
 }
-.setup-profile .tag {
-  color: #f0f4e9;
-  background: #ffffff13;
-  font-size: 8px;
-}
 .profile-visibility {
   display: flex;
   align-items: center;
@@ -2583,12 +2561,6 @@ textarea {
   font-size: 10px;
   margin: 20px 0 10px;
   color: #f3f8ee;
-}
-.spatial-detail .tag {
-  color: #ebf2e4;
-  background: #ffffff10;
-  border-color: #ffffff16;
-  font-size: 9px;
 }
 .looking-for {
   font-size: 10px;
@@ -3160,10 +3132,6 @@ textarea {
     width: 31px;
     height: 31px;
   }
-  .landing-scene .tag {
-    font-size: 7px;
-    padding: 4px 5px;
-  }
   .landing-scene .match-label {
     font-size: 8px;
     margin-bottom: 11px;
@@ -3618,10 +3586,6 @@ textarea {
     margin-top: 11px;
     padding-top: 10px;
     font-size: 9px;
-  }
-  .world-profile .tag {
-    font-size: 7px;
-    padding: 4px;
   }
   .world-name {
     top: 42%;

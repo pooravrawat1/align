@@ -265,12 +265,12 @@ async function replaceChips(page, groupName, inputName, values) {
   await expectChips(page, groupName, values);
 }
 
-async function expectTagRadius(page, groupName, value, { pill }) {
+async function expectPillChip(page, groupName, value) {
   const group = chipGroup(page, groupName);
   const tag = group.getByRole('button', { name: `Remove ${value}`, exact: true }).locator('..');
   const radius = await tag.evaluate((element) => parseFloat(getComputedStyle(element).borderRadius));
-  if (pill) expect(radius).toBeGreaterThanOrEqual(999);
-  else expect(radius).toBeLessThan(999);
+  expect(radius).toBeGreaterThanOrEqual(999);
+  await expect(tag).toHaveClass(/chip--editable/);
 }
 
 const viewports = [
@@ -422,8 +422,7 @@ for (const viewport of viewports) {
       'Building a wearable navigation system that makes the world easier to explore.',
     );
     await expectChips(page, 'I can help with', ['Embedded systems', 'C++', 'Electronics']);
-    await expect(chipGroup(page, 'I can help with')).not.toHaveClass(/entry-tags-pills/);
-    await expectTagRadius(page, 'I can help with', 'Embedded systems', { pill: false });
+    await expectPillChip(page, 'I can help with', 'Embedded systems');
     await expect(chipGroup(page, 'I can help with').getByRole('textbox', { name: 'Add a skill', exact: true })).toBeVisible();
     await expect(page.getByLabel('LinkedIn profile', { exact: true })).toHaveValue('');
     await expect(page.getByText('A little context makes a better introduction.', { exact: true })).toHaveCount(0);
@@ -434,17 +433,15 @@ for (const viewport of viewports) {
     await expect(selector).toHaveCount(0);
     await expectDesktopStepWithinViewport(page, 'Who would you love to meet?', 'Go to Home');
     await expectChips(page, 'Interests', ['Assistive technology', 'Robotics', 'Open source']);
-    await expect(chipGroup(page, 'Interests')).toHaveClass(/entry-tags-pills/);
-    await expectTagRadius(page, 'Interests', 'Assistive technology', { pill: true });
+    await expectPillChip(page, 'Interests', 'Assistive technology');
     await expect(chipGroup(page, 'Interests').getByRole('textbox', { name: 'Add an interest', exact: true })).toBeVisible();
     await expectChips(page, "I'm looking for help with", ['Computer vision']);
-    await expect(chipGroup(page, "I'm looking for help with")).toHaveClass(/entry-tags-pills/);
-    await expectTagRadius(page, "I'm looking for help with", 'Computer vision', { pill: true });
+    await expectPillChip(page, "I'm looking for help with", 'Computer vision');
     await expect(chipGroup(page, "I'm looking for help with").getByRole('textbox', { name: 'Add what you need', exact: true })).toBeVisible();
     const addedInterest = chipGroup(page, 'Interests').getByRole('textbox', { name: 'Add an interest', exact: true });
     await addedInterest.fill('Human factors');
     await addedInterest.press('Enter');
-    await expectTagRadius(page, 'Interests', 'Human factors', { pill: true });
+    await expectPillChip(page, 'Interests', 'Human factors');
     await chipGroup(page, 'Interests').getByRole('button', { name: 'Remove Human factors', exact: true }).click();
     await expect(chipGroup(page, 'Interests').getByRole('button', { name: 'Remove Human factors', exact: true })).toHaveCount(0);
     await expect(page.getByText('The Builders Room', { exact: true })).toBeVisible();
