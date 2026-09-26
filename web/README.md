@@ -21,7 +21,12 @@ npm run dev
 4. Open Spatial preview. Join `DEMO`, confirm your profile, simulate calibration, and enter the room.
 5. Find connections, open Maya, start a conversation, and save the connection.
 6. Finish the conversation or leave the room. Find Maya in Network, open the full profile, and save private notes and a follow-up date.
-7. The spatial Demo panel exposes simulated connection/alignment/boundary interruptions and demo recovery controls.
+7. In Network, expand the clearly labeled, preloaded Quest demo recap for Alex/Maya to see the rubric percentage, shared past event, complementary skills, shared interests, personal experience, and the exact headset conversation starter.
+8. The spatial Demo panel exposes simulated connection/alignment/boundary interruptions and demo recovery controls.
+
+The Quest demo recap uses the canonical fictional fixture in `../assets/quest-demo-fixtures.json`.
+It is sample content, not a live Quest-to-web synchronization or an AI request.
+The percentage appears only in this web recap, never in the headset display.
 
 The website uses temporary demo identities. No password, OAuth service, invitation, email, push notification, or contact-sharing request is sent. A follow-up date is stored only as local-session metadata. Restarting the mock service resets demo sessions; the reset control restores sample content.
 

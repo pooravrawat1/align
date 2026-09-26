@@ -5,6 +5,19 @@
 **Platform:** Meta Quest 2  
 **Target build time:** 24–36 hours
 
+> **Current two-Quest demo override (September 26, 2026):** This document
+> includes the original, broader product concept. For the build now underway,
+> headset A uses bundled Alex, headset B uses bundled Maya with an operator-only
+> Sam nonmatch switch. The headset shows only a floating name, then an identical
+> green cue and conversation starter for a match. There is no custom headset
+> profile form, expanded card, visible score, login, or web-to-Quest sync.
+> Person 3's current source of truth is the
+> [matching rubric](align-matching-rubric.md),
+> [demo fixture](quest-demo-fixtures.json), and
+> [matcher contract](../matcher/README.md). These supersede conflicting
+> requirements and examples below; the web companion remains separate and may
+> show a clearly labeled, preloaded Alex/Maya recap without Quest sync.
+
 ## 1. Product summary
 
 Align is a colocated mixed-reality networking experience for events. Attendees wearing Meta Quest 2 headsets can see lightweight profile cards floating above other participants' heads.

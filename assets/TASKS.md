@@ -1,8 +1,20 @@
 # Align — 24-Hour Hackathon Execution Plan
 
-Source of truth: [`assets/match-prd.md`](assets/match-prd.md)  
+Original source of truth (superseded for the current demo): [`assets/match-prd.md`](assets/match-prd.md)
 Team size: 4 people  
 Deadline: 24 hours from kickoff
+
+> **Current demo override (September 26, 2026):** The checklist below is the
+> original execution snapshot. The current headset demo uses bundled Alex on
+> headset A and Maya/Sam on headset B, name-only floating cues, and no headset
+> profile editor or expanded profile cards. The Person 3 contract and offline
+> results are in [matcher/README.md](../matcher/README.md) and
+> [quest-demo-fixtures.json](quest-demo-fixtures.json); the current scoring rules
+> are in [align-matching-rubric.md](align-matching-rubric.md). In particular,
+> Q-06/Q-08, D-01 through D-05, D-14, and the custom-profile acceptance items
+> below do **not** apply to this two-headset build. Unity/Photon teammates own
+> the one-caller coordinator and Maya/Sam operator switch. The web UI remains
+> a separate mockup with a preloaded sample match recap on its Network page.
 
 ## Ship target
 
