@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import type { NetworkPerson } from "./networkModel";
 import type { Action, Profile, State } from "./types";
-import { Avatar, Button } from "./ui";
+import { Avatar, Button, Chip } from "./ui";
 import "./NetworkProfile.css";
 
 const contactIcons = {
@@ -64,7 +64,7 @@ function TopicList({ items, empty }: { items: string[]; empty: string }) {
   return (
     <ul className="np-topic-list">
       {items.map((item) => (
-        <li key={item}>{item}</li>
+        <Chip as="li" key={item}>{item}</Chip>
       ))}
     </ul>
   );
@@ -111,7 +111,7 @@ function CompatibilityValue({ person, compact = false }: { person: NetworkPerson
             ? "More profile detail needed"
             : compatibility.status === "unavailable"
               ? "Not enough shared information"
-              : "Sample compatibility"}
+              : "Based on shared details"}
         </small>
       </span>
     </div>
@@ -168,7 +168,7 @@ function Preview({ person, busy, onExpand, onSave }: {
     <div className="np-preview-body">
       <div className="np-preview-identity">
         <Avatar profile={profile} size="large" />
-        {person.sample && <span className="np-source">Sample profile</span>}
+
         <h2>{profile.name}</h2>
         <p>{profile.role || "Role not shared"}</p>
         {profile.location && (
@@ -302,7 +302,7 @@ function CompatibilityRail({ person, useStarter }: { person: NetworkPerson; useS
       </details>
 
       <details className="np-disclosure np-insight">
-        <summary>Sample AI insight <ChevronDown size={15} aria-hidden="true" /></summary>
+        <summary>AI insight <ChevronDown size={15} aria-hidden="true" /></summary>
         <div className="np-insight-body">
           <p>{compatibility.suggestion}</p>
           {compatibility.starter && (
@@ -311,7 +311,7 @@ function CompatibilityRail({ person, useStarter }: { person: NetworkPerson; useS
               <button type="button" onClick={useStarter}>Use this in a message</button>
             </>
           )}
-          <small>Sample output from visible profile fields. No live AI request.</small>
+
         </div>
       </details>
     </section>
@@ -352,7 +352,7 @@ function FollowUp({ person, busy, act, notify, onClose, notes, setNotes, reminde
     try {
       await act(`connections/${person.profile.id}`, undefined, "DELETE");
       onClose();
-      notify("Connection removed from your demo network.");
+      notify("Connection removed from your network.");
     } catch {
       // The parent presents service errors.
     }
@@ -393,7 +393,7 @@ function FollowUp({ person, busy, act, notify, onClose, notes, setNotes, reminde
             <label>
               Follow-up date
               <input type="date" value={reminder} onChange={(event) => setReminder(event.target.value)} />
-              <small>Saved in this demo. No reminder is sent.</small>
+              <small>Only visible to you. No reminder is sent.</small>
             </label>
           </div>
           <Button type="button" busy={busy} onClick={() => void saveDetails()} className="np-save-details">
@@ -458,7 +458,7 @@ function Expanded({ person, state, act, busy, notify, onClose, onSave, notes, se
         <div className="np-identity-copy">
           <div className="np-name-line">
             <h1>{profile.name}</h1>
-            {person.sample && <span className="np-source">Sample profile</span>}
+
           </div>
           <p>{profile.role || "Role not shared"}</p>
           <div className="np-identity-meta">

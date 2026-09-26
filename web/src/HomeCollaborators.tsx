@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import type { Profile } from "./types";
-import { Avatar } from "./ui";
+import { Avatar, Chip } from "./ui";
 import {
   homeCollaborators,
   isProfileFieldVisible,
@@ -224,7 +224,7 @@ function TagList({ items }: { items: string[] }) {
   return (
     <div className="home-collaborators-tags">
       {items.map((item) => (
-        <span key={item}>{item}</span>
+        <Chip key={item}>{item}</Chip>
       ))}
     </div>
   );

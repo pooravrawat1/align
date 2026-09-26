@@ -1214,15 +1214,6 @@
   margin-top: 20px;
 }
 
-.product-topic-cloud span {
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--raised);
-  padding: 7px 10px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
 .product-followup-panel ul {
   display: flex;
   flex-direction: column;

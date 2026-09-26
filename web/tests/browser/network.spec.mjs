@@ -291,8 +291,37 @@ test('hidden profile fields never leak into common ground or sample AI copy', as
 
   await page.getByRole('button', { name: 'Explore profile' }).click();
   await expect(page.getByRole('heading', { name: 'Common ground' })).toBeVisible();
-  await page.getByText('Sample AI insight', { exact: true }).click();
+  await page.getByText('AI insight', { exact: true }).click();
   const guardedSurfaces = page.locator('.np-main, .np-compatibility');
   const renderedCopy = await guardedSurfaces.allTextContents();
   for (const token of privateTokens) expect(renderedCopy.join(' ')).not.toContain(token);
 });
+
+for (const width of [1440, 390]) {
+  test(`People view uses dashboard typography and opens a profile at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openNetwork(page);
+    await page.goto(`${origin}/#/home`);
+    const homeSizes = await page.locator('.home-connection-profile .product-connection-copy').first().evaluate(node => ({
+      name: getComputedStyle(node.querySelector('strong')).fontSize,
+      role: getComputedStyle(node.querySelector('strong small')).fontSize,
+      reason: getComputedStyle(node.querySelector(':scope > span')).fontSize,
+    }));
+    await page.goto(`${origin}/#/network`);
+    await page.getByRole('button', { name: 'People', exact: true }).click();
+    const row = page.getByRole('button', { name: "View Leo Park's profile", exact: true });
+    await expect(row).toBeVisible();
+    const listSizes = await row.locator('.nx-row-identity').evaluate(node => ({
+      name: getComputedStyle(node.querySelector('strong')).fontSize,
+      role: getComputedStyle(node.querySelector(':scope > span')).fontSize,
+      reason: getComputedStyle(node.querySelector('small')).fontSize,
+    }));
+    expect(listSizes).toEqual(homeSizes);
+    await expect(page.locator('.nx-page')).not.toContainText(/sample|demo|interactive preview/i);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await row.click();
+    await expect(page.getByRole('dialog', { name: 'Leo Park — profile preview' })).toBeVisible();
+    await page.getByRole('button', { name: 'Explore profile' }).click();
+    await expect(page.getByRole('dialog', { name: 'Leo Park — full profile' })).toBeVisible();
+  });
+}

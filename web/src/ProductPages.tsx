@@ -28,7 +28,7 @@ import type {
   Profile,
   State,
 } from "./types";
-import { Avatar, Button, Tags, TextAction } from "./ui";
+import { Avatar, Button, Chip, Tags, TextAction } from "./ui";
 import "./ProductPages.css";
 import "./Home.css";
 import { ContactLinks } from "./ProfileContactLinks";
@@ -461,9 +461,9 @@ export function HomeProduct(props: ProductProps) {
                 <div className="home-focus-topics">
                   <p>Looking for</p>
                   <div className="home-focus-pills" id="home-focus-topics">
-                    {lookingFor.slice(0, expandedFocus ? undefined : 2).map((item) => <span key={item}>{item}</span>)}
+                    {lookingFor.slice(0, expandedFocus ? undefined : 2).map((item) => <Chip key={item}>{item}</Chip>)}
                     {lookingFor.length > 2 && (
-                      <button aria-expanded={expandedFocus} aria-controls="home-focus-topics" onClick={() => setExpandedFocus(!expandedFocus)}>
+                      <button className="chip chip--interactive" aria-expanded={expandedFocus} aria-controls="home-focus-topics" onClick={() => setExpandedFocus(!expandedFocus)}>
                         {expandedFocus ? "Show less" : `+${lookingFor.length - 2} more`}
                       </button>
                     )}
@@ -1320,7 +1320,7 @@ export function EventProduct({
               {topics.length > 0 ? (
                 <div className="product-topic-cloud">
                   {topics.map((topic) => (
-                    <span key={topic}>{topic}</span>
+                    <Chip key={topic}>{topic}</Chip>
                   ))}
                 </div>
               ) : (

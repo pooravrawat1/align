@@ -223,16 +223,6 @@ svg {
   flex-wrap: wrap;
   gap: 6px;
 }
-.tag {
-  display: inline-block;
-  border-radius: 5px;
-  padding: 5px 9px;
-  background: #ffffff0a;
-  border: 1px solid #ffffff0a;
-  color: #c3c8bc;
-  font-size: 10px;
-  line-height: 1.25;
-}
 .glass {
   background: var(--glass);
   border: 1px solid var(--glass-edge);
@@ -1018,38 +1008,8 @@ svg {
   background: var(--raised);
 }
 .entry-tag {
-  display: inline-flex;
-  align-items: center;
   gap: 4px;
-  max-width: 100%;
-  padding: 3px 4px 3px 8px;
-  border-radius: 6px;
-  background: #ffffff0d;
-  color: var(--text);
-  font-size: 12px;
-  overflow-wrap: anywhere;
 }
-.entry-tag button {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  min-width: 24px;
-  min-height: 24px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--muted);
-}
-.entry-tag button:hover { background: #ffffff14; color: var(--text); }
-.entry-tags-pills .entry-tag {
-  padding: 4px 6px 4px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: #ffffff04;
-  color: var(--muted);
-  line-height: 1.5;
-}
-.entry-tags-pills .entry-tag button { border-radius: 50%; }
 .login-fields .entry-tags-field input {
   flex: 1 1 130px;
   width: 130px;

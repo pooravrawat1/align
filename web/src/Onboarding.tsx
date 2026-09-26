@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { ArrowRight, Check, X } from "lucide-react";
 import profileContract from "../shared/profile-contract.json";
-import { Brand, Button } from "./ui";
+import { Brand, Button, Chip } from "./ui";
 import type { Profile } from "./types";
 
 export type OnboardingDetails = Required<Pick<Profile,
@@ -70,22 +70,21 @@ function confirmTags(draft: Draft): Draft {
     interests: withTag(draft.interests, draft.tagInputs.interests), lookingFor: withTag(draft.lookingFor, draft.tagInputs.lookingFor),
     tagInputs: { skills: "", interests: "", lookingFor: "" } };
 }
-function Tags({ label, placeholder, values, onChange, input, onInputChange, variant = "chip" }: {
+function Tags({ label, placeholder, values, onChange, input, onInputChange }: {
   label: string; placeholder: string; values: string[]; onChange: (values: string[]) => void;
   input: string; onInputChange: (value: string) => void;
-  variant?: "chip" | "pill";
 }) {
   const id = useId();
   const add = () => {
     onChange(withTag(values, input));
     onInputChange("");
   };
-  return <div className={`entry-tags${variant === "pill" ? " entry-tags-pills" : ""}`} role="group" aria-labelledby={`${id}-label`}>
+  return <div className="entry-tags" role="group" aria-labelledby={`${id}-label`}>
     <label id={`${id}-label`} htmlFor={id}>{label}</label>
     <div className="entry-tags-field">
-      {values.map((value) => <span className="entry-tag" key={value}>{value}
+      {values.map((value) => <Chip className="chip--editable entry-tag" key={value}>{value}
         <button type="button" aria-label={`Remove ${value}`} onClick={() => onChange(values.filter((tag) => tag !== value))}><X size={12} /></button>
-      </span>)}
+      </Chip>)}
       {values.length < topicLimit && <input id={id} aria-label={placeholder} placeholder={placeholder} maxLength={topicItemLimit} value={input}
         onChange={(event) => onInputChange(event.target.value)} onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === ",") { event.preventDefault(); add(); }
@@ -183,8 +182,8 @@ export function Onboarding({ profiles, initialProfileId, busy, onComplete, error
             <label>LinkedIn profile<input type="url" name="linkedin" maxLength={stringLimits.linkedin} placeholder="https://www.linkedin.com/in/you" value={draft.linkedin} onChange={(event) => update("linkedin", event.target.value)} /></label>
           </>}
           {step === 2 && <>
-            <Tags variant="pill" label="Interests" placeholder="Add an interest" values={draft.interests} onChange={(values) => update("interests", values)} input={draft.tagInputs.interests} onInputChange={(value) => update("tagInputs", { ...draft.tagInputs, interests: value })} />
-            <Tags variant="pill" label="I'm looking for help with" placeholder="Add what you need" values={draft.lookingFor} onChange={(values) => update("lookingFor", values)} input={draft.tagInputs.lookingFor} onInputChange={(value) => update("tagInputs", { ...draft.tagInputs, lookingFor: value })} />
+            <Tags label="Interests" placeholder="Add an interest" values={draft.interests} onChange={(values) => update("interests", values)} input={draft.tagInputs.interests} onInputChange={(value) => update("tagInputs", { ...draft.tagInputs, interests: value })} />
+            <Tags label="I'm looking for help with" placeholder="Add what you need" values={draft.lookingFor} onChange={(values) => update("lookingFor", values)} input={draft.tagInputs.lookingFor} onInputChange={(value) => update("tagInputs", { ...draft.tagInputs, lookingFor: value })} />
             <div className="entry-room"><span className="entry-room-mark" aria-hidden="true">B</span><div><strong>The Builders Room</strong><span>Demo room · Code DEMO</span></div><Check size={16} aria-label="Selected" /></div>
           </>}
         </fieldset>

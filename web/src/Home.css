@@ -377,24 +377,7 @@
   margin-top: 8px;
 }
 
-.home-focus-pills > span,
-.home-focus-pills > button {
-  max-width: 100%;
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: #ffffff04;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-  text-align: left;
-}
-
-.home-focus-pills > button:hover {
-  background: #ffffff0a;
-  color: var(--text);
-}
+.home-focus-pills > button { text-align: left; }
 
 .home-focus-action {
   width: 100%;

@@ -423,8 +423,8 @@ export default function App() {
                 <span className="header-live">
                   <span className="status-dot" />
                   {event
-                    ? event.name + " · demo live"
-                    : "The Builders Room · demo available"}
+                    ? event.name + " · live"
+                    : "The Builders Room"}
                 </span>
                 <Button className="header-enter" onClick={() => go("spatial")}>
                   Enter <ArrowUpRight size={12} />

@@ -90,13 +90,24 @@ export function Avatar({
     />
   );
 }
+export function Chip({
+  children,
+  className = "",
+  as: Component = "span",
+}: {
+  children: ReactNode;
+  className?: string;
+  as?: "span" | "li";
+}) {
+  return <Component className={`chip ${className}`.trim()}>{children}</Component>;
+}
 export function Tags({ items, limit }: { items: string[]; limit?: number }) {
   return (
     <div className="tags">
       {items.slice(0, limit).map((item) => (
-        <span className="tag" key={item}>
+        <Chip key={item}>
           {item}
-        </span>
+        </Chip>
       ))}
     </div>
   );

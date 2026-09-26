@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Check, Download, Eye, EyeOff, Glasses, LogOut, Pencil, Plus, X } from "lucide-react";
 import contract from "../shared/profile-contract.json";
 import type { Action, Profile, State } from "./types";
-import { Avatar, Button, TextAction, Toggle } from "./ui";
+import { Avatar, Button, Chip, TextAction, Toggle } from "./ui";
 import { NearbyProfile, ProfilePreview } from "./ProfilePreview";
 import { prepareProfilePhoto } from "./profilePhoto";
 import { profileSectionFromHash, profileSections, visibilityOf } from "./profileEditor";
@@ -188,12 +188,12 @@ function TopicInput({ field, label, help, suggestions, editor, snapshot }: { fie
   const values = snapshot.draft[field];
   const text = snapshot.topicText[field];
   return <div className="pe-field pe-topic-field"><label htmlFor={`pe-${field}`}>{label}</label><p className="pe-help" id={`pe-${field}-help`}>{help}</p>
-    <div className="pe-topic-control"><div className="pe-topic-tags">{values.map((value, index) => <span key={`${value}-${index}`} className="pe-topic-tag">{value}<button type="button" aria-label={`Remove ${value} from ${label}`} onClick={() => editor.change(field, values.filter((_, i) => i !== index))}><X size={14} /></button></span>)}</div>
+    <div className="pe-topic-control"><div className="pe-topic-tags">{values.map((value, index) => <Chip key={`${value}-${index}`} className="chip--editable pe-topic-tag">{value}<button type="button" aria-label={`Remove ${value} from ${label}`} onClick={() => editor.change(field, values.filter((_, i) => i !== index))}><X size={14} /></button></Chip>)}</div>
       <div className="pe-topic-entry"><input id={`pe-${field}`} value={text} placeholder="Add a topic…" aria-invalid={!!snapshot.errors[field]} aria-describedby={`pe-${field}-help pe-${field}-error`} onChange={event => editor.typeTopic(field, event.target.value)} onBlur={() => { if (text.trim()) editor.commitTopic(field); }} onKeyDown={event => {
         if ((event.key === "Enter" || event.key === ",") && !event.nativeEvent.isComposing) { event.preventDefault(); editor.commitTopic(field); }
         if (event.key === "Backspace" && !text && values.length) { event.preventDefault(); editor.change(field, values.slice(0, -1)); editor.typeTopic(field, values[values.length - 1]); }
       }} /><button type="button" className="pe-add-topic" aria-label={`Add topic to ${label}`} disabled={!text.trim()} onMouseDown={event => event.preventDefault()} onClick={() => editor.commitTopic(field)}><Plus size={16} />Add</button></div>
     </div><FieldError field={field} message={snapshot.errors[field]} />
-    <div className="pe-suggestions"><span>Try</span>{suggestions.filter(item => !values.some(value => value.toLowerCase() === item.toLowerCase())).slice(0, 3).map(item => <button key={item} type="button" disabled={values.length >= contract.topicLimit} onClick={() => { const pending = editor.getSnapshot().topicText[field]; if (!pending.trim() || editor.commitTopic(field)) editor.commitTopic(field, item); }}>{item}<Plus size={12} /></button>)}</div>
+    <div className="pe-suggestions"><span>Try</span>{suggestions.filter(item => !values.some(value => value.toLowerCase() === item.toLowerCase())).slice(0, 3).map(item => <button className="chip chip--interactive" key={item} type="button" disabled={values.length >= contract.topicLimit} onClick={() => { const pending = editor.getSnapshot().topicText[field]; if (!pending.trim() || editor.commitTopic(field)) editor.commitTopic(field, item); }}>{item}<Plus size={12} /></button>)}</div>
   </div>;
 }

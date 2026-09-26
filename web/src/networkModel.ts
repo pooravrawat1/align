@@ -112,7 +112,7 @@ export function networkPerson(state: State, user: Profile, original: Profile): N
   const points = allVisible && unchangedSample(user) && unchangedSample(original) ? samplePoints[key] : undefined;
   const evidence = [
     [theyOffer.length ? `${firstName} offers ${theyOffer.join(", ")}.` : "No direct skill-to-need overlap from them is listed.", youOffer.length ? `You offer ${youOffer.join(", ")}.` : "No direct skill-to-need overlap from you is listed."].join(" "),
-    goals.length ? `Their sample goals: ${goals.join("; ").toLowerCase()}.` : "Networking goals have not been shared.",
+    goals.length ? `Their goals: ${goals.join("; ").toLowerCase()}.` : "Networking goals have not been shared.",
     supplement && visible(user, "bio") && user.bio ? `Compare your work: “${user.bio}” Their work: “${profile.bio}”` : "More project detail is needed to explain this category.",
     theyOffer.length && youOffer.length ? `You could exchange ${youOffer[0].toLowerCase()} and ${theyOffer[0].toLowerCase()} expertise.` : sharedInterests.length ? `An exchange of perspectives on ${sharedInterests[0].toLowerCase()}; a concrete two-way outcome is still to explore.` : "A concrete benefit for each person is still to explore.",
     sharedInterests.length ? `You both list ${sharedInterests.join(", ")}.` : "No shared interests are listed.",
