@@ -8,11 +8,13 @@ const profile = {
   visibility: { previousConnections: true, linkedin: true, website: true, email: true },
 };
 
-test('only explicitly shared, valid contact destinations are rendered', () => {
+test('saved-connection access shares valid populated contacts regardless of legacy flags', () => {
   assert.equal(sharedContactLinks(profile).length, 3);
-  assert.deepEqual(sharedContactLinks({ ...profile, visibility: undefined }), []);
+  assert.equal(sharedContactLinks({ ...profile, visibility: undefined }).length, 3);
+  assert.equal(sharedContactLinks({ ...profile, visibility: { previousConnections: true, linkedin: false, website: false, email: false } }).length, 3);
+  assert.deepEqual(sharedContactLinks({ ...profile, linkedin: '', website: '', email: '' }), []);
   assert.deepEqual(sharedContactLinks({ ...profile, visibility: { ...profile.visibility, previousConnections: false } }), []);
-  assert.deepEqual(sharedContactLinks({ ...profile, visibility: { email: true } }).map(link => link.kind), ['email']);
+  assert.deepEqual(sharedContactLinks({ ...profile, visibility: { email: true } }).map(link => link.kind), ['linkedin', 'website', 'email']);
 });
 
 test('contact links reject executable URLs, credentials, lookalike domains, and email headers', () => {

@@ -10,6 +10,7 @@ import { activeEvent, homeEvent, eventPhase, eventPhaseLabel, eventPhoto } from 
 import './ProductPages.css';
 import './EventProduct.css';
 import './Home.css';
+import './SpatialSurface.css';
 import './EventWorkspace.css';
 
 type ProductProps = { state: State; user: Profile; connected: string[]; act: Action; busy: boolean; notify: (message: string) => void; onSessionExpired?: () => void };
@@ -40,7 +41,7 @@ export function HomeProduct(props: ProductProps) {
   if (!event) return <div className="home-page">
     <PageHeader className="home-heading" title={'Good to see you, ' + firstName + '.'} description="Find your next room. Bring something of yourself." />
     <section className="product-panel workspace-welcome"><h2>Your next conversation starts with an event.</h2><p>Choose an event or use the code from your host. Your introduction and people will come together here.</p><div className="workspace-actions"><Button onClick={() => navigate('events')}>Find an event<ArrowRight size={16} /></Button><TextAction href="#/events?join=1">Join with a code</TextAction></div></section>
-    <button className="home-profile-card workspace-unjoined-profile" onClick={() => navigate('profile')} aria-label="Edit your profile"><span className="home-person"><Avatar profile={user} /><span className="home-person-copy"><strong>{user.name}</strong><span>{user.role}</span></span><Pencil size={14} /></span></button>
+    <button className="spatial-surface home-profile-card workspace-unjoined-profile" onClick={() => navigate('profile')} aria-label="Edit your profile"><span className="home-person"><Avatar profile={user} /><span className="home-person-copy"><strong>{user.name}</strong><span>{user.role}</span></span><Pencil size={14} /></span></button>
     <HomeSections {...props} />
   </div>;
   const otherEvents = state.events.filter(item => item.id !== event.id).slice(0, 2);
@@ -58,12 +59,12 @@ export function HomeProduct(props: ProductProps) {
     } catch { /* App presents the action error. */ }
   };
   return <div className="home-page event-workspace">
-    <PageHeader className="home-heading" title={'Good to see you, ' + firstName + '.'} action={incomingCount > 0 ? <TextAction href="#/network">{incomingCount} connection {incomingCount === 1 ? 'request' : 'requests'}<ArrowRight size={16} /></TextAction> : undefined} />
+    <PageHeader className="home-heading" title={'Good to see you, ' + firstName + '.'} description="Your next conversation starts here." action={incomingCount > 0 ? <TextAction href="#/network">{incomingCount} connection {incomingCount === 1 ? 'request' : 'requests'}<ArrowRight size={16} /></TextAction> : undefined} />
     <section className="home-event" aria-labelledby="home-event-title">
       <img className="home-event-image" src={eventPhoto(event)} alt="" fetchPriority="high" />
       <div className="home-event-topline"><span>{event.date} · {event.location}</span></div>
       <div className="home-event-content"><div className="home-event-copy"><h2 id="home-event-title">{event.name}</h2><div className="home-event-actions"><Button busy={busy} onClick={ended ? () => navigate('events?event=' + encodeURIComponent(event.id) + '&tab=recap') : enter}>{ended ? 'View recap' : readyForRoom(user) ? 'Enter room' : 'Finish profile'}<ArrowRight size={17} /></Button><Button className="home-meet-people" variant="secondary" busy={busy} onClick={() => void meetPeople()}>Meet people<ArrowRight size={16} /></Button><TextAction className="home-event-detail-action" href={'#/events?event=' + encodeURIComponent(event.id)}>Event details</TextAction></div></div>
-      <button className="home-profile-card" onClick={() => navigate('profile')} aria-label="Edit your profile"><span className="home-person"><Avatar profile={user} size="large" /><span className="home-person-copy"><strong>{user.name}</strong><span>{user.role || 'Add your role'}</span></span><Pencil size={14} /></span></button></div>
+      <button className="spatial-surface home-profile-card" onClick={() => navigate('profile')} aria-label="Edit your profile"><span className="home-person"><Avatar profile={user} size="large" /><span className="home-person-copy"><strong>{user.name}</strong><span>{user.role || 'Add your role'}</span></span><Pencil size={14} /></span></button></div>
     </section>
     {peopleTab || recapTab ? <>
       <TextAction className="home-back-action" href="#/home" icon={<ArrowLeft size={16} />} iconPosition="start">Back to Home</TextAction>

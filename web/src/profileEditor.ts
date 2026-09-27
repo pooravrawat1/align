@@ -17,7 +17,7 @@ export const sectionFields: Record<ProfileSection, EditableField[]> = {
 };
 const sectionVisibility: Record<ProfileSection, VisibilityField[]> = {
   about: [], focus: ["bio", "interests", "skills", "lookingFor", "goals", "domains", "experiences"],
-  contact: ["linkedin", "website", "email", "contact"],
+  contact: [],
   settings: ["activeInEvent", "previousConnections"],
 };
 export const topicFields: TopicField[] = ["interests", "skills", "lookingFor", "domains"];

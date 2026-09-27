@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { loadEnvFile } from 'node:process';
 import { createServer as createHttpServer } from 'node:http';
 import { pathToFileURL } from 'node:url';
 import { assessmentFingerprint, createAssessmentService } from './assessment.mjs';
@@ -169,7 +170,7 @@ function sessionBootstrap(state) {
     const networkAllowed = connectionByParticipant.has(profile.id)
       && current.visibility?.previousConnections !== false;
     const audience = networkAllowed ? 'network' : sharesEvent ? 'event' : 'network';
-    return projectRequestPeer(current, audience);
+    return projectRequestPeer(current, audience, networkAllowed);
   });
   const ownProfile = profiles.find((profile) => profile.id === state.session.userId);
   const ownIndex = state.profiles.findIndex((profile) => profile.id === state.session.userId);
@@ -196,10 +197,11 @@ function sessionBootstrap(state) {
   };
 }
 
-function projectRequestPeer(profile, audience) {
+function projectRequestPeer(profile, audience, connected = false) {
   const visibility = profile.visibility ?? DEFAULT_VISIBILITY;
   const allowed = audience === 'network' ? visibility.previousConnections !== false : visibility.activeInEvent !== false;
   const visible = (field) => allowed && visibility[field] !== false;
+  const shareContact = audience === 'network' && connected && allowed;
   return {
     ...clone(profile),
     bio: visible('bio') ? profile.bio : '',
@@ -209,10 +211,10 @@ function projectRequestPeer(profile, audience) {
     goals: visible('goals') ? (profile.goals ?? []) : [],
     domains: visible('domains') ? (profile.domains ?? []) : [],
     experiences: visible('experiences') ? (profile.experiences ?? []) : [],
-    contact: audience === 'network' && visible('contact') ? profile.contact : '',
-    linkedin: audience === 'network' && visible('linkedin') ? profile.linkedin : '',
-    website: audience === 'network' && visible('website') ? profile.website : '',
-    email: audience === 'network' && visible('email') ? profile.email : '',
+    contact: shareContact ? profile.contact : '',
+    linkedin: shareContact ? profile.linkedin : '',
+    website: shareContact ? profile.website : '',
+    email: shareContact ? profile.email : '',
   };
 }
 
@@ -1085,6 +1087,7 @@ async function handleRequest(request, response, sessions, assessmentService, req
 export function createRequestHandler(sessions = new Map(), options = {}) {
   const assessmentService = options.assessmentService ?? createAssessmentService(options);
   const requestStore = options.connectionRequestStore ?? createConnectionRequestStore();
+  for (const request of options.seedConnectionRequests ?? []) requestStore.send(request);
   const followUpService = options.followUpService ?? createFollowUpService(options);
   return (request, response) => {
     handleRequest(request, response, sessions, assessmentService, requestStore, followUpService).catch((error) => {
@@ -1115,8 +1118,10 @@ const executedDirectly =
   process.argv[1] !== undefined && pathToFileURL(process.argv[1]).href === import.meta.url;
 
 if (executedDirectly) {
+  const envFile = new URL('../.env', import.meta.url);
+  if (existsSync(envFile)) loadEnvFile(envFile);
   const port = configuredPort();
-  createServer().listen(port, HOST, () => {
+  createServer({ seedConnectionRequests: seed.demoRequests }).listen(port, HOST, () => {
     console.log(`Catalyst demo API listening at http://${HOST}:${port}`);
   });
 }

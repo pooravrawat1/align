@@ -1,5 +1,5 @@
 import { useRef, useState, type MouseEvent } from 'react';
-import { ArrowDown, ArrowRight, ArrowUpRight, MapPin } from 'lucide-react';
+import { ArrowDown, Glasses, MapPin } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -25,7 +25,7 @@ function SavedContext() {
 }
 
 function MayaIdentity() {
-  return <div className="qv-match-identity"><span className="qv-portrait" style={{ backgroundImage: `url(${ROOM_IMAGE})` }} aria-hidden="true" /><div><strong>Maya</strong><small>Computer vision engineer</small></div><i className="qv-small-light" /></div>;
+  return <div className="qv-match-identity"><span className="qv-portrait" style={{ backgroundImage: `url(${ROOM_IMAGE})` }} aria-hidden="true" /><div><strong>Maya</strong><small>Computer vision engineer</small></div></div>;
 }
 
 function NetworkCopy() {
@@ -126,7 +126,7 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
     gsap.set(select('.qv-entry-rim'), { opacity: .12 });
 
     tl.to(trigger, { scale: .98, duration: .1, ease: 'power2.out' }, 0)
-      .to(select('.qv-header, .qv-hero-copy, .qv-stage-bottom, .qv-closing > *'),
+      .to(select('.qv-header, .qv-hero-copy, .qv-closing > *'),
         { autoAlpha: 0, duration: .24, ease: 'power2.inOut' }, .02);
 
     if (fromScene) {
@@ -175,43 +175,42 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
         <VisorScene ref={scene}>
           <div className="qv-scene-shade" />
           <div className="qv-world-dim" />
-          <SpatialSurface className="qv-jordan"><span className="qv-small-light" /><div><strong>Jordan</strong><small>Creative technologist</small></div><span className="qv-neutral-tether" /></SpatialSurface>
-          <SpatialSurface className="qv-match" matched>
+          <SpatialSurface className="qv-jordan spatial-surface--frosted"><span className="qv-small-light" /><div><strong>Jordan</strong><small>Creative technologist</small></div><span className="qv-neutral-tether" /></SpatialSurface>
+          <SpatialSurface className="qv-match spatial-surface--frosted">
             <MayaIdentity />
             <div className="qv-match-saved"><SavedContext /></div>
-            <svg className="qv-tether" viewBox="0 0 80 80" aria-hidden="true"><path d="M78 2 19 61" /><circle cx="14" cy="66" r="6" /><circle cx="14" cy="66" r="2" /></svg>
+            <svg className="qv-tether" viewBox="0 0 80 80" aria-hidden="true"><path d="M78 2 19 61" /><circle className="qv-tether-dot" cx="14" cy="66" r="5" /></svg>
           </SpatialSurface>
         </VisorScene>
         <div className="qv-top-shade" aria-hidden="true" />
         <header className="qv-header">
           <Brand />
           <nav aria-label="Website navigation"><button onClick={() => jumpTo('discover')}>The Experience</button><button onClick={() => jumpTo('network')}>The Connection</button></nav>
-          <div className="qv-header-actions"><Button className="qv-enter" onClick={enterExperience} disabled={entering}>Step inside<ArrowUpRight size={15} /></Button></div>
+          <div className="qv-header-actions"><Button className="qv-enter" onClick={enterExperience} disabled={entering}>Step inside<Glasses size={18} aria-hidden="true" /></Button></div>
         </header>
-        <div className="qv-hero-copy"><h1>Your people.<br className="qv-mobile-break" /> In plain sight<span>.</span></h1><p>A little context. A real connection.</p><div className="qv-hero-actions"><Button className="qv-primary" onClick={enterExperience} disabled={entering}>Try the demo<ArrowUpRight size={17} /></Button><Button variant="secondary" className="qv-how" onClick={() => jumpTo('discover')}>See how it works<ArrowDown size={14} /></Button></div></div>
+        <div className="qv-hero-copy"><div className="qv-hero-message"><h1>Your people.<br className="qv-mobile-break" /> In plain sight<span>.</span></h1><p>Discover people nearby through shared interests and complementary skills.</p></div><div className="qv-hero-actions"><Button className="qv-primary" onClick={enterExperience} disabled={entering}>Try the demo<Glasses size={18} aria-hidden="true" /></Button><button className="qv-how" onClick={() => jumpTo('discover')}>See how it works<ArrowDown size={18} aria-hidden="true" /></button></div></div>
         <span className="qv-lens-caption">Through Alex’s eyes<span />Catalyst</span>
         <div className="qv-network"><NetworkCopy /></div>
-        <div className="qv-stage-bottom"><span>Mixed reality, imagined.</span><span className="qv-progress-track" aria-hidden="true"><i /></span></div>
       </div>
     </section>
     <div className="qv-linear-story">
-      <section className="qv-linear-network" id="qv-linear-network"><NetworkCopy /><div className="qv-static-connection"><div className="qv-static-card qv-static-saved"><MayaIdentity /><SavedContext /></div></div></section>
+      <section className="qv-linear-network" id="qv-linear-network"><NetworkCopy /><div className="qv-static-connection"><SpatialSurface className="qv-static-card qv-static-saved"><MayaIdentity /><SavedContext /></SpatialSurface></div></section>
     </div>
     <LandingProduct onEnter={enterExperience} entering={entering} />
-    <footer className="qv-closing" data-landing-stop aria-labelledby="qv-closing-title">
+    <footer className="qv-closing" data-landing-stop>
       <div className="qv-closing-top">
-        <div className="qv-closing-copy">
-          <h2 id="qv-closing-title">Who could you<br /><span>build with?</span></h2>
-          <p>Bring what you know. Find what you’re missing.</p>
-          <div className="qv-closing-action"><Button className="qv-primary" onClick={enterExperience} disabled={entering}>Step inside<ArrowUpRight size={17} /></Button><small>Try the browser demo.<br />No headset needed.</small></div>
+        <div className="qv-closing-brand">
+          <Brand />
+          <p>Find common ground with the people in the room.</p>
         </div>
         <nav className="qv-closing-nav" aria-label="Explore Catalyst">
-          <button onClick={() => jumpTo('start')}>The Experience<ArrowRight size={20} /></button>
-          <button onClick={() => jumpTo('event')}>Find your room<ArrowRight size={20} /></button>
-          <button onClick={() => jumpTo('connections')}>Your connections<ArrowRight size={20} /></button>
+          <button onClick={() => jumpTo('start')}>The Experience</button>
+          <button onClick={() => jumpTo('event')}>Find your room</button>
+          <button onClick={() => jumpTo('connections')}>Your connections</button>
+          <button onClick={enterExperience} disabled={entering}>Step inside</button>
         </nav>
       </div>
-      <div className="qv-closing-bottom"><span>Made for meeting in person.</span><button onClick={() => jumpTo('start')}>Back to the room<ArrowUpRight size={18} /></button></div>
+      <div className="qv-closing-bottom"><span>© 2026 Catalyst</span><span>Made for meeting in person.</span></div>
     </footer>
   </main>;
 }

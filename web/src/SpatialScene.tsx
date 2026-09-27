@@ -66,7 +66,7 @@ export function SpatialScene({ people, hidden, conversationId, renderCard }: {
         </div>)}
       </div>
     </div>
-    {canPan && !conversationId && <nav className="qmv2-look-controls" aria-label="Look around the demo room" inert={hidden}>
+    {canPan && !conversationId && <nav className="qmv2-look-controls spatial-surface" aria-label="Look around the demo room" inert={hidden}>
       <button aria-label="Look left" disabled={lookIndex === 0} onClick={() => lookToward(lookIndex - 1)}><ArrowLeft size={18} /></button>
       <span>Look around</span>
       <button aria-label="Look right" disabled={lookIndex === heads.length - 1} onClick={() => lookToward(lookIndex + 1)}><ArrowRight size={18} /></button>

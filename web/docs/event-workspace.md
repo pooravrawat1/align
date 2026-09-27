@@ -14,7 +14,7 @@ The selected event (`activeEventId`) outlives transient spatial presence (`code`
 
 Open any eligible event profile, including a saved profile in Network, and choose **Request to connect**. The other identity can accept or decline from Network or the profile. The sender can cancel while pending. Repeated or crossed requests reuse the same request; acceptance adds each person to the other's Network. **Save profile** is a separate private bookmark and never sends a request. Removing that bookmark does not disconnect an accepted relationship.
 
-The inbox refreshes on tab focus, with an explicit Refresh requests action. Accepted profiles expose only the contact channels their owner has chosen to share. Follow up opens the existing message draft, private notes, status, and date; Catalyst does not send messages or reminder notifications.
+The inbox refreshes on tab focus, with an explicit Refresh requests action. Saved and accepted connections see populated LinkedIn, website, email, and Other contact fields when the owner enables Access for saved connections. Legacy individual contact flags no longer control these fields. Accepted connections retain this access when opening a profile from an event page. Follow up opens the existing message draft, private notes, status, and date; Catalyst does not send messages or reminder notifications.
 
 Event recaps attribute saves to their recorded event and requests to the event where that request began; a connection is global, not duplicated at every later event. A profile can be both connected and saved, so those counts can overlap. Reset and event-data clearing remove the corresponding shared request records as well as owner metadata.
 

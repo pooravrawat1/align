@@ -152,6 +152,7 @@ test('event discovery does not use saved contact consent, while saved GitHub req
   maya.visibility = { linkedin: true };
   assert.deepEqual(networkPerson(state, user, maya, undefined, 'event').contacts, []);
   const leo = find('leo');
+  leo.linkedin = ''; leo.website = ''; leo.email = '';
   leo.github = 'https://github.com/test-person';
   assert.deepEqual(networkPerson(state, user, leo).contacts, []);
   leo.visibility = { github: true };
@@ -173,4 +174,20 @@ test('recommendations prioritize reciprocal skill fit, then explicit overlap wit
   assert.ok(recommendationRank(reciprocal) > recommendationRank(oneWay));
   assert.ok(recommendationRank(oneWay) > recommendationRank(interestsOnly));
   assert.equal('score' in reciprocal, false);
+});
+
+
+test('saved contact details ignore legacy flags but remain absent for room and unconnected views', () => {
+  const { state, user, find } = fixture();
+  const leo = find('leo');
+  leo.contact = 'Ask for Leo';
+  leo.visibility = { ...leo.visibility, previousConnections: true, contact: false, linkedin: false, website: false, email: false };
+  const connected = networkPerson(state, user, leo);
+  assert.equal(connected.profile.contact, 'Ask for Leo');
+  assert.equal(connected.contacts.length, 3);
+  assert.equal(networkPerson(state, user, leo, undefined, 'event').profile.contact, '');
+  assert.deepEqual(networkPerson(state, user, leo, undefined, 'event').contacts, []);
+  const unconnected = networkPerson({ ...state, connections: [] }, user, leo);
+  assert.equal(unconnected.profile.contact, '');
+  assert.deepEqual(unconnected.contacts, []);
 });
