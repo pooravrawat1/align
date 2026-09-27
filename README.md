@@ -31,15 +31,6 @@ Catalyst puts an invisible layer on top of the room. Two people in headsets look
  
 We built the demo on Meta Quest 2 because that's the hardware we had. The real home for this is glasses you wear while you talk, like Meta Ray-Bans.
  
-## Try it in a browser
- 
-(https://catalystathackgt.vercel.app)
- 
-1. Open the site and choose **Try the demo**.
-2. Continue with the prepared **Alex** profile.
-3. Explore Home, Events, Network, and Profile.
-4. Open **Spatial preview** and enter `DEMO` to walk through the room in your browser.
-
 ## How it works
  
 ```mermaid
