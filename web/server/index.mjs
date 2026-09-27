@@ -1188,6 +1188,12 @@ if (executedDirectly) {
 }
 
 let bootstrapping = null;
+let dataSourceStatus = 'memory: not loaded yet';
+
+// Never includes the connection string, only which store is active and why.
+export function getDataSourceStatus() {
+  return dataSourceStatus;
+}
 
 // Safe to call on every request: serverless instances load MongoDB once and
 // reuse the store while warm. A failed load is retried on the next call.
@@ -1199,17 +1205,23 @@ export function ensureDataSource() {
 }
 
 async function bootstrapDataSource() {
-  if (!process.env.MONGODB_URI) return true;
+  if (!process.env.MONGODB_URI) {
+    dataSourceStatus = 'memory: MONGODB_URI not set';
+    return true;
+  }
   try {
     const { getDb } = await import('./mongodb.mjs');
     const { createMongoStore, setActiveStore } = await import('./store.mjs');
     const db = await getDb();
     const store = await createMongoStore(db);
     setActiveStore(store);
+    dataSourceStatus = `mongo: ${store.snapshot().profiles.length} profiles from ${db.databaseName}`;
     console.log(`Loaded ${store.snapshot().profiles.length} profiles from MongoDB (${db.databaseName}).`);
     return true;
   } catch (error) {
-    console.warn(`MongoDB startup failed, falling back to bundled seed: ${error?.message ?? error}`);
+    const message = String(error?.message ?? error).replaceAll(process.env.MONGODB_URI, '<uri>');
+    dataSourceStatus = `memory: MongoDB failed (${error?.name ?? 'Error'}): ${message}`;
+    console.warn(`MongoDB startup failed, falling back to bundled seed: ${message}`);
     return false;
   }
 }
