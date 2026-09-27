@@ -1,4 +1,10 @@
 using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using Align.Integration;
+using Align.Networking;
+using Align.Pose;
 using Align.Presentation;
 using Align.Profiles;
 using Align.Quest;
@@ -35,9 +41,19 @@ namespace Align.Editor
             (RemoteParticipantView participant, RemoteProfileCardPresenter presenter) =
                 CreateDemoParticipant(viewer);
 
-            var controllerObject = new GameObject("Quest Demo Controller");
-            QuestDemoController controller = controllerObject.AddComponent<QuestDemoController>();
-            controller.Configure(participant, presenter, viewer, 2.5f);
+            QuestHeadPoseProvider poseProvider = viewer.gameObject.AddComponent<QuestHeadPoseProvider>();
+            var transportObject = new GameObject("HTTP Room Transport");
+            HttpRoomTransport transport = transportObject.AddComponent<HttpRoomTransport>();
+            transport.Configure(ResolveMatcherUrl(), "DEMO");
+
+            var controllerObject = new GameObject("Two Headset Demo Controller");
+            TwoHeadsetDemoController controller =
+                controllerObject.AddComponent<TwoHeadsetDemoController>();
+            controller.Configure(
+                poseProvider,
+                transport,
+                participant,
+                presenter);
 
             Directory.CreateDirectory(SceneDirectory);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -49,26 +65,9 @@ namespace Align.Editor
             AssetDatabase.SaveAssets();
 
             Selection.activeGameObject = controllerObject;
-            Debug.Log("Created QuestDemo. On Quest, look forward to see Maya's card; press A or X to toggle the match state.");
-        }
-
-        [MenuItem("Align/Preview/Toggle Quest Demo Match _F8")]
-        private static void ToggleMatchPreview()
-        {
-            if (!EditorApplication.isPlaying)
-            {
-                Debug.LogWarning("Enter Play Mode before toggling the Quest demo match.");
-                return;
-            }
-
-            QuestDemoController controller = Object.FindFirstObjectByType<QuestDemoController>();
-            if (controller == null)
-            {
-                Debug.LogWarning("No QuestDemoController is active in the current scene.");
-                return;
-            }
-
-            controller.ToggleMatchState();
+            Debug.Log(
+                $"Created two-headset QuestDemo. Matcher={ResolveMatcherUrl()}. " +
+                "A/X calibrates once, then hides/shows the card; B/Y switches Maya/Sam; Menu resets the room.");
         }
 
         private static Camera CreateXrOrigin()
@@ -105,18 +104,22 @@ namespace Align.Editor
 
         private static (RemoteParticipantView, RemoteProfileCardPresenter) CreateDemoParticipant(Camera viewer)
         {
-            var remoteRoot = new GameObject("Remote Participant - Maya (Demo Anchor)");
+            var remoteRoot = new GameObject("Remote Participant");
             RemoteParticipantView participant = remoteRoot.AddComponent<RemoteParticipantView>();
 
-            GameObject card = CreateProfileCard(remoteRoot.transform, viewer.transform);
-            participant.Configure(remoteRoot.transform, card.transform, 0.28f);
-            participant.SetSessionState(true, true, true);
+            GameObject card = CreateProfileCard(viewer.transform, viewer.transform);
+            card.transform.localPosition = new Vector3(0f, -0.06f, 1.35f);
+            // The peer still owns its network pose; the readable card follows the viewer.
+            participant.Configure(remoteRoot.transform, null);
+            participant.SetSessionState(false, false, false);
+            RemoteCardVisibility visibility = remoteRoot.AddComponent<RemoteCardVisibility>();
+            visibility.Configure(participant, viewer, card, viewerFixed: true);
 
             RemoteProfileCardPresenter presenter = card.GetComponent<RemoteProfileCardPresenter>();
             return (participant, presenter);
         }
 
-        private static GameObject CreateProfileCard(Transform parent, Transform viewer)
+        internal static GameObject CreateProfileCard(Transform parent, Transform viewer)
         {
             var card = new GameObject("Profile Card", typeof(RectTransform));
             card.transform.SetParent(parent, false);
@@ -157,9 +160,24 @@ namespace Align.Editor
             });
             presenter.SetMatchState(false, string.Empty);
 
-            YawBillboard billboard = card.AddComponent<YawBillboard>();
-            billboard.Configure(viewer);
             return card;
+        }
+
+        private static string ResolveMatcherUrl()
+        {
+            string configured = System.Environment.GetEnvironmentVariable("ALIGN_MATCHER_URL");
+            if (!string.IsNullOrWhiteSpace(configured))
+            {
+                return configured.Trim().TrimEnd('/');
+            }
+
+            IPAddress address = Dns.GetHostEntry(Dns.GetHostName()).AddressList
+                .FirstOrDefault(candidate =>
+                    candidate.AddressFamily == AddressFamily.InterNetwork &&
+                    !IPAddress.IsLoopback(candidate));
+            return address == null
+                ? "http://192.168.1.2:4323"
+                : $"http://{address}:4323";
         }
 
         private static TMP_Text CreateText(

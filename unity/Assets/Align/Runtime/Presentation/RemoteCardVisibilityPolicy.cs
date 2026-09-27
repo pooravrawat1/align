@@ -54,6 +54,17 @@ namespace Align.Presentation
 
     public static class RemoteCardVisibilityPolicy
     {
+        // A viewer-fixed panel represents the connected peer, not a location in
+        // the room. It can show the name before spatial calibration, but must
+        // never retain a disconnected, untracked or stale participant.
+        public static bool ShouldShowViewerPanel(in RemoteCardVisibilityInput input)
+        {
+            double age = input.NowSeconds - input.LastPoseReceivedAtSeconds;
+            return input.IsInSameRoom && input.HasPose && input.IsPoseTracked &&
+                !double.IsNaN(age) && age >= 0d &&
+                age <= Mathf.Max(0f, input.MaximumPoseAgeSeconds);
+        }
+
         public static bool ShouldShow(in RemoteCardVisibilityInput input)
         {
             if (!input.IsInSameRoom ||

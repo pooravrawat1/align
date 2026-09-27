@@ -14,24 +14,23 @@ namespace Align.Presentation
         [SerializeField] private TMP_Text matchReasonText;
         [SerializeField] private TMP_Text brandText;
         [SerializeField] private Graphic panel;
-        [SerializeField] private Color neutralColor = new(0.12f, 0.13f, 0.15f, 0.96f);
-        [SerializeField] private Color matchedColor = new(0.18f, 0.56f, 0.36f, 0.96f);
-        [Header("Player nameplate")]
-        [SerializeField] private Color neutralNameColor = Color.black;
-        [SerializeField] private Color matchedNameColor = new(0.31f, 1f, 0.47f, 1f);
-        [SerializeField] private Color nameOutlineColor = new(0f, 0f, 0f, 0.9f);
-        [SerializeField, Range(0f, 0.5f)] private float nameOutlineWidth = 0.16f;
+        [SerializeField] private Graphic nameGlass;
+        [SerializeField] private Graphic matchGlass;
+        [SerializeField] private RoundedGlassPanel glassSurface;
+
+        private const float Width = 560f;
+        private const float Padding = 36f;
+        private const float ContentWidth = Width - Padding * 2f;
+        private static readonly Color Ink = new(0.035f, 0.045f, 0.045f, 1f);
+        private static readonly Color NeutralGlass = new(0.89f, 0.93f, 0.93f, 0.94f);
+        private static readonly Color MatchGlass = new(0.66f, 0.94f, 0.76f, 0.94f);
 
         private bool _isMatched;
+        private string _reason = string.Empty;
 
-        public void Configure(
-            TMP_Text profileName,
-            TMP_Text profileBio,
-            TMP_Text profileInterests,
-            TMP_Text profileSocial,
-            TMP_Text matchReason,
-            Graphic background,
-            TMP_Text profileBrand = null)
+        public void Configure(TMP_Text profileName, TMP_Text profileBio,
+            TMP_Text profileInterests, TMP_Text profileSocial, TMP_Text matchReason,
+            Graphic background, TMP_Text profileBrand = null)
         {
             nameText = profileName;
             bioText = profileBio;
@@ -40,190 +39,148 @@ namespace Align.Presentation
             matchReasonText = matchReason;
             brandText = profileBrand;
             panel = background;
-            ResolveBrandText();
-            DisableRichText();
-            ApplyNameplateStyle();
-            ApplyNameColor();
-            ApplyDetailVisibility();
+            EnsureSurface();
+            ApplyPresentation();
         }
 
         public void Bind(ProfileCardData profile)
         {
-            if (profile == null)
-            {
-                return;
-            }
-
-            SetText(nameText, profile.Name?.Trim().ToLowerInvariant());
-            SetText(bioText, profile.Bio);
-            SetText(interestsText, JoinLimited(profile.Interests, 3));
-            SetText(socialText, JoinSocialLinks(profile.SocialLinks, 4));
+            if (profile == null) return;
+            string name = profile.Name?.Trim() ?? string.Empty;
+            int space = name.IndexOf(' ');
+            if (nameText != null)
+                nameText.text = space > 0 ? name.Substring(0, space) : name;
+            ApplyPresentation();
         }
 
         public void SetMatchState(bool isMatched, string reason)
         {
+            string nextReason = isMatched ? reason?.Trim() ?? string.Empty : string.Empty;
+            if (_isMatched == isMatched && _reason == nextReason) return;
             _isMatched = isMatched;
-
-            if (panel != null)
-            {
-                panel.color = isMatched ? matchedColor : neutralColor;
-            }
-
-            ApplyNameColor();
-            ApplyDetailVisibility();
-
-            SetText(matchReasonText, isMatched ? reason : string.Empty);
-            if (matchReasonText != null)
-            {
-                matchReasonText.gameObject.SetActive(isMatched && !string.IsNullOrWhiteSpace(reason));
-            }
+            _reason = nextReason;
+            ApplyPresentation();
         }
 
         private void Awake()
         {
-            ResolveBrandText();
-            DisableRichText();
-            ApplyNameplateStyle();
-            SetMatchState(false, string.Empty);
+            EnsureSurface();
+            // Room snapshots can arrive while the card is hidden. Preserve that
+            // result when the card becomes visible for the first time.
+            ApplyPresentation();
         }
 
-        private void OnValidate()
+        private void EnsureSurface()
         {
-            nameOutlineWidth = Mathf.Clamp(nameOutlineWidth, 0f, 0.5f);
-            ResolveBrandText();
-            ApplyNameplateStyle();
-            ApplyNameColor();
-            ApplyDetailVisibility();
-        }
+            if (glassSurface == null)
+                glassSurface = GetComponentInChildren<RoundedGlassPanel>(true);
+            if (glassSurface == null)
+            {
+                var surface = new GameObject("Profile Glass", typeof(RectTransform));
+                surface.transform.SetParent(transform, false);
+                glassSurface = surface.AddComponent<RoundedGlassPanel>();
+            }
+            glassSurface.raycastTarget = false;
+            glassSurface.transform.SetAsFirstSibling();
 
-        private void DisableRichText()
-        {
-            if (nameText != null) nameText.richText = false;
-            if (bioText != null) bioText.richText = false;
-            if (interestsText != null) interestsText.richText = false;
-            if (socialText != null) socialText.richText = false;
-            if (matchReasonText != null) matchReasonText.richText = false;
-            if (brandText != null) brandText.richText = false;
-        }
-
-        private void ResolveBrandText()
-        {
             if (brandText == null)
             {
-                Transform brand = transform.Find("Brand");
-                if (brand != null)
-                {
-                    brandText = brand.GetComponent<TMP_Text>();
-                }
+                Transform existing = transform.Find("Brand");
+                brandText = existing != null ? existing.GetComponent<TMP_Text>() : null;
+            }
+            if (brandText == null)
+            {
+                var label = new GameObject("Brand", typeof(RectTransform));
+                label.transform.SetParent(transform, false);
+                brandText = label.AddComponent<TextMeshProUGUI>();
+                if (nameText != null) brandText.font = nameText.font;
             }
         }
 
-        private void ApplyDetailVisibility()
+        private void ApplyPresentation()
         {
-            if (panel != null)
+            if (nameText == null || glassSurface == null) return;
+
+            if (panel != null) panel.enabled = false;
+            SetActive(nameGlass, false);
+            SetActive(matchGlass, false);
+            SetActive(bioText, false);
+            SetActive(interestsText, false);
+            SetActive(socialText, false);
+
+            bool showReason = _isMatched && !string.IsNullOrWhiteSpace(_reason);
+            StyleText(nameText, 46f, FontStyles.Bold);
+            nameText.enableAutoSizing = true;
+            nameText.fontSizeMin = 34f;
+            nameText.fontSizeMax = 46f;
+            nameText.textWrappingMode = TextWrappingModes.NoWrap;
+            Layout(nameText.rectTransform, new Vector2(Padding, -52f), new Vector2(ContentWidth, 64f));
+
+            if (brandText != null)
             {
-                panel.enabled = _isMatched;
+                SetActive(brandText, true);
+                brandText.text = _isMatched ? "IT'S A MATCH" : "IN YOUR ROOM";
+                StyleText(brandText, 16f, FontStyles.Bold);
+                brandText.characterSpacing = 2f;
+                Layout(brandText.rectTransform, new Vector2(Padding, -25f), new Vector2(ContentWidth, 22f));
             }
 
-            SetActive(bioText, _isMatched);
-            SetActive(interestsText, _isMatched);
-            SetActive(socialText, _isMatched);
+            float reasonHeight = 0f;
+            if (matchReasonText != null)
+            {
+                matchReasonText.text = _reason;
+                StyleText(matchReasonText, 27f, FontStyles.Normal);
+                matchReasonText.textWrappingMode = TextWrappingModes.Normal;
+                reasonHeight = showReason
+                    ? Mathf.Max(40f, matchReasonText.GetPreferredValues(_reason, ContentWidth, Mathf.Infinity).y)
+                    : 0f;
+                Layout(matchReasonText.rectTransform, new Vector2(Padding, -126f),
+                    new Vector2(ContentWidth, reasonHeight));
+                SetActive(matchReasonText, showReason);
+            }
 
-            // The overhead label should read like an in-game player marker.
-            // Product branding belongs in menus, not above a participant.
-            SetActive(brandText, false);
+            float height = showReason ? 158f + reasonHeight : 142f;
+            if (transform is RectTransform card)
+            {
+                // Keep the top edge stable as the explanation expands downward.
+                card.pivot = new Vector2(0.5f, 1f);
+                card.sizeDelta = new Vector2(Width, height);
+                card.localScale = Vector3.one * 0.00115f;
+            }
+            RectTransform surfaceRect = glassSurface.rectTransform;
+            surfaceRect.anchorMin = Vector2.zero;
+            surfaceRect.anchorMax = Vector2.one;
+            surfaceRect.offsetMin = Vector2.zero;
+            surfaceRect.offsetMax = Vector2.zero;
+            glassSurface.color = _isMatched ? MatchGlass : NeutralGlass;
         }
 
-        private void ApplyNameplateStyle()
+        private static void StyleText(TMP_Text text, float size, FontStyles style)
         {
-            if (nameText == null)
-            {
-                return;
-            }
-
-            // EAFC-style overhead labels are compact, centered, bold and kept
-            // legible over a moving background with a strong dark edge.
-            nameText.fontStyle = FontStyles.Bold;
-            nameText.alignment = TextAlignmentOptions.Center;
-            nameText.characterSpacing = 1.5f;
-            nameText.outlineColor = nameOutlineColor;
-            nameText.outlineWidth = nameOutlineWidth;
-            nameText.text = nameText.text?.Trim().ToLowerInvariant() ?? string.Empty;
+            text.richText = false;
+            text.raycastTarget = false;
+            text.fontSize = size;
+            text.fontStyle = style;
+            text.color = Ink;
+            text.alignment = TextAlignmentOptions.TopLeft;
+            text.characterSpacing = 0f;
+            text.outlineWidth = 0f;
+            text.outlineColor = Color.clear;
+            text.overflowMode = TextOverflowModes.Ellipsis;
         }
 
-        private void ApplyNameColor()
+        private static void Layout(RectTransform rect, Vector2 position, Vector2 size)
         {
-            if (nameText != null)
-            {
-                nameText.color = _isMatched ? matchedNameColor : neutralNameColor;
-            }
+            rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
         }
 
-        private static void SetText(TMP_Text target, string value)
+        private static void SetActive(Graphic graphic, bool active)
         {
-            if (target != null)
-            {
-                target.text = value ?? string.Empty;
-            }
-        }
-
-        private static void SetActive(TMP_Text target, bool active)
-        {
-            if (target != null && target.gameObject.activeSelf != active)
-            {
-                target.gameObject.SetActive(active);
-            }
-        }
-
-        private static string JoinLimited(string[] values, int limit)
-        {
-            if (values == null || values.Length == 0 || limit <= 0)
-            {
-                return string.Empty;
-            }
-
-            string result = string.Empty;
-            int included = 0;
-            for (int index = 0; index < values.Length && included < limit; index++)
-            {
-                string value = values[index]?.Trim();
-                if (string.IsNullOrEmpty(value))
-                {
-                    continue;
-                }
-
-                result = included == 0 ? value : $"{result} · {value}";
-                included++;
-            }
-
-            return result;
-        }
-
-        private static string JoinSocialLinks(SocialLinkData[] links, int limit)
-        {
-            if (links == null || links.Length == 0 || limit <= 0)
-            {
-                return string.Empty;
-            }
-
-            string result = string.Empty;
-            int included = 0;
-            for (int index = 0; index < links.Length && included < limit; index++)
-            {
-                SocialLinkData link = links[index];
-                string platform = link?.Platform?.Trim();
-                string handle = link?.UrlOrHandle?.Trim();
-                if (string.IsNullOrEmpty(platform) || string.IsNullOrEmpty(handle))
-                {
-                    continue;
-                }
-
-                string label = $"{platform}: {handle}";
-                result = included == 0 ? label : $"{result}  ·  {label}";
-                included++;
-            }
-
-            return result;
+            if (graphic != null && graphic.gameObject.activeSelf != active)
+                graphic.gameObject.SetActive(active);
         }
     }
 }

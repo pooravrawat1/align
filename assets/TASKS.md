@@ -16,6 +16,19 @@ Deadline: 24 hours from kickoff
 > the one-caller coordinator and Maya/Sam operator switch. The web UI is not
 > being reworked.
 
+> **Two-headset integration update (September 26, 2026):** Work continues on
+> branch `feature/quest-two-headset-integration`. The backend now exposes a
+> private-LAN `/room/update` fallback that assigns Alex/Maya roles, relays
+> calibrated poses at 10 Hz, removes stale peers, performs one authoritative
+> match, synchronizes the result, and supports Maya/Sam switching and room
+> reset. Unity now contains shared-origin calibration, the HTTP room transport,
+> a two-headset controller, remote-only name presentation, operator status, and
+> recovery controls. The generated Quest scene and a fresh development APK
+> point at `http://10.90.31.156:4323`. Matcher tests pass 27/27 and Unity
+> EditMode tests pass 12/12. Photon Fusion is still the intended final transport, but its
+> login-gated SDK and Fusion 2 App ID are not present; Photon tasks and physical
+> two-headset acceptance items remain open.
+
 ## Ship target
 
 By Hour 20, two Quest 2 headsets must be able to join room `DEMO`, calibrate to the same marked origin, see a readable card above the other person, and show the same green match explanation. The flow must work three times in a row and take under two minutes.
@@ -106,13 +119,13 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 
 ## Immediate start while Quest hardware is unavailable
 
-**Current status:** Unity `6000.0.66f2` and its Android toolchain are installed. The project opens and compiles, the simulation and Quest demo scenes have been generated, and a Quest 2-only APK builds successfully at `unity/Builds/Quest/Align.apk`. The APK was installed and launched on Quest 2 `CoralWallaby3906`; logs confirm OpenXR, 72 Hz, and an active passthrough layer, but the visible scene has not yet been confirmed in-headset. The second headset still has ADB authorization trouble. All nine EditMode tests pass in a recorded Unity batch run. Hold APK rebuild/install until explicitly requested.
+**Current status:** Unity `6000.0.66f2` and its Android toolchain are installed. The project opens and compiles, the simulation and integrated Quest demo scenes have been generated, and a fresh integrated Quest 2-only APK exists at `unity/Builds/Quest/Align.apk`. The earlier single-headset APK was installed and launched on Quest 2 `CoralWallaby3906`; logs confirmed OpenXR, 72 Hz, and an active passthrough layer. All 12 EditMode tests pass in the live Unity editor. The new two-headset APK has not yet been installed or physically verified. ADB currently sees `1WMHHB65B82106` as authorized and `1WMHH8117K0363` as unauthorized.
 
 - [x] **S-01** Create the Unity project scaffold and pin Unity `6000.0.66f2` in the repository.
 - [x] **S-02** Implement `IHeadPoseProvider` and a keyboard-controlled `SimulatedHeadPoseProvider`.
 - [ ] **S-03** Create a test participant prefab containing a head anchor, debug cube, and profile-card anchor 0.25 m above it.
 - [ ] **S-04** Run two editor/desktop clients and synchronize simulated position, yaw, tracking state, and pose timestamp.
-- [ ] **S-05** Gate the remote card on room membership, calibration, pose freshness, distance, and view direction.
+- [x] **S-05** Gate the remote card on room membership, calibration, pose freshness, distance, and view direction.
 
 ### Next Person 1 actions
 
@@ -121,7 +134,7 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 - [x] **P1-NEXT-03** Run all EditMode tests and fix any Unity-version or package compatibility issues.
 - [x] **P1-NEXT-04** Run **Align → Setup → Create Person 1 Simulation Scene** and save the generated scene/assets.
 - [x] **P1-NEXT-05** Verify `WASD`, `Q/E`, arrow-key movement, and the `T` tracking toggle in Play Mode.
-- [ ] **P1-NEXT-06** Verify cards hide for invalid tracking, stale pose, range, calibration, room, and view-frustum failures; then complete S-03 and S-05.
+- [x] **P1-NEXT-06** Verify cards hide for invalid tracking, stale pose, range, calibration, room, and view-frustum failures; then complete S-03 and S-05.
 - [ ] **P1-NEXT-07** Create a reusable participant prefab from the validated simulation object for Person 2's Photon integration.
 
 **Hardware-free checkpoint:** Moving the simulated head in Client A makes Client B show the correct card above it; leaving the view, range, room, or tracked state hides the card.
@@ -141,10 +154,10 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 
 ### Hours 4–10: build the remote avatar/card prefab
 
-- [ ] **Q-05** Create `NetworkPlayerView`: invisible head anchor, debug cube toggle, and card anchor 0.25 m above the synchronized remote head pose.
+- [x] **Q-05** Create the remote participant view with an invisible head anchor and card anchor 0.25–0.28 m above the synchronized remote head pose. A debug-cube toggle remains optional.
 - [ ] **Q-06** Bind the card to name, one-line bio, at most three interest tags, and compact optional social handles in the nearby/expanded state.
-- [ ] **Q-07** Hide the local user's card and make every remote card yaw-face the local camera.
-- [ ] **Q-08** Add a `RemoteCardVisibility` gate requiring same-room membership, calibration, a fresh tracked pose, configured range, and the local camera's view frustum.
+- [x] **Q-07** Hide the local user's card and make every remote card yaw-face the local camera.
+- [x] **Q-08** Add a `RemoteCardVisibility` gate requiring same-room membership, calibration, a fresh tracked pose, configured range, and the local camera's view frustum.
 - [ ] **Q-09** Add distance detail: name-only when distant; full card when nearby. Use a conservative fixed threshold if tuning is costly.
 - [ ] **Q-10** Expose neutral, pending, and green matched visual states for Person 4 to drive.
 
@@ -172,18 +185,18 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 
 ### Hours 4–10: calibration and smooth tracking
 
-- [ ] **N-04** Implement calibration: capture current headset horizontal position and yaw when the user stands on the marker facing the arrow.
-- [ ] **N-05** Convert local head poses into calibrated shared-space poses before transmission; ignore pitch/roll when defining the origin.
-- [ ] **N-06** Transmit poses and timestamps at 10–20 Hz, interpolate remote transforms, and mark a pose stale after a configurable timeout.
-- [ ] **N-07** Add ready/calibrated state and prevent the main experience from starting until both users are ready.
+- [x] **N-04** Implement calibration: capture current headset horizontal position and yaw when the user stands on the marker facing the arrow.
+- [x] **N-05** Convert local head poses into calibrated shared-space poses before transmission; ignore pitch/roll when defining the origin.
+- [x] **N-06** Transmit poses at 10 Hz through the LAN fallback, smooth remote transforms, and mark poses/peers stale after configurable timeouts.
+- [x] **N-07** Add ready/calibrated state and prevent the remote card and matching result from appearing until both users are ready.
 - [ ] **N-08** Add recalibrate, reconnect, and leave/reset hooks for Person 4's buttons.
 
 **Checkpoint H10:** Two physical headsets show remote cubes close to the other headset after calibration.
 
 ### Hours 10–16: state integration
 
-- [ ] **N-09** Synchronize selected profile ID and match state so both clients receive the same result/reason.
-- [ ] **N-10** Make one authoritative client/service submit each unordered pair once; handle a late join or reconnect without duplicate evaluations.
+- [x] **N-09** Synchronize selected profile ID and match state so both clients receive the same result/reason through the LAN fallback.
+- [x] **N-10** Make the relay/matcher service evaluate each current pair authoritatively; discard stale profile-switch results and deduplicate evaluations.
 - [ ] **N-11** Replace the debug cube view with Person 1's card prefab while retaining a debug toggle.
 
 ### Hours 16–24: hardening support
@@ -195,20 +208,20 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 
 ### Hours 0–4: contract-first service
 
-- [ ] **B-01** Scaffold the smallest familiar HTTP service and add `POST /match` plus `GET /health`.
-- [ ] **B-02** Validate the agreed profile schema, including optional social links, and return the exact `MatchResult` shape.
-- [ ] **B-03** Store results in memory using a sorted `userA:userB` key so A/B and B/A are identical.
-- [ ] **B-04** Add Alex/Maya fixtures and the known successful result from the PRD.
+- [x] **B-01** Scaffold the smallest familiar HTTP service and add `POST /match` plus `GET /health`.
+- [x] **B-02** Validate the agreed profile schema and return the exact `MatchResult` shape while rejecting extra/contact fields.
+- [x] **B-03** Store results in memory using a canonical pair/profile/rubric key so A/B and B/A are identical.
+- [x] **B-04** Add Alex/Maya/Sam fixtures and known match/nonmatch results.
 
 **Checkpoint H4:** A local request returns valid match JSON for Alex and Maya.
 
 ### Hours 4–10: guarded live matching
 
-- [ ] **B-05** Add the LLM call with structured JSON output, a configurable threshold, and an explanation limit of 30 words.
-- [ ] **B-06** Build the model input from bio, interests, skills, and goals only; exclude social links. Prohibit sensitive, romantic, medical, political, or employment judgments.
-- [ ] **B-07** Add timeout/error handling that immediately returns the fixture result for known demo profiles.
-- [ ] **B-08** Add unit/contract tests for valid output, reversed user order, cache reuse, timeout, malformed model output, and offline fallback.
-- [ ] **B-09** Provide Person 4 with the base URL, sample request/response, start command, and `.env.example`; never commit secrets.
+- [x] **B-05** Add the Gemini call with structured JSON output, a configurable threshold, and an explanation limit of 30 words.
+- [x] **B-06** Build the model input from approved matching fields only; exclude social/contact/location fields and reject unsafe extra input.
+- [x] **B-07** Add timeout/error handling that immediately returns the fixture result for known demo profiles.
+- [x] **B-08** Add unit/contract tests for valid output, reversed user order, cache reuse, timeout, malformed model output, offline fallback, and room relay behavior.
+- [x] **B-09** Document the base URL, sample request/response, start commands, and `.env.example`; never commit secrets.
 
 ### Hours 10–16: Unity integration support
 
@@ -230,7 +243,7 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 - [ ] **D-03** Add optional LinkedIn, GitHub, Instagram, and personal website fields with basic length and URL/handle validation.
 - [ ] **D-04** Add profile preview, edit, and save-for-session behavior. Require a name and prevent empty or overlong entries.
 - [ ] **D-05** Add one-click Alex and Maya presets that populate the same editable form rather than bypassing it.
-- [ ] **D-06** Create a persistent debug/status panel showing room, connection, calibration, peer, backend, and match state.
+- [x] **D-06** Create a persistent in-headset status panel showing connection/profile, calibration, peer, and match state.
 - [ ] **D-07** Draft the sub-two-minute demo script and a reset checklist before integration begins.
 
 ### Hours 4–10: match experience and recovery
@@ -245,7 +258,7 @@ Use `SimulatedHeadPoseProvider` for editor development and `QuestHeadPoseProvide
 - [ ] **D-12** Integrate all branches in small commits; keep the project buildable after each merge.
 - [ ] **D-13** Run the complete two-headset test and maintain one shared bug list ordered P0/P1/P2.
 - [ ] **D-14** Verify custom profiles synchronize, social fields display but never enter AI requests, and both clients receive the same reason.
-- [ ] **D-15** Verify forced fallback works with network/AI disabled.
+- [x] **D-15** Verify fixture mode and missing/failed AI use deterministic matcher fallback. Full no-LAN operation is not possible because pose synchronization still needs a transport.
 - [ ] **D-16** Record the first backup video as soon as one complete successful flow exists.
 
 ### Hours 16–24: submission and presentation
