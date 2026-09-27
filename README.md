@@ -33,8 +33,6 @@ Big events put you in a room with the right people. They give you no way to find
 
 Catalyst fixes the finding part. You look at someone who opted into the event. Your headset works out who you're facing. Gemini reads what both of you wrote about yourselves and returns one shared result: a match, or a quiet nothing. On a match, you both get the same green cue and one concrete reason to talk. Nobody gets ranked in public.
 
-This belongs on glasses. Something you wear while you talk, like Meta Ray-Bans, where your face stays visible and you keep walking. A full headset covers your face, which is the wrong shape for approaching a stranger. We built the two-person demo on Quest 2 because that's the hardware we had. The Quest build proves the match works.
-
 ## Try it in a browser
 
 The [live web demo](https://catalystathackgt.vercel.app) is the full companion experience. 400 seeded attendees, backed by MongoDB Atlas. No headset needed.
