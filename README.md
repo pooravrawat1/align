@@ -21,9 +21,7 @@
   <img alt="React" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white">
   <img alt="Node 20" src="https://img.shields.io/badge/Node-20.6%2B-3C873A?logo=node.js&logoColor=white">
   <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-Atlas-13AA52?logo=mongodb&logoColor=white">
-</p>
-<sub align="center"><i>Formerly known as Align. The Unity project, APK filename, and Android package still use the Align name.</i></sub>
- 
+</p> 
 ---
  
 ## The pitch
