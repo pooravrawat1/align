@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="web/public/assets/catalyst-logo-wordmark-black-bg.png" alt="Catalyst" width="280">
+  <img src="docs/brand/catalyst-logo.png" alt="Catalyst" width="420">
 </p>
 <h3 align="center">Your people. In plain sight.</h3>
  
