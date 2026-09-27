@@ -23,7 +23,7 @@
   <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-Atlas-13AA52?logo=mongodb&logoColor=white">
 </p> 
 
-## The pitch
+## Problem statement
  
 Big events put you in a room with the right people and no reliable way to find them.
  
