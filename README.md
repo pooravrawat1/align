@@ -33,7 +33,7 @@ We built the demo on Meta Quest 2 because that's the hardware we had. The real h
  
 ## Try it in a browser
  
-[live web demo](https://catalystathackgt.vercel.app)
+(https://catalystathackgt.vercel.app)
  
 1. Open the site and choose **Try the demo**.
 2. Continue with the prepared **Alex** profile.
