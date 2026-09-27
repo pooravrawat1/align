@@ -67,7 +67,7 @@ flowchart LR
   api --> matcher
   api --> mongo
 ```
- - **Gemini does the matching.** It gets both profiles and returns structured JSON: a 0 to 100 score across the six categories in the [matching rubric](assets/align-matching-rubric.md), plus one conversation starter grounded in what both people wrote. 70 or above is a match. Nobody ever sees the number.
+ - **Gemini does the matching.** It gets both profiles and returns structured JSON: a 0 to 100 score across the six categories in the [matching rubric](assets/catalyst-matching-rubric.md), plus one conversation starter grounded in what both people wrote. 70 or above is a match. Nobody ever sees the number.
 - **The card.** A viewer-fixed glass panel 1.35 m in front of the wearer, 64 cm wide, black type on a translucent surface. On a match it tints pale green and shows the other person's name and the conversation starter. On a nonmatch it stays empty.
 - **The voice.** On a match, ElevenLabs reads the starter aloud. Your eyes stay on the person, not the panel. A low-vision wearer hears the intro instead of hunting for text.
 - **The fallback.** Gemini gets a 3-second deadline so nobody stands around waiting. If it's slow or the response breaks the schema, the rubric returns the same shape of result. `npm run start:demo` forces that offline path so the demo still runs with no internet.
@@ -138,7 +138,7 @@ The build lands in `unity/Builds/Quest/Align.apk`. Full setup, controller mappin
 - [Cable-free laptop relay setup and demo walkthrough](assets/LAPTOP_RELAY_DEMO.md)
 - [Product requirements](assets/match-prd.md)
 - [24-hour execution plan](assets/TASKS.md)
-- [Matching rubric](assets/align-matching-rubric.md)
+- [Matching rubric](assets/catalyst-matching-rubric.md)
 - [Unity client setup](unity/README.md)
 - [Quest matcher and Unity handoff](matcher/README.md)
 - [Interactive web companion](web/README.md)

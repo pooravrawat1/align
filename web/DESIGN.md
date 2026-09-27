@@ -1,5 +1,5 @@
 ---
-name: Catalyst Spatial Salon
+name: Catalyst
 description: A compact spatial networking app with Linear-like discipline and restrained salon depth.
 colors:
   graphite-background: "#101113"
@@ -116,7 +116,7 @@ components:
     rounded: "{rounded.pill}"
 ---
 
-# Design System: Catalyst Spatial Salon
+# Design System: Catalyst
 
 ## Overview
 

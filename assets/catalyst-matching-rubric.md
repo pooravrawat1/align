@@ -1,4 +1,4 @@
-# Align Matching Rubric
+# Catalyst Matching Rubric
 
 The AI scores the networking-fit route for every pair out of 100 using the following rubric. The Quest demo's final score also considers the human-connection routes defined below.
 
@@ -72,7 +72,7 @@ Specific interests such as `assistive robotics` are more valuable than broad int
 
 Measures whether the profiles provide a clear and specific reason for the two people to start a conversation.
 
-A strong result allows Align to generate:
+A strong result allows Catalyst to generate:
 
 - A concise reason they should meet
 - A useful opening question

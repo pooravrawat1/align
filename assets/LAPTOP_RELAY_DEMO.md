@@ -8,7 +8,7 @@ This is the most practical next step because the current project already support
 
 Current deployment status (2026-09-27): the wireless APK is **installed and running on both headsets**, using `http://172.20.10.8:4323`. Both apps joined room `DEMO` as Alex/Maya, and each had an established Wi-Fi connection to the relay with **no USB reverse mappings**. The USB forwarding watcher is stopped. All 27 matcher/relay tests passed before deployment. The laptop relay and its stay-awake helper are running. Both clients initially reported calibration pending; participants must press A/X once each. Physical cable removal and the walking/match demonstration still need participant confirmation. The known-working USB APK is preserved at `unity/Builds/Quest/Align-usb-fallback.apk`.
 
-The repository is named `catalyst`. Some internal names remain `Align`: the Unity menus, APK filename, and Android package. The headset app may therefore appear as **Align** rather than Catalyst.
+The repository and product are named **Catalyst**. The Unity menus, APK filename, and Android package still use legacy technical identifiers because this documentation-only rename does not modify application code or build configuration.
 
 ## 1. What I need from you
 

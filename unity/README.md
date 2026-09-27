@@ -1,6 +1,6 @@
-# Align Unity client
+# Catalyst Unity client
 
-This is the mixed-reality client for Align. The first slice establishes a head-pose contract, editor simulation, Quest 2 OpenXR/passthrough setup, remote profile presentation, and visibility gating that Person 2 can connect to networking.
+This is the mixed-reality client for Catalyst. The first slice establishes a head-pose contract, editor simulation, Quest 2 OpenXR/passthrough setup, remote profile presentation, and visibility gating that Person 2 can connect to networking.
 
 ## Shared match audio
 
@@ -110,7 +110,7 @@ Open **Window → General → Test Runner**, select **EditMode**, and run all te
 - `HttpRoomTransport` drives the current physical two-headset fallback behind `IAlignRoomTransport`.
 - `QuestDemoController` remains available as a staged local pose source, but is not included in the live `QuestDemo.unity` scene.
 - The Quest 2 implementation does not request or process passthrough camera frames.
-- `QuestDemo.unity` uses AR Foundation passthrough, but Align code never requests or processes passthrough image frames.
+- `QuestDemo.unity` uses AR Foundation passthrough, but Catalyst client code never requests or processes passthrough image frames.
 - The generated Quest scene consumes the live peer state from the relay and presents a viewer-fixed card; it does not place labels above a physical participant.
 - The latest APK uses `http://172.20.10.8:4323` over the private hotspot. The wireless build is installed on both headsets. Both apps have joined room `DEMO` over Wi-Fi with USB forwarding removed; the physical unplug-and-walk check still needs participant confirmation. Keep the Mac awake with the matcher running. The previous loopback/USB APK is preserved at `Builds/Quest/Align-usb-fallback.apk`; only that build requires `adb -s <serial> reverse tcp:4323 tcp:4323` and connected USB cables. Rebuild the wireless APK if the Mac's IP changes. See the [wireless demo guide](../assets/LAPTOP_RELAY_DEMO.md) for the unplugged acceptance test.
 

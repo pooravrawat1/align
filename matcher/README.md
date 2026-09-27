@@ -1,8 +1,8 @@
-# Align Quest matcher
+# Catalyst Quest matcher
 
 This is the Person 3 service for the **two-Quest demo**. It is separate from the
 finished `web/` browser simulation. Node 20.6+ is required; there are no npm
-dependencies. The rubric is in [assets/align-matching-rubric.md](../assets/align-matching-rubric.md),
+dependencies. The rubric is in [assets/catalyst-matching-rubric.md](../assets/catalyst-matching-rubric.md),
 and the one canonical Alex/Maya/Sam fixture is
 [assets/quest-demo-fixtures.json](../assets/quest-demo-fixtures.json).
 

@@ -1,4 +1,4 @@
-# Catalyst — Spatial Salon product plan
+# Catalyst product plan
 
 ## The promise
 Help someone notice a useful conversation in the room, then get out of the way. Afterward, help them remember the person and why they met.

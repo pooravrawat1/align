@@ -1,6 +1,6 @@
-# Align — Spatial Salon
+# Catalyst
 
-An interactive companion website and browser simulation of the Align mixed-reality introduction experience. This is a UI-first MVP with a temporary local session service and the shared Quest matching engine. It is not a Quest client or production backend.
+An interactive companion website and browser simulation of the Catalyst mixed-reality introduction experience. This is a UI-first MVP with a temporary local session service and the shared Quest matching engine. It is not a Quest client or production backend.
 
 ## Run
 
@@ -72,12 +72,12 @@ HTTP tests exercise the in-memory API. A browser preview can establish compositi
 
 `src/theme.css` owns the unified color and typography tokens over reusable layout primitives in `styles.css`. `Landing.css`, `ProductPages.css`, `PersonalPages.css`, and `SpatialV2.css` own their respective compositions. Geist and Inter are self-hosted from Fontsource packages. The product presents one unified interface. Prior drafts are preserved separately in the original local workspace.
 
-See [current event and matcher integration](docs/event-workspace.md), [product scope](PRODUCT.md), [implementation boundaries](docs/IMPLEMENTATION.md), and [asset provenance](docs/ASSETS.md). This companion prototype lives in `web/` in the Align repository; the repository’s existing Unity requirements and execution plan remain authoritative for headset implementation.
+See [current event and matcher integration](docs/event-workspace.md), [product scope](PRODUCT.md), [implementation boundaries](docs/IMPLEMENTATION.md), and [asset provenance](docs/ASSETS.md). This companion prototype lives in `web/` in the Catalyst repository; the repository’s existing Unity requirements and execution plan remain authoritative for headset implementation.
 
 ## Cinematic public landing
 
-The approved V3 landing is now the Align front page. Its fullscreen room photograph, illuminated visor, Maya marker-to-contact transition and deliberate scroll checkpoints are scoped to the public route. The existing Align branding and login callback are reused; current Home, Event, Network, Profile and Spatial implementations remain in place. Below 900px and with reduced motion, the story uses the normal linear reading layout.
+The approved V3 landing is now the Catalyst front page. Its fullscreen room photograph, illuminated visor, Maya marker-to-contact transition and deliberate scroll checkpoints are scoped to the public route. The existing Catalyst branding and login callback are reused; current Home, Event, Network, Profile and Spatial implementations remain in place. Below 900px and with reduced motion, the story uses the normal linear reading layout.
 
-GSAP owns the scroll timeline; Three.js renders the optical surface with an aligned SVG fallback. The illustrative photograph's provenance is in `public/assets/hero-room-v3.webp.json`. Development-only version comparison links remain in the separate V3 project and are not shown on Align.
+GSAP owns the scroll timeline; Three.js renders the optical surface with an aligned SVG fallback. The illustrative photograph's provenance is in `public/assets/hero-room-v3.webp.json`. Development-only version comparison links remain in the separate V3 project and are not shown on Catalyst.
 
 No builds, tests, browser verification or Playwright were run for this integration, per the user's instruction.

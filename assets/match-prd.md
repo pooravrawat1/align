@@ -1,4 +1,4 @@
-# PRD: Align
+# PRD: Catalyst
 
 **Version:** 1.0  
 **Status:** Hackathon MVP  
@@ -12,14 +12,14 @@
 > green cue and conversation starter for a match. There is no custom headset
 > profile form, expanded card, visible score, login, or web-to-Quest sync.
 > Person 3's current source of truth is the
-> [matching rubric](align-matching-rubric.md),
+> [matching rubric](catalyst-matching-rubric.md),
 > [demo fixture](quest-demo-fixtures.json), and
 > [matcher contract](../matcher/README.md). These supersede conflicting
 > requirements and examples below; the web companion remains unchanged.
 
 ## 1. Product summary
 
-Align is a colocated mixed-reality networking experience for events. Attendees wearing Meta Quest 2 headsets can see lightweight profile cards floating above other participants' heads.
+Catalyst is a colocated mixed-reality networking experience for events. Attendees wearing Meta Quest 2 headsets can see lightweight profile cards floating above other participants' heads.
 
 An AI matching system compares participant profiles in the background. When two people are considered compatible, their profile cards turn green and display a specific reason they should meet.
 
@@ -27,7 +27,7 @@ An AI matching system compares participant profiles in the background. When two 
 
 At hackathons, conferences, and networking events, attendees frequently walk past people who share their interests or could help with their projects. Existing networking applications require users to browse directories or continually check their phones.
 
-Align makes relevant connections visible directly in the physical environment.
+Catalyst makes relevant connections visible directly in the physical environment.
 
 ## 3. Goals
 
@@ -36,7 +36,7 @@ The MVP must:
 - Allow two or more Quest 2 users to join the same event session.
 - Let each user create, preview, edit, and save a session profile or load a demo default.
 - Support optional user-provided social links or handles on the profile.
-- Align users within one shared physical coordinate system.
+- Place users within one shared physical coordinate system.
 - Display a profile card above each participant's physical head.
 - Synchronize headset positions in real time.
 - Use synchronized headset pose—not computer vision—to locate Quest 2 participants.
@@ -79,7 +79,7 @@ A judge who needs to understand the product within one minute and see the comple
 
 ## 6. Core user journey
 
-1. The user launches Align on a Quest 2.
+1. The user launches Catalyst on a Quest 2.
 2. The user enters an event room code.
 3. The user enters or selects:
    - Name
