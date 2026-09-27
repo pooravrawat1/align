@@ -29,7 +29,7 @@ Big events put you in a room with the right people and no reliable way to find t
  
 Catalyst puts an invisible layer on top of the room. Two people in headsets look at each other. Gemini reads what both of them wrote about themselves and decides if they should meet. On a match, both see the other person's name, the same green cue, and one specific reason to start talking. ElevenLabs says that reason out loud. No match? Nothing shows up. Neither person learns who the other is.
  
-We built the demo on Meta Quest 2 because that's the hardware we had. The real home for this is glasses you wear while you talk, like Meta Ray-Bans. A headset covers your face. Glasses don't. The Quest build proves the match works.
+We built the demo on Meta Quest 2 because that's the hardware we had. The real home for this is glasses you wear while you talk, like Meta Ray-Bans.
  
 ## Try it in a browser
  
