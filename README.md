@@ -33,7 +33,7 @@ We built the demo on Meta Quest 2 because that's the hardware we had. The real h
  
 ## Try it in a browser
  
-The [live web demo](https://catalystathackgt.vercel.app) is the full companion experience with 400 seeded attendees backed by MongoDB Atlas. No headset needed.
+[live web demo](https://catalystathackgt.vercel.app)
  
 1. Open the site and choose **Try the demo**.
 2. Continue with the prepared **Alex** profile.
