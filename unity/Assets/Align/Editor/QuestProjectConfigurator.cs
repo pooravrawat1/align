@@ -52,6 +52,9 @@ namespace Align.Editor
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
             PlayerSettings.colorSpace = ColorSpace.Linear;
             PlayerSettings.MTRendering = true;
+            // The private demo LAN relay intentionally uses plain HTTP. Never
+            // expose the unauthenticated room endpoint on a public network.
+            PlayerSettings.insecureHttpOption = InsecureHttpOption.AlwaysAllowed;
             SetInputSystemOnly();
 
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);

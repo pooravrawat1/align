@@ -14,18 +14,20 @@ namespace Align.Presentation
         [SerializeField] private TMP_Text matchReasonText;
         [SerializeField] private TMP_Text brandText;
         [SerializeField] private Graphic panel;
-        [SerializeField] private Color discoveryTransparentColor = new(0.12f, 0.13f, 0.15f, 0f);
-        [SerializeField] private Color positiveMatchColor = new(0.24f, 0.55f, 0.34f, 0.78f);
-        [SerializeField, Min(0.01f)] private float transitionSeconds = 0.2f;
-        [Header("Player nameplate")]
-        [SerializeField] private Color readableNeutralNameColor = Color.white;
-        [SerializeField] private Color matchedNameColor = new(0.31f, 1f, 0.47f, 1f);
-        [SerializeField] private Color nameOutlineColor = new(0f, 0f, 0f, 0.9f);
-        [SerializeField, Range(0f, 0.5f)] private float nameOutlineWidth = 0.16f;
+        [SerializeField] private Graphic nameGlass;
+        [SerializeField] private Graphic matchGlass;
+        [SerializeField] private RoundedGlassPanel glassSurface;
+
+        private const float Width = 560f;
+        private const float Padding = 36f;
+        private const float ContentWidth = Width - Padding * 2f;
+        private static readonly Color Ink = new(0.035f, 0.045f, 0.045f, 1f);
+        private static readonly Color NeutralGlass = new(0.89f, 0.93f, 0.93f, 0.94f);
+        private static readonly Color MatchGlass = new(0.66f, 0.94f, 0.76f, 0.94f);
+        private static readonly Color TransparentPanel = new(0f, 0f, 0f, 0f);
 
         private bool _isMatched;
         private string _matchReason = string.Empty;
-        private Color _targetPanelColor;
 
         public RemotePresentationState PresentationState { get; private set; }
         private bool CanPresentMatch => _isMatched && !string.IsNullOrWhiteSpace(_matchReason);
@@ -46,11 +48,9 @@ namespace Align.Presentation
             matchReasonText = matchReason;
             brandText = profileBrand;
             panel = background;
-            ResolveBrandText();
+            EnsureSurface();
             DisableRichText();
-            ApplyCompactLayout();
-            ApplyNameplateStyle();
-            ApplyPresentation(immediate: true);
+            ApplyPresentation();
         }
 
         public void Bind(ProfileCardData profile)
@@ -61,21 +61,24 @@ namespace Align.Presentation
             }
 
             SetText(nameText, profile.Name?.Trim().ToLowerInvariant());
-            // Match inputs and contact data are not attendee-facing headset content.
+            // Match inputs and contact data are never attendee-facing headset content.
             SetText(bioText, string.Empty);
             SetText(interestsText, string.Empty);
             SetText(socialText, string.Empty);
+            ApplyPresentation();
         }
 
         public void SetMatchState(bool isMatched, string reason)
         {
             _isMatched = isMatched;
-            _matchReason = RemotePresentationStatePolicy.LimitReason(reason);
+            _matchReason = isMatched
+                ? RemotePresentationStatePolicy.LimitReason(reason)
+                : string.Empty;
             if (PresentationState != RemotePresentationState.Conversation)
             {
                 PresentationState = RemotePresentationStatePolicy.DiscoveryState(CanPresentMatch);
             }
-            ApplyPresentation(immediate: !isActiveAndEnabled);
+            ApplyPresentation();
         }
 
         public void SetConversationState(bool isInConversation)
@@ -83,48 +86,45 @@ namespace Align.Presentation
             PresentationState = isInConversation
                 ? RemotePresentationState.Conversation
                 : RemotePresentationStatePolicy.DiscoveryState(CanPresentMatch);
-            ApplyPresentation(immediate: !isActiveAndEnabled);
+            ApplyPresentation();
         }
 
         private void Awake()
         {
-            ResolveBrandText();
-            DisableRichText();
-            ApplyCompactLayout();
-            ApplyNameplateStyle();
             PresentationState = RemotePresentationState.DiscoveryNeutral;
-            SetMatchState(false, string.Empty);
-        }
-
-        private void OnValidate()
-        {
-            nameOutlineWidth = Mathf.Clamp(nameOutlineWidth, 0f, 0.5f);
-            ResolveBrandText();
-            ApplyNameplateStyle();
-            ApplyPresentation(immediate: true);
+            EnsureSurface();
+            DisableRichText();
+            ApplyPresentation();
         }
 
         private void OnEnable()
         {
-            ApplyPresentation(immediate: true);
+            // Room snapshots can arrive while the card is hidden. Snap to the
+            // latest synchronized state before the card is rendered again.
+            ApplyPresentation();
         }
 
-        private void Update()
+        private void OnValidate()
         {
-            if (panel == null || panel.color == _targetPanelColor)
-            {
-                return;
-            }
+            EnsureSurface();
+            DisableRichText();
+            ApplyPresentation();
+        }
 
-            float blend = 1f - Mathf.Exp(-Time.unscaledDeltaTime / Mathf.Max(0.01f, transitionSeconds));
-            panel.color = Color.Lerp(panel.color, _targetPanelColor, blend);
-            Color delta = panel.color - _targetPanelColor;
-            float maximumDelta = Mathf.Max(
-                Mathf.Abs(delta.r), Mathf.Abs(delta.g), Mathf.Abs(delta.b), Mathf.Abs(delta.a));
-            if (maximumDelta < 0.005f)
+        private void EnsureSurface()
+        {
+            if (glassSurface == null)
             {
-                panel.color = _targetPanelColor;
+                glassSurface = GetComponentInChildren<RoundedGlassPanel>(true);
             }
+            if (glassSurface == null)
+            {
+                var surface = new GameObject("Profile Glass", typeof(RectTransform));
+                surface.transform.SetParent(transform, false);
+                glassSurface = surface.AddComponent<RoundedGlassPanel>();
+            }
+            glassSurface.raycastTarget = false;
+            glassSurface.transform.SetAsFirstSibling();
         }
 
         private void DisableRichText()
@@ -137,86 +137,91 @@ namespace Align.Presentation
             if (brandText != null) brandText.richText = false;
         }
 
-        private void ResolveBrandText()
+        private void ApplyPresentation()
         {
-            if (brandText == null)
-            {
-                Transform brand = transform.Find("Brand");
-                if (brand != null)
-                {
-                    brandText = brand.GetComponent<TMP_Text>();
-                }
-            }
-        }
-
-        private void ApplyPresentation(bool immediate)
-        {
-            bool showMatch = PresentationState == RemotePresentationState.DiscoveryMatched && CanPresentMatch;
-            _targetPanelColor = showMatch ? positiveMatchColor : discoveryTransparentColor;
-            if (panel != null)
-            {
-                panel.enabled = true;
-                if (immediate)
-                {
-                    panel.color = _targetPanelColor;
-                }
-            }
-
-            SetActive(bioText, false);
-            SetActive(interestsText, false);
-            SetActive(socialText, false);
-            SetText(matchReasonText, showMatch ? _matchReason : string.Empty);
-            SetActive(matchReasonText, showMatch);
-
-            SetActive(brandText, false);
-            ApplyNameColor();
-        }
-
-        private void ApplyNameplateStyle()
-        {
-            if (nameText == null)
+            if (glassSurface == null)
             {
                 return;
             }
 
-            // EAFC-style overhead labels are compact, centered, bold and kept
-            // legible over a moving background with a strong dark edge.
-            nameText.fontStyle = FontStyles.Bold;
-            nameText.alignment = TextAlignmentOptions.Center;
-            nameText.characterSpacing = 1.5f;
-            nameText.outlineColor = nameOutlineColor;
-            nameText.outlineWidth = nameOutlineWidth;
-            nameText.text = nameText.text?.Trim().ToLowerInvariant() ?? string.Empty;
-        }
+            bool showMatch = PresentationState == RemotePresentationState.DiscoveryMatched && CanPresentMatch;
 
-        private void ApplyCompactLayout()
-        {
-            if (transform is RectTransform cardRect)
+            // The legacy Image remains serialized in existing scenes, but the
+            // rounded mesh owns the visible surface. Its color still mirrors
+            // match state for editor tooling and tests.
+            if (panel != null)
             {
-                cardRect.sizeDelta = new Vector2(660f, 170f);
+                panel.enabled = false;
+                panel.color = showMatch ? MatchGlass : TransparentPanel;
             }
+            SetActive(nameGlass, false);
+            SetActive(matchGlass, false);
+            SetActive(bioText, false);
+            SetActive(interestsText, false);
+            SetActive(socialText, false);
+            SetActive(brandText, false);
 
-            ConfigureTextRect(nameText, new Vector2(32f, -20f), new Vector2(596f, 56f));
-            ConfigureTextRect(matchReasonText, new Vector2(32f, -84f), new Vector2(596f, 62f));
-        }
-
-        private static void ConfigureTextRect(TMP_Text text, Vector2 position, Vector2 size)
-        {
-            if (text != null && text.transform is RectTransform rect)
-            {
-                rect.anchoredPosition = position;
-                rect.sizeDelta = size;
-            }
-        }
-
-        private void ApplyNameColor()
-        {
             if (nameText != null)
             {
-                nameText.color = PresentationState == RemotePresentationState.DiscoveryMatched
-                    ? matchedNameColor
-                    : readableNeutralNameColor;
+                SetActive(nameText, true);
+                StyleText(nameText, 46f, FontStyles.Bold);
+                nameText.enableAutoSizing = true;
+                nameText.fontSizeMin = 34f;
+                nameText.fontSizeMax = 46f;
+                nameText.textWrappingMode = TextWrappingModes.NoWrap;
+                Layout(nameText.rectTransform, new Vector2(Padding, -32f), new Vector2(ContentWidth, 64f));
             }
+
+            float reasonHeight = 0f;
+            if (matchReasonText != null)
+            {
+                SetText(matchReasonText, showMatch ? _matchReason : string.Empty);
+                StyleText(matchReasonText, 27f, FontStyles.Normal);
+                matchReasonText.textWrappingMode = TextWrappingModes.Normal;
+                reasonHeight = showMatch
+                    ? Mathf.Max(40f, matchReasonText.GetPreferredValues(_matchReason, ContentWidth, Mathf.Infinity).y)
+                    : 0f;
+                Layout(matchReasonText.rectTransform, new Vector2(Padding, -102f),
+                    new Vector2(ContentWidth, reasonHeight));
+                SetActive(matchReasonText, showMatch);
+            }
+
+            float height = showMatch ? 134f + reasonHeight : 112f;
+            if (transform is RectTransform card)
+            {
+                card.pivot = new Vector2(0.5f, 1f);
+                card.sizeDelta = new Vector2(Width, height);
+                card.localScale = Vector3.one * 0.00115f;
+            }
+
+            RectTransform surfaceRect = glassSurface.rectTransform;
+            surfaceRect.anchorMin = Vector2.zero;
+            surfaceRect.anchorMax = Vector2.one;
+            surfaceRect.offsetMin = Vector2.zero;
+            surfaceRect.offsetMax = Vector2.zero;
+            glassSurface.color = showMatch ? MatchGlass : NeutralGlass;
+        }
+
+        private static void StyleText(TMP_Text text, float size, FontStyles style)
+        {
+            text.richText = false;
+            text.raycastTarget = false;
+            text.fontSize = size;
+            text.fontStyle = style;
+            text.color = Ink;
+            text.alignment = TextAlignmentOptions.TopLeft;
+            text.characterSpacing = 0f;
+            text.outlineWidth = 0f;
+            text.outlineColor = Color.clear;
+            text.overflowMode = TextOverflowModes.Ellipsis;
+        }
+
+        private static void Layout(RectTransform rect, Vector2 position, Vector2 size)
+        {
+            rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
         }
 
         private static void SetText(TMP_Text target, string value)
@@ -227,13 +232,12 @@ namespace Align.Presentation
             }
         }
 
-        private static void SetActive(TMP_Text target, bool active)
+        private static void SetActive(Graphic graphic, bool active)
         {
-            if (target != null && target.gameObject.activeSelf != active)
+            if (graphic != null && graphic.gameObject.activeSelf != active)
             {
-                target.gameObject.SetActive(active);
+                graphic.gameObject.SetActive(active);
             }
         }
-
     }
 }

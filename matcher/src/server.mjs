@@ -1,7 +1,8 @@
 import { createServer } from 'node:http';
 import { pathToFileURL } from 'node:url';
 import { InputError } from './profiles.mjs';
-import { createMatcher } from './service.mjs';
+import { createRoomRelay } from './rooms.mjs';
+import { createMatcher, demoFixtures } from './service.mjs';
 
 const MAX_BODY_BYTES = 16 * 1024;
 
@@ -36,7 +37,7 @@ async function readJson(request) {
   }
 }
 
-export function createMatchServer(matcher) {
+export function createMatchServer(matcher, roomRelay = createRoomRelay({ matcher, fixtures: demoFixtures })) {
   return createServer(async (request, response) => {
     try {
       const path = new URL(request.url, 'http://localhost').pathname;
@@ -48,6 +49,12 @@ export function createMatchServer(matcher) {
         const body = await readJson(request);
         const { result, source } = await matcher.match(body);
         sendJson(response, 200, result, { 'x-align-match-source': source });
+        return;
+      }
+      if (request.method === 'POST' && path === '/room/update') {
+        const body = await readJson(request);
+        const state = await roomRelay.update(body);
+        sendJson(response, 200, state);
         return;
       }
       sendJson(response, 404, { error: 'Not found' });

@@ -14,7 +14,10 @@ namespace Align.Presentation
         [SerializeField, Range(-1f, 1f)] private float minimumViewDot = 0.35f;
         [SerializeField, Range(0f, 0.25f)] private float viewportPadding = 0.02f;
 
+        [SerializeField] private bool fixedInViewerSpace;
+
         public bool IsVisible { get; private set; }
+        public bool IsDismissed { get; private set; }
         public RemoteParticipantView Participant => participant;
         public Camera ViewerCamera => viewerCamera;
         public GameObject CardRoot => cardRoot;
@@ -22,17 +25,30 @@ namespace Align.Presentation
         public void Configure(
             RemoteParticipantView remoteParticipant,
             Camera localViewer,
-            GameObject remoteCardRoot)
+            GameObject remoteCardRoot,
+            bool viewerFixed = false)
         {
             participant = remoteParticipant;
             viewerCamera = localViewer;
             cardRoot = remoteCardRoot;
+            fixedInViewerSpace = viewerFixed;
+        }
+
+        public void SetDismissed(bool dismissed)
+        {
+            IsDismissed = dismissed;
+            RefreshVisibility();
         }
 
         private void LateUpdate()
         {
+            RefreshVisibility();
+        }
+
+        public void RefreshVisibility()
+        {
             Camera activeCamera = viewerCamera != null ? viewerCamera : Camera.main;
-            bool shouldShow = participant != null && activeCamera != null;
+            bool shouldShow = !IsDismissed && participant != null && activeCamera != null;
 
             if (shouldShow)
             {
@@ -52,8 +68,10 @@ namespace Align.Presentation
                     maximumPoseAgeSeconds,
                     minimumViewDot);
 
-                shouldShow = RemoteCardVisibilityPolicy.ShouldShow(input) &&
-                    IsInsideViewport(activeCamera, participant.RenderedHeadPosition);
+                shouldShow = fixedInViewerSpace
+                    ? RemoteCardVisibilityPolicy.ShouldShowViewerPanel(input)
+                    : RemoteCardVisibilityPolicy.ShouldShow(input) &&
+                      IsInsideViewport(activeCamera, participant.RenderedHeadPosition);
             }
 
             SetVisible(shouldShow);

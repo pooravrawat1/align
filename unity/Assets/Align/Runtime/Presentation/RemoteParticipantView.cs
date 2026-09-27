@@ -12,7 +12,7 @@ namespace Align.Presentation
     {
         [SerializeField] private Transform headRoot;
         [SerializeField] private Transform cardAnchor;
-        [SerializeField, Min(0f)] private float cardHeightMeters = 0.25f;
+        [SerializeField, Min(0f)] private float cardHeightMeters = 0.22f;
         [SerializeField, Min(0f)] private float smoothingSharpness = 18f;
 
         private HeadPoseSample _latestPose;
@@ -92,12 +92,15 @@ namespace Align.Presentation
             {
                 target.SetPositionAndRotation(_latestPose.Position, _latestPose.Rotation);
                 _hasRenderedPose = true;
-                return;
+            }
+            else
+            {
+                float blend = 1f - Mathf.Exp(-smoothingSharpness * Time.unscaledDeltaTime);
+                target.position = Vector3.Lerp(target.position, _latestPose.Position, blend);
+                target.rotation = Quaternion.Slerp(target.rotation, _latestPose.Rotation, blend);
             }
 
-            float blend = 1f - Mathf.Exp(-smoothingSharpness * Time.unscaledDeltaTime);
-            target.position = Vector3.Lerp(target.position, _latestPose.Position, blend);
-            target.rotation = Quaternion.Slerp(target.rotation, _latestPose.Rotation, blend);
+            ApplyCardOffset();
         }
 
         private Transform ResolveHeadRoot()
@@ -109,7 +112,11 @@ namespace Align.Presentation
         {
             if (cardAnchor != null)
             {
-                cardAnchor.localPosition = Vector3.up * cardHeightMeters;
+                // The headset pose includes pitch and roll. A local-space offset
+                // would swing the card above or below the wearer's face whenever
+                // they tilt their head, so keep the label on world up instead.
+                cardAnchor.position = ResolveHeadRoot().position +
+                    Vector3.up * cardHeightMeters;
             }
         }
     }
