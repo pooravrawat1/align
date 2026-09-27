@@ -37,7 +37,11 @@ The Maya card is visible only while the simulated participant is in the same roo
 2. Select **Align → Setup → Create Quest Demo Scene** if `QuestDemo.unity` does not exist.
 3. Select **Align → Build → Build Quest APK**.
 
-The build is written to `Builds/Quest/Align.apk`. The checked-in scene uses a transparent XR camera over Quest passthrough, requests a 72 Hz refresh rate, and places Maya's hardcoded demo head anchor 2.5 m in front of the shared origin. Press A or X on either controller to toggle the green match state; press Space when previewing the same scene in the editor.
+The build is written to `Builds/Quest/Align.apk`. The checked-in scene uses a transparent XR camera over Quest passthrough, requests a 72 Hz refresh rate, and places Maya's hardcoded demo head anchor 2.5 m in front of the viewer. This is a staged presentation preview, not the live two-headset pose path. Press A or X (Space in the editor) to advance neutral → green match → conversation → green discovery. Press B or Y (Backspace in the editor) to reset to neutral discovery.
+
+The headset surface intentionally shows only the remote person's name while neutral. A positive match adds a short translucent green panel and a reason capped at 30 words. Conversation mode collapses back to the selected name and suppresses the reason until Finish Conversation restores discovery. Bio, interests, score, and social/contact data never render on the headset card.
+
+For the live networking scene, select **Align → Setup → Create Remote Participant Prefab**. This creates `Assets/Align/Prefabs/RemoteParticipant.prefab` without `QuestDemoController`, a staged pose, or pre-authorized room/calibration state. The networking owner binds identity and supplies session, pose, match, and conversation state through the documented runtime entry points.
 
 Do not rebuild or reinstall the APK until explicitly requested. Scene and non-UI systems can be developed and verified in the editor first.
 
@@ -55,12 +59,17 @@ ADB="/Applications/Unity/Hub/Editor/6000.0.66f2/PlaybackEngines/AndroidPlayer/SD
 
 Open **Window → General → Test Runner**, select **EditMode**, and run all tests. The initial suite verifies the card visibility policy for room, calibration, tracking, staleness, range, and view direction.
 
+The current implementation pass could not run Unity EditMode tests because the Unity editor/CLI was not available in its environment. The new factory, legacy visibility repair, conversation lifecycle, reason limit, and headset-detail privacy coverage must be run in the editor before claiming Unity test evidence.
+
 ## Boundaries
 
 - `SimulatedHeadPoseProvider` is the hardware-free source used now.
 - `QuestHeadPoseProvider` reads the XR head transform and tracking flag only.
 - `PoseLoopbackDriver` is temporary and must be replaced by Person 2's Photon adapter.
+- `QuestDemoController` is also a staged local pose source. Do not include it in the live network scene; the networking adapter owns `ApplyPose`, `SetSessionState`, and synchronized match delivery.
 - The Quest 2 implementation does not request or process passthrough camera frames.
 - `QuestDemo.unity` uses AR Foundation passthrough, but Align code never requests or processes passthrough image frames.
 - The hardcoded Maya anchor proves rendering only. Person 2 still needs to replace it with the calibrated remote headset pose.
 - The existing APK is built, manifest-verified, installed, and was observed as the foreground process on one Quest 2. Logs confirm OpenXR, 72 Hz, and active passthrough, but the visible passthrough/card result still needs in-headset confirmation. The second headset still needs ADB authorization.
+
+See [the two-Quest teammate handoff](../web/docs/quest-demo-handoff.md) for the presentation state table, integration inputs, and rehearsal checklist.

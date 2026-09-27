@@ -18,8 +18,8 @@ export function LandingProduct({ onEnter, entering }: { onEnter: MouseEventHandl
     <section className="lp-event" id="lp-event" data-landing-stop aria-labelledby="lp-event-title">
       <div className="lp-section-heading">
         <div className="lp-event-intro">
-          <h2 id="lp-event-title">Start with the room<br />you’re in.</h2>
-          <p>Join an event. Share your interests and skills.<br />Find people you have a reason to meet.</p>
+          <h2 id="lp-event-title">Start with the room you’re in.</h2>
+          <p>Join an event. Share your interests and skills. Find people you have a reason to meet.</p>
         </div>
         <Button onClick={onEnter} disabled={entering}>Explore the demo<ArrowUpRight size={16} /></Button>
       </div>

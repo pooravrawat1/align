@@ -18,7 +18,7 @@ for (const width of [1440, 390]) {
       await page.getByRole('button', { name: 'Join event', exact: true }).click();
       await expect(page).toHaveURL(/#\/home$/);
       await expect(page.getByRole('heading', { name: 'Spatial Sessions', exact: true })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Enter room' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Preview headset experience' })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({ path: '.impeccable/review/workspace-home-' + width + '.png', fullPage: true });
     } finally { await env.close(); }

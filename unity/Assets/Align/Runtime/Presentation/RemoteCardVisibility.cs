@@ -15,6 +15,9 @@ namespace Align.Presentation
         [SerializeField, Range(0f, 0.25f)] private float viewportPadding = 0.02f;
 
         public bool IsVisible { get; private set; }
+        public RemoteParticipantView Participant => participant;
+        public Camera ViewerCamera => viewerCamera;
+        public GameObject CardRoot => cardRoot;
 
         public void Configure(
             RemoteParticipantView remoteParticipant,

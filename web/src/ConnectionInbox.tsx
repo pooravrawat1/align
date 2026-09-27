@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import type { Action, Profile, State } from './types';
 import { Avatar, Button, PanelHeader, TextAction } from './ui';
 import { pendingRequests } from './connectionRequests';
@@ -35,9 +35,9 @@ export function ConnectionInbox({ state, user, act, busy, notify, eventId }: Pro
         const event = state.events.find(item => item.id === request.eventId);
         return <div className="request-row" key={request.id}>
           <button className="request-person" onClick={() => openPersonProfile(person.id, request.eventId, 'event')} aria-label={`View ${person.name}'s request`}>
-            <Avatar profile={person} /><span><strong>{person.name}</strong><small>{selected === 'received' ? 'Wants to connect' : 'Request pending'}{event ? ' · ' + event.name : ''}</small></span><ArrowRight size={16} aria-hidden="true" />
+            <Avatar profile={person} /><span><strong>{person.name}</strong>{person.role && <span className="request-person-role">{person.role}</span>}<small>{selected === 'received' ? 'Wants to connect' : 'Request pending'}{event ? ' · ' + event.name : ''}</small></span>
           </button>
-          <div className="request-actions">{selected === 'received' ? <><Button disabled={busy} onClick={() => void update(request.id, 'accept')} aria-label={`Accept ${person.name}'s request`}>Accept</Button><TextAction disabled={busy} onClick={() => void update(request.id, 'decline')} aria-label={`Decline ${person.name}'s request`}>Decline</TextAction></> : <TextAction disabled={busy} onClick={() => void update(request.id, 'cancel')} aria-label={`Cancel request to ${person.name}`}>Cancel request</TextAction>}</div>
+          <div className="request-actions">{selected === 'received' ? <><Button disabled={busy} onClick={() => void update(request.id, 'accept')} aria-label={`Accept ${person.name}'s request`}>Accept</Button><Button variant="secondary" className="request-decline" disabled={busy} onClick={() => void update(request.id, 'decline')} aria-label={`Decline ${person.name}'s request`}>Decline</Button></> : <TextAction disabled={busy} onClick={() => void update(request.id, 'cancel')} aria-label={`Cancel request to ${person.name}`}>Cancel request</TextAction>}</div>
         </div>;
       })}</div>
     </>}

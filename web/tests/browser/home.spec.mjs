@@ -30,8 +30,10 @@ for (const width of [1440, 390]) {
 }
 
 for (const width of [1440, 390]) {
-  test('fresh demo Home restores the event hero and joins on Enter room at ' + width + 'px', async ({ page }) => {
+  test('fresh demo Home restores the event hero and joins only on preview entry at ' + width + 'px', async ({ page }) => {
     await page.setViewportSize({ width, height: 950 });
+    // Exercise the active-event action independently of rehearsal wall time.
+    await page.clock.setFixedTime(new Date('2026-09-26T16:00:00-04:00'));
     const env = await workspace(page, { join: false });
     try {
       await page.goto(origin + '/#/home');
@@ -44,7 +46,7 @@ for (const width of [1440, 390]) {
       expect((await env.api('bootstrap')).session.code).toBeNull();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({ path: '.impeccable/review/home-restored-' + width + '.png', fullPage: true });
-      await page.getByRole('button', { name: 'Enter room', exact: true }).click();
+      await page.getByRole('button', { name: 'Preview headset experience', exact: true }).click();
       await expect(page).toHaveURL(/#\/spatial$/);
       expect((await env.api('bootstrap')).session.code).toBe('DEMO');
     } finally { await env.close(); }

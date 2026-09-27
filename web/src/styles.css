@@ -826,18 +826,14 @@ svg {
 }
 .login-steps button:active:not(:disabled) { transform: none; }
 .login-step-number {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #ffffff16;
+  display: inline-block;
+  min-width: 14px;
   font-size: 14px;
   font-weight: 600;
+  text-align: center;
 }
 .login-steps button[aria-current="step"] .login-step-number {
-  background: #104b3d;
-  color: #fff;
+  color: inherit;
 }
 .login-form {
   min-height: 0;
@@ -1119,10 +1115,11 @@ svg {
 }
 .nav-count {
   margin-left: auto;
-  background: #ffffff09;
-  border-radius: 4px;
-  padding: 2px 5px;
-  font-size: 9px;
+  padding: 0;
+  color: currentColor;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 .sidebar-divider {
   margin: 21px 12px;

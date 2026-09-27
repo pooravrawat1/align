@@ -12,9 +12,12 @@ test('profile prioritizes connection context and follow-up on desktop and mobile
       await page.goto(origin + '/#/home?person=leo&event=demo&audience=network');
       const profile = page.locator('.np-profile');
       await expect(profile.getByRole('heading', { name: 'Why you should connect' })).toBeVisible();
-      await expect(profile.locator('.np-follow-up')).toHaveAttribute('open', '');
+      await expect(profile.locator('.np-follow-up')).not.toHaveAttribute('open', '');
       await expect(profile.getByRole('button', { name: /Close .*profile/ })).toHaveCount(0);
+      await expect(profile.getByText('Leo can help you with', { exact: true })).toBeHidden();
+      await profile.locator('.np-disclosure > summary').click();
       await expect(profile.getByText('Leo can help you with', { exact: true })).toBeVisible();
+      await profile.locator('.np-disclosure > summary').click();
       const layout = await profile.evaluate((node) => {
         const selectors = ['.np-compatibility', '.np-project', '.np-follow-up', '.np-more-profile'];
         const positions = selectors.map(selector => node.querySelector(selector).getBoundingClientRect().top);
@@ -22,6 +25,7 @@ test('profile prioritizes connection context and follow-up on desktop and mobile
       });
       expect(layout).toEqual({ ordered: true, fits: true });
       await profile.locator('.np-follow-up').scrollIntoViewIfNeeded();
+      await profile.locator('.np-follow-up > summary').click();
       await expect(profile.getByLabel('Private notes')).toBeVisible();
       await profile.getByRole('button', { name: 'Back to network' }).click();
       await expect(profile).toHaveCount(0);
@@ -63,11 +67,11 @@ test('a sent request remains separate from the private saved profile', async ({ 
   const env = await requestWorkspace(page);
   try {
     await page.goto(origin + '/#/home?tab=people&person=maya&event=demo&audience=event');
-    await page.getByRole('button', { name: 'Request to connect' }).click();
+    await page.getByRole('button', { name: 'Connect', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Request sent' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Save connection' })).toContainText('Save profile');
     await page.getByRole('button', { name: 'Cancel request' }).click();
-    await expect(page.getByRole('button', { name: 'Request to connect' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Connect', exact: true })).toBeVisible();
   } finally {
     await env.close();
   }
@@ -78,8 +82,8 @@ test('a saved Network profile can still receive a connection request from its sh
   try {
     await page.goto(origin + '/#/network');
     await page.getByRole('button', { name: "View Leo Park's profile" }).click();
-    await expect(page.getByRole('button', { name: 'Request to connect' })).toBeVisible();
-    await page.getByRole('button', { name: 'Request to connect' }).click();
+    await expect(page.getByRole('button', { name: 'Connect', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Connect', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Request sent' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Unsave connection' })).toContainText('Saved');
   } finally {

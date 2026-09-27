@@ -1,6 +1,7 @@
 {
-  "source": "https://www.pexels.com/photo/3777943/",
-  "download": "https://images.pexels.com/photos/3777943/pexels-photo-3777943.jpeg?auto=compress&cs=tinysrgb&w=512&h=512&fit=crop",
+  "source": "https://www.pexels.com/photo/4558592/",
+  "photographer": "Risz Amin",
   "license": "https://www.pexels.com/license/",
-  "usage": "Stock photograph illustrating a fictional demo profile. The name, role, and biography are fictional; no endorsement is implied."
+  "processing": "Photographic source only. Crop 800x800+0+160 from an 800px-wide original and resize to 512px. No generative processing.",
+  "usage": "Stock photograph cast as a fictional demo persona; names and biographies do not identify the photographed person or imply endorsement."
 }

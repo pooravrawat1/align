@@ -12,6 +12,7 @@ type Props = {
   ownerKey: string;
   senderName: string;
   demo?: boolean;
+  demoHref?: string;
   pendingCount?: number;
   notify: (message: string) => void;
   onSave: (id: string, patch: { notes?: string; contacted?: boolean }) => Promise<void>;
@@ -39,6 +40,7 @@ function FollowUpEditor({ person, ...props }: Omit<Props, 'people'> & { person: 
   const changedContext = draft.context !== inputContext;
   const noteDirty = notes !== person.notes;
   const messageRef = useRef<HTMLTextAreaElement>(null);
+  const isSavedOnly = person.relationship === 'saved';
 
   useEffect(() => () => { controller.current?.abort(); requestRevision.current += 1; }, []);
   useEffect(() => {
@@ -48,7 +50,7 @@ function FollowUpEditor({ person, ...props }: Omit<Props, 'people'> & { person: 
 
   const saveNote = async () => {
     setSaving(true); setError('');
-    try { await props.onSave(person.id, { notes }); props.notify('Meeting note saved.'); }
+    try { await props.onSave(person.id, { notes }); props.notify(isSavedOnly ? 'Private note saved.' : 'Meeting note saved.'); }
     catch { setError('Your note could not be saved. Try again.'); }
     finally { setSaving(false); }
   };
@@ -78,8 +80,8 @@ function FollowUpEditor({ person, ...props }: Omit<Props, 'people'> & { person: 
 
   return <div className="recap-editor">
     <div className="recap-note-editor">
-      <label htmlFor={`meeting-${person.id}`}>Your meeting note</label>
-      <p>What did you discuss? What would you like to do next?</p>
+      <label htmlFor={`meeting-${person.id}`}>{isSavedOnly ? 'Your private note' : 'Your meeting note'}</label>
+      <p>{isSavedOnly ? 'Why save this person? What would you like to follow up on?' : 'What did you discuss? What would you like to do next?'}</p>
       <textarea id={`meeting-${person.id}`} rows={3} maxLength={2000} value={notes} onChange={event => editNotes(event.target.value)} placeholder="A topic, an idea, or something you offered to share…" />
       <TextAction onClick={() => void saveNote()} disabled={!noteDirty || saving || generating}>{saving ? 'Saving…' : 'Save note'}</TextAction>
     </div>
@@ -117,13 +119,13 @@ export function ConferenceReport({ people, ...props }: Props) {
   };
 
   return <section className="product-panel recap-report" aria-labelledby="recap-people-title">
-    <PanelHeader headingId="recap-people-title" title="Your event recap" description={`${connected} connected · ${saved} saved privately${props.pendingCount ? ` · ${props.pendingCount} pending` : ''}`} action={!props.demo ? <TextAction href="#/recap-demo">Try a completed-conference demo<ArrowUpRight size={15} /></TextAction> : undefined} />
+    <PanelHeader headingId="recap-people-title" title="Your event recap" description={`${connected} connected · ${saved} saved privately${props.pendingCount ? ` · ${props.pendingCount} pending` : ''}`} action={!props.demo ? <TextAction href={props.demoHref ?? '#/recap-demo?persona=alex'}>Try a completed-conference demo<ArrowUpRight size={15} /></TextAction> : undefined} />
     <div className="recap-introduction"><h3>{people.length ? 'Keep the conversation going.' : 'Your next connection starts here.'}</h3><p>{people.length ? `${remaining ? `${remaining} ${remaining === 1 ? 'person to follow up with' : 'people to follow up with'}.` : 'You’re caught up.'} Revisit your common ground, add what you remember, and make the next message personal.` : 'Connect with someone or save their profile at this event. Your people and next steps will appear here.'}</p>{common.length > 0 && <div className="recap-topics">{common.map(topic => <Chip key={topic}>{topic}</Chip>)}</div>}</div>
     {people.length > 0 && <div className="recap-list-toolbar"><h3>Your people</h3><div className="workspace-tabs" role="group" aria-label="Filter follow-ups">{(['all', 'needed', 'contacted'] as const).map(value => <button key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{value === 'all' ? 'Everyone' : value === 'needed' ? 'To follow up' : 'Contacted'}</button>)}</div></div>}
     {saveError && <p className="recap-error" role="alert">{saveError}</p>}
     <div className="recap-report-list">{visible.map(person => <article className="recap-report-person" key={person.id}>
       <div className="recap-person-main"><div className="recap-person-identity">{props.onProfile ? <button className="recap-profile-link" aria-label={`View ${person.profile.name}'s profile`} onClick={() => props.onProfile?.(person.id)}><Avatar profile={person.profile} /><span><strong>{person.profile.name}</strong><span>{person.withdrawn ? 'Shared profile is private' : person.profile.role}</span></span></button> : <div className="recap-profile-link"><Avatar profile={person.profile} /><span><strong>{person.profile.name}</strong><span>{person.profile.role}</span></span></div>}<span className="recap-relationship">{person.relationship === 'connected' ? 'Connected' : 'Saved privately'}{person.contacted && <span><Check size={13} />Contacted</span>}</span></div>
-        <div className="recap-person-context">{person.withdrawn ? <p>Shared details are no longer available. Your private note is kept.</p> : <p><strong>Common ground</strong>{person.sharedInterests.length ? person.sharedInterests.join(' · ') : 'No shared profile topics yet.'}</p>}{person.notes.trim() && <p><strong>Your meeting note</strong>{person.notes}</p>}{!person.notes.trim() && <p className="recap-no-note">No meeting note yet. Add one to make your follow-up more personal.</p>}{person.example && person.notes === person.example.notes && <p><strong>Suggested next step</strong>{person.example.nextStep}</p>}</div>
+        <div className="recap-person-context">{person.withdrawn ? <p>Shared details are no longer available. Your private note is kept.</p> : person.example?.reason ? <p><strong>{person.relationship === 'saved' ? 'Why you saved this profile' : 'Why you connected'}</strong>{person.example.reason}</p> : <p><strong>Common ground</strong>{person.sharedInterests.length ? person.sharedInterests.join(' · ') : 'No shared profile topics yet.'}</p>}{person.example?.durationMinutes != null && <p className="recap-conversation-length"><strong>Conversation</strong>{person.example.durationMinutes} minutes</p>}{person.notes.trim() && <p><strong>{person.relationship === 'saved' ? 'Your private note' : 'Your meeting note'}</strong>{person.notes}</p>}{!person.notes.trim() && <p className="recap-no-note">Saved for later · No conversation recorded.</p>}{person.example && person.notes === person.example.notes && <p><strong>Suggested next step</strong>{person.example.nextStep}</p>}</div>
         <div className="recap-person-actions">{!person.withdrawn && <Button variant={selected === person.id ? 'secondary' : 'primary'} aria-expanded={selected === person.id} aria-controls={`followup-${person.id}`} onClick={() => setSelected(selected === person.id ? null : person.id)}>{selected === person.id ? 'Close draft' : 'Draft follow-up'}{selected === person.id && <X size={15} />}</Button>}<TextAction disabled={savingId !== null} onClick={() => void mark(person)}>{savingId === person.id ? 'Saving…' : person.contacted ? 'Mark to follow up' : 'Mark contacted'}</TextAction></div>
       </div>
       {selected === person.id && !person.withdrawn && <div id={`followup-${person.id}`}><FollowUpEditor key={`${props.ownerKey}:${props.eventId}:${person.id}:${followUpEvidenceContext(person, props.eventName, props.senderName)}`} person={person} {...props} /></div>}

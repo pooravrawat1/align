@@ -79,7 +79,9 @@ The judged run can use `npm run start:demo` in `matcher/` to force fixture-only 
 
 The mixed-reality client lives in `unity/`. Its first implementation slice includes the shared head-pose interface, keyboard-controlled simulation, Quest XR head tracking adapter, remote profile-card presentation, visibility gating, editor scene generators, and EditMode policy tests.
 
-Unity `6000.0.66f2` and Android Build Support are installed, and the project compiles. A development APK is available at `unity/Builds/Quest/Align.apk`; it is configured for Quest 2, OpenXR, ARM64, 72 Hz, and passthrough. The APK was installed and launched on Quest 2 `CoralWallaby3906`; device logs confirmed OpenXR, 72 Hz, and an active passthrough layer, but the visible scene is not yet confirmed in-headset. The current Quest scene displays Maya's hardcoded demo profile and lets A or X toggle the green match state. It does not detect a person or synchronize the second headset yet. Do not rebuild or reinstall the APK until explicitly requested.
+Historical device evidence: a development APK at `unity/Builds/Quest/Align.apk` was configured for Quest 2, OpenXR, ARM64, 72 Hz, and passthrough. It was installed and launched on Quest 2 `CoralWallaby3906`; logs confirmed OpenXR, 72 Hz, and an active passthrough layer, but not the visible in-headset scene. That artifact does not prove the current source changes.
+
+The current source adds compact discovery/conversation presentation and a standalone remote-participant prefab generator. The staged scene advances neutral → matched → conversation → matched with A or X; it is not person detection or live two-headset synchronization. Unity editor was unavailable during this presentation update, so the new EditMode tests and generated prefab remain unexecuted. See [the integration handoff](web/docs/quest-demo-handoff.md) and [the rehearsal guide](web/docs/hackathon-demo.md). Do not rebuild or reinstall the APK until explicitly requested.
 
 Open `unity/` in Unity and use **Align → Build → Build Quest APK** to rebuild. See [the Unity setup guide](unity/README.md) for scene controls and headset installation.
 

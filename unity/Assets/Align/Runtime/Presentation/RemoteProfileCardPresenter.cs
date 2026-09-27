@@ -14,15 +14,21 @@ namespace Align.Presentation
         [SerializeField] private TMP_Text matchReasonText;
         [SerializeField] private TMP_Text brandText;
         [SerializeField] private Graphic panel;
-        [SerializeField] private Color neutralColor = new(0.12f, 0.13f, 0.15f, 0.96f);
-        [SerializeField] private Color matchedColor = new(0.18f, 0.56f, 0.36f, 0.96f);
+        [SerializeField] private Color discoveryTransparentColor = new(0.12f, 0.13f, 0.15f, 0f);
+        [SerializeField] private Color positiveMatchColor = new(0.24f, 0.55f, 0.34f, 0.78f);
+        [SerializeField, Min(0.01f)] private float transitionSeconds = 0.2f;
         [Header("Player nameplate")]
-        [SerializeField] private Color neutralNameColor = Color.black;
+        [SerializeField] private Color readableNeutralNameColor = Color.white;
         [SerializeField] private Color matchedNameColor = new(0.31f, 1f, 0.47f, 1f);
         [SerializeField] private Color nameOutlineColor = new(0f, 0f, 0f, 0.9f);
         [SerializeField, Range(0f, 0.5f)] private float nameOutlineWidth = 0.16f;
 
         private bool _isMatched;
+        private string _matchReason = string.Empty;
+        private Color _targetPanelColor;
+
+        public RemotePresentationState PresentationState { get; private set; }
+        private bool CanPresentMatch => _isMatched && !string.IsNullOrWhiteSpace(_matchReason);
 
         public void Configure(
             TMP_Text profileName,
@@ -42,9 +48,9 @@ namespace Align.Presentation
             panel = background;
             ResolveBrandText();
             DisableRichText();
+            ApplyCompactLayout();
             ApplyNameplateStyle();
-            ApplyNameColor();
-            ApplyDetailVisibility();
+            ApplyPresentation(immediate: true);
         }
 
         public void Bind(ProfileCardData profile)
@@ -55,35 +61,38 @@ namespace Align.Presentation
             }
 
             SetText(nameText, profile.Name?.Trim().ToLowerInvariant());
-            SetText(bioText, profile.Bio);
-            SetText(interestsText, JoinLimited(profile.Interests, 3));
-            SetText(socialText, JoinSocialLinks(profile.SocialLinks, 4));
+            // Match inputs and contact data are not attendee-facing headset content.
+            SetText(bioText, string.Empty);
+            SetText(interestsText, string.Empty);
+            SetText(socialText, string.Empty);
         }
 
         public void SetMatchState(bool isMatched, string reason)
         {
             _isMatched = isMatched;
-
-            if (panel != null)
+            _matchReason = RemotePresentationStatePolicy.LimitReason(reason);
+            if (PresentationState != RemotePresentationState.Conversation)
             {
-                panel.color = isMatched ? matchedColor : neutralColor;
+                PresentationState = RemotePresentationStatePolicy.DiscoveryState(CanPresentMatch);
             }
+            ApplyPresentation(immediate: !isActiveAndEnabled);
+        }
 
-            ApplyNameColor();
-            ApplyDetailVisibility();
-
-            SetText(matchReasonText, isMatched ? reason : string.Empty);
-            if (matchReasonText != null)
-            {
-                matchReasonText.gameObject.SetActive(isMatched && !string.IsNullOrWhiteSpace(reason));
-            }
+        public void SetConversationState(bool isInConversation)
+        {
+            PresentationState = isInConversation
+                ? RemotePresentationState.Conversation
+                : RemotePresentationStatePolicy.DiscoveryState(CanPresentMatch);
+            ApplyPresentation(immediate: !isActiveAndEnabled);
         }
 
         private void Awake()
         {
             ResolveBrandText();
             DisableRichText();
+            ApplyCompactLayout();
             ApplyNameplateStyle();
+            PresentationState = RemotePresentationState.DiscoveryNeutral;
             SetMatchState(false, string.Empty);
         }
 
@@ -92,8 +101,30 @@ namespace Align.Presentation
             nameOutlineWidth = Mathf.Clamp(nameOutlineWidth, 0f, 0.5f);
             ResolveBrandText();
             ApplyNameplateStyle();
-            ApplyNameColor();
-            ApplyDetailVisibility();
+            ApplyPresentation(immediate: true);
+        }
+
+        private void OnEnable()
+        {
+            ApplyPresentation(immediate: true);
+        }
+
+        private void Update()
+        {
+            if (panel == null || panel.color == _targetPanelColor)
+            {
+                return;
+            }
+
+            float blend = 1f - Mathf.Exp(-Time.unscaledDeltaTime / Mathf.Max(0.01f, transitionSeconds));
+            panel.color = Color.Lerp(panel.color, _targetPanelColor, blend);
+            Color delta = panel.color - _targetPanelColor;
+            float maximumDelta = Mathf.Max(
+                Mathf.Abs(delta.r), Mathf.Abs(delta.g), Mathf.Abs(delta.b), Mathf.Abs(delta.a));
+            if (maximumDelta < 0.005f)
+            {
+                panel.color = _targetPanelColor;
+            }
         }
 
         private void DisableRichText()
@@ -118,20 +149,27 @@ namespace Align.Presentation
             }
         }
 
-        private void ApplyDetailVisibility()
+        private void ApplyPresentation(bool immediate)
         {
+            bool showMatch = PresentationState == RemotePresentationState.DiscoveryMatched && CanPresentMatch;
+            _targetPanelColor = showMatch ? positiveMatchColor : discoveryTransparentColor;
             if (panel != null)
             {
-                panel.enabled = _isMatched;
+                panel.enabled = true;
+                if (immediate)
+                {
+                    panel.color = _targetPanelColor;
+                }
             }
 
-            SetActive(bioText, _isMatched);
-            SetActive(interestsText, _isMatched);
-            SetActive(socialText, _isMatched);
+            SetActive(bioText, false);
+            SetActive(interestsText, false);
+            SetActive(socialText, false);
+            SetText(matchReasonText, showMatch ? _matchReason : string.Empty);
+            SetActive(matchReasonText, showMatch);
 
-            // The overhead label should read like an in-game player marker.
-            // Product branding belongs in menus, not above a participant.
             SetActive(brandText, false);
+            ApplyNameColor();
         }
 
         private void ApplyNameplateStyle()
@@ -151,11 +189,33 @@ namespace Align.Presentation
             nameText.text = nameText.text?.Trim().ToLowerInvariant() ?? string.Empty;
         }
 
+        private void ApplyCompactLayout()
+        {
+            if (transform is RectTransform cardRect)
+            {
+                cardRect.sizeDelta = new Vector2(660f, 170f);
+            }
+
+            ConfigureTextRect(nameText, new Vector2(32f, -20f), new Vector2(596f, 56f));
+            ConfigureTextRect(matchReasonText, new Vector2(32f, -84f), new Vector2(596f, 62f));
+        }
+
+        private static void ConfigureTextRect(TMP_Text text, Vector2 position, Vector2 size)
+        {
+            if (text != null && text.transform is RectTransform rect)
+            {
+                rect.anchoredPosition = position;
+                rect.sizeDelta = size;
+            }
+        }
+
         private void ApplyNameColor()
         {
             if (nameText != null)
             {
-                nameText.color = _isMatched ? matchedNameColor : neutralNameColor;
+                nameText.color = PresentationState == RemotePresentationState.DiscoveryMatched
+                    ? matchedNameColor
+                    : readableNeutralNameColor;
             }
         }
 
@@ -175,55 +235,5 @@ namespace Align.Presentation
             }
         }
 
-        private static string JoinLimited(string[] values, int limit)
-        {
-            if (values == null || values.Length == 0 || limit <= 0)
-            {
-                return string.Empty;
-            }
-
-            string result = string.Empty;
-            int included = 0;
-            for (int index = 0; index < values.Length && included < limit; index++)
-            {
-                string value = values[index]?.Trim();
-                if (string.IsNullOrEmpty(value))
-                {
-                    continue;
-                }
-
-                result = included == 0 ? value : $"{result} · {value}";
-                included++;
-            }
-
-            return result;
-        }
-
-        private static string JoinSocialLinks(SocialLinkData[] links, int limit)
-        {
-            if (links == null || links.Length == 0 || limit <= 0)
-            {
-                return string.Empty;
-            }
-
-            string result = string.Empty;
-            int included = 0;
-            for (int index = 0; index < links.Length && included < limit; index++)
-            {
-                SocialLinkData link = links[index];
-                string platform = link?.Platform?.Trim();
-                string handle = link?.UrlOrHandle?.Trim();
-                if (string.IsNullOrEmpty(platform) || string.IsNullOrEmpty(handle))
-                {
-                    continue;
-                }
-
-                string label = $"{platform}: {handle}";
-                result = included == 0 ? label : $"{result}  ·  {label}";
-                included++;
-            }
-
-            return result;
-        }
     }
 }

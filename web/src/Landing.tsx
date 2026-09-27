@@ -71,7 +71,6 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
         tl.fromTo(select(selector), { autoAlpha: 0, y: 18, filter: 'blur(10px)', clipPath: 'inset(0 0 16% 0)', ...from },
           { autoAlpha: 1, y: 0, x: 0, scale: 1, filter: 'blur(0px)', clipPath: 'inset(0 0 0% 0)', duration: range[1] - range[0], ease: 'power2.out' }, range[0]);
       to('.qv-hero-copy', { autoAlpha: 0, y: -20, filter: 'blur(8px)', scale: .985, transformOrigin: 'left bottom', ease: 'power2.in' }, tracks.heroExit);
-      to('.qv-lens-caption', { autoAlpha: 0, y: -10, filter: 'blur(5px)', ease: 'power1.in' }, tracks.heroExit);
       to('.qv-jordan', { autoAlpha: 0 }, tracks.jordanExit);
       to('.qv-tether', { autoAlpha: 0 }, tracks.savedShell);
       to('.qv-world-dim', { opacity: .26 }, tracks.worldDim);
@@ -188,8 +187,7 @@ export function Landing({ onEnter }: { profiles: Profile[]; onEnter: () => void 
           <nav aria-label="Website navigation"><button onClick={() => jumpTo('discover')}>The Experience</button><button onClick={() => jumpTo('network')}>The Connection</button></nav>
           <div className="qv-header-actions"><Button className="qv-enter" onClick={enterExperience} disabled={entering}>Step inside<Glasses size={18} aria-hidden="true" /></Button></div>
         </header>
-        <div className="qv-hero-copy"><div className="qv-hero-message"><h1>Your people.<br className="qv-mobile-break" /> In plain sight<span>.</span></h1><p>Discover people nearby through shared interests and complementary skills.</p></div><div className="qv-hero-actions"><Button className="qv-primary" onClick={enterExperience} disabled={entering}>Try the demo<Glasses size={18} aria-hidden="true" /></Button><button className="qv-how" onClick={() => jumpTo('discover')}>See how it works<ArrowDown size={18} aria-hidden="true" /></button></div></div>
-        <span className="qv-lens-caption">Through Alex’s eyes<span />Catalyst</span>
+        <div className="qv-hero-copy"><div className="qv-hero-message"><h1>Your people.<br className="qv-mobile-break" /> In plain sight<span>.</span></h1><p>Find a reason to say hello. Keep the connection afterward.</p></div><div className="qv-hero-actions"><Button className="qv-primary" onClick={enterExperience} disabled={entering}>Try the demo<Glasses size={18} aria-hidden="true" /></Button><button className="qv-how" onClick={() => jumpTo('discover')}>See how it works<ArrowDown size={18} aria-hidden="true" /></button></div></div>
         <div className="qv-network"><NetworkCopy /></div>
       </div>
     </section>

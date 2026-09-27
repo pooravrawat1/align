@@ -130,7 +130,7 @@ export function PeopleDirectory({ state, user, eventId, mode, limit, pageHeading
   const search = <label className="nx-search"><Search size={17} aria-hidden="true" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a person, skill, or interest" aria-label="Search people" />{query && <button aria-label="Clear search" onClick={() => setQuery("")}><X size={14} /></button>}</label>;
   return (
     <div className={`people-directory ${compact ? "people-directory--compact" : ""}`}>
-      {pageHeading && <PageHeader className="nx-heading" title="Your network" description="A little common ground. A world of possibility." action={search} />}
+      {pageHeading && <PageHeader className="nx-heading" title="Your network" description="People you've saved or connected with. Pick up where you left off." action={search} />}
       {headerContent}
       {!compact && (
         <>

@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { createServer } from '../../server/index.mjs';
+import { readFileSync } from 'node:fs';
+const demoProfiles = JSON.parse(readFileSync(new URL('../../shared/demo-data.json', import.meta.url), 'utf8')).profiles;
 
 const origin = process.env.ALIGN_TEST_ORIGIN || 'http://127.0.0.1:4320';
 const draftKey = 'align-entry-v1';
@@ -454,12 +456,12 @@ for (const viewport of viewports) {
     await expect(selector).toHaveCount(0);
     await expectDesktopStepWithinViewport(page, 'What are you working on?', 'Continue');
     await expect(bioField(page)).toHaveValue(
-      'Building a wearable navigation system that makes the world easier to explore.',
+      demoProfiles.find(person => person.id === 'alex').bio,
     );
     await expectChips(page, 'I can help with', ['Embedded systems', 'C++', 'Electronics']);
     await expectSharedProfilePill(page, 'I can help with', 'Embedded systems');
     await expect(chipGroup(page, 'I can help with').getByRole('textbox', { name: 'Add a skill', exact: true })).toBeVisible();
-    await expect(page.getByLabel('LinkedIn profile', { exact: true })).toHaveValue('');
+    await expect(page.getByLabel('LinkedIn profile', { exact: true })).toHaveValue(demoProfiles.find(person => person.id === 'alex').linkedin);
     await expect(page.getByText('A little context makes a better introduction.', { exact: true })).toHaveCount(0);
     await expect(page.getByText(/(?:won.t|not|never).*import/i)).toHaveCount(0);
     await expect(page.getByText(/Demo mode · No account or password required\./)).toHaveCount(0);
@@ -511,11 +513,11 @@ for (const viewport of viewports) {
         name: 'Alex Morgan',
         email: 'alex@example.com',
         role: 'Hardware engineer',
-        bio: 'Building a wearable navigation system that makes the world easier to explore.',
+        bio: demoProfiles.find(person => person.id === 'alex').bio,
         skills: ['Embedded systems', 'C++', 'Electronics'],
         interests: ['Assistive technology', 'Robotics', 'Open source'],
         lookingFor: ['Computer vision'],
-        linkedin: '',
+        linkedin: demoProfiles.find(person => person.id === 'alex').linkedin,
       },
     });
     expect(roomRequests).toEqual([]);
@@ -588,9 +590,9 @@ test('edited details and chips survive step navigation and reload, then drive th
   expect(matched.response.status).toBe(200);
   expect(matched.value.matches.find((match) => match.userA === 'alex' && match.userB === 'maya')).toMatchObject({
     compatible: true,
-    score: 0.99,
-    reason: 'Maya offers Computer vision, which Alexandra is seeking.',
-    source: 'mock',
+    score: 0.95,
+    reason: 'You both attended Build Together in 2025. What stayed with each of you from it?',
+    source: 'rules',
   });
 
   await page.goto(`${origin}/#/home`);
@@ -612,7 +614,7 @@ test('Alex and Maya keep independent drafts across the three steps', async ({ pa
   await expect(page.getByLabel('First name', { exact: true })).toHaveValue('Maya');
   await continueToWork(page);
   await expect(bioField(page)).toHaveValue(
-    'Building visual assistance software. Curious about bringing intelligence into everyday objects.',
+    demoProfiles.find(person => person.id === 'maya').bio,
   );
   await bioField(page).fill('Maya-only biography');
   await replaceChips(page, 'I can help with', 'Add a skill', ['Maya-only skill']);

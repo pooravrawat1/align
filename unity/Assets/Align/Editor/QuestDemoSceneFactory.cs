@@ -33,7 +33,8 @@ namespace Align.Editor
 
             Camera viewer = CreateXrOrigin();
             (RemoteParticipantView participant, RemoteProfileCardPresenter presenter) =
-                CreateDemoParticipant(viewer);
+                CreateRemoteParticipant(
+                    viewer, DemoMayaProfile(), "Remote Participant - Maya (Demo Anchor)", stagedReady: true);
 
             var controllerObject = new GameObject("Quest Demo Controller");
             QuestDemoController controller = controllerObject.AddComponent<QuestDemoController>();
@@ -49,7 +50,7 @@ namespace Align.Editor
             AssetDatabase.SaveAssets();
 
             Selection.activeGameObject = controllerObject;
-            Debug.Log("Created QuestDemo. On Quest, look forward to see Maya's card; press A or X to toggle the match state.");
+            Debug.Log("Created staged QuestDemo. Look forward for Maya; A/X advances presentation state and B/Y resets neutral discovery.");
         }
 
         [MenuItem("Align/Preview/Toggle Quest Demo Match _F8")]
@@ -103,26 +104,34 @@ namespace Align.Editor
             return camera;
         }
 
-        private static (RemoteParticipantView, RemoteProfileCardPresenter) CreateDemoParticipant(Camera viewer)
+        public static (RemoteParticipantView, RemoteProfileCardPresenter) CreateRemoteParticipant(
+            Camera viewer,
+            ProfileCardData profile,
+            string objectName = "Remote Participant",
+            bool stagedReady = false)
         {
-            var remoteRoot = new GameObject("Remote Participant - Maya (Demo Anchor)");
+            var remoteRoot = new GameObject(objectName);
             RemoteParticipantView participant = remoteRoot.AddComponent<RemoteParticipantView>();
 
-            GameObject card = CreateProfileCard(remoteRoot.transform, viewer.transform);
+            GameObject card = CreateProfileCard(remoteRoot.transform, viewer, profile);
             participant.Configure(remoteRoot.transform, card.transform, 0.28f);
-            participant.SetSessionState(true, true, true);
+            participant.SetSessionState(stagedReady, stagedReady, stagedReady);
 
             RemoteProfileCardPresenter presenter = card.GetComponent<RemoteProfileCardPresenter>();
+            RemoteParticipantPresentationWiring.EnsureVisibility(participant, viewer, card);
             return (participant, presenter);
         }
 
-        private static GameObject CreateProfileCard(Transform parent, Transform viewer)
+        private static GameObject CreateProfileCard(
+            Transform parent,
+            Camera viewer,
+            ProfileCardData profile)
         {
             var card = new GameObject("Profile Card", typeof(RectTransform));
             card.transform.SetParent(parent, false);
 
             RectTransform cardRect = card.GetComponent<RectTransform>();
-            cardRect.sizeDelta = new Vector2(660f, 380f);
+            cardRect.sizeDelta = new Vector2(660f, 170f);
             cardRect.localScale = Vector3.one * 0.00145f;
 
             Canvas canvas = card.AddComponent<Canvas>();
@@ -132,35 +141,24 @@ namespace Align.Editor
             Image panel = card.AddComponent<Image>();
             panel.color = new Color(0.08f, 0.1f, 0.14f, 0.94f);
 
-            TMP_Text brand = CreateText(card.transform, "Brand", 18f, new Vector2(32f, -22f), new Vector2(596f, 30f));
-            brand.text = "ALIGN  ·  DEMO PROFILE";
-            brand.color = new Color(0.45f, 0.84f, 1f);
-
-            TMP_Text name = CreateText(card.transform, "Name", 42f, new Vector2(32f, -58f), new Vector2(596f, 62f));
-            TMP_Text bio = CreateText(card.transform, "Bio", 23f, new Vector2(32f, -126f), new Vector2(596f, 92f));
-            TMP_Text interests = CreateText(card.transform, "Interests", 20f, new Vector2(32f, -224f), new Vector2(596f, 40f));
-            TMP_Text social = CreateText(card.transform, "Social", 18f, new Vector2(32f, -270f), new Vector2(596f, 36f));
-            TMP_Text matchReason = CreateText(card.transform, "Match reason", 19f, new Vector2(32f, -314f), new Vector2(596f, 50f));
+            TMP_Text name = CreateText(card.transform, "Name", 42f, new Vector2(32f, -20f), new Vector2(596f, 56f));
+            TMP_Text matchReason = CreateText(card.transform, "Match reason", 19f, new Vector2(32f, -84f), new Vector2(596f, 62f));
 
             RemoteProfileCardPresenter presenter = card.AddComponent<RemoteProfileCardPresenter>();
-            presenter.Configure(name, bio, interests, social, matchReason, panel, brand);
-            presenter.Bind(new ProfileCardData
-            {
-                UserId = "maya",
-                Name = "Maya Chen",
-                Bio = "Computer vision engineer building visual assistance software.",
-                Interests = new[] { "Assistive technology", "Robotics", "Startups" },
-                SocialLinks = new[]
-                {
-                    new SocialLinkData { Platform = "GitHub", UrlOrHandle = "maya-builds" }
-                }
-            });
+            presenter.Configure(name, null, null, null, matchReason, panel);
+            presenter.Bind(profile);
             presenter.SetMatchState(false, string.Empty);
 
             YawBillboard billboard = card.AddComponent<YawBillboard>();
-            billboard.Configure(viewer);
+            billboard.Configure(viewer != null ? viewer.transform : null);
             return card;
         }
+
+        private static ProfileCardData DemoMayaProfile() => new()
+        {
+            UserId = "maya",
+            Name = "Maya Chen"
+        };
 
         private static TMP_Text CreateText(
             Transform parent,

@@ -194,7 +194,7 @@ function RelationshipActions({ request, userId, eligible, saved, busy, onSave, o
           <Button type="button" variant="secondary" onClick={onFollowUp}>Follow up</Button>
         </div>
       ) : eligible ? (
-        <Button type="button" busy={busy} onClick={onRequest} className="np-request-connection"><UserPlus size={15} />Request to connect</Button>
+        <Button type="button" busy={busy} onClick={onRequest} className="np-request-connection"><UserPlus size={17} />Connect</Button>
       ) : saved ? (
         <Button type="button" variant="secondary" onClick={onFollowUp}>Follow up</Button>
       ) : null}
@@ -283,18 +283,13 @@ function CompatibilitySection({ person, loading, onRetry }: { person: NetworkPer
           <Sparkles size={15} aria-hidden="true" />
           <h2 id="np-compatibility-title">Why you should connect</h2>
         </div>
+        {!loading && assessmentScore(compatibility) !== null && <CompatibilityValue person={person} />}
       </div>
       <p className="np-compatibility-summary">{loading ? "Finding the strongest reason for you to talk…" : compatibility.reason || person.reason}</p>
       <div className="np-common-ground">
         <h3>Common ground</h3>
         <TopicList items={person.sharedInterests} empty="No shared interests are visible yet." />
       </div>
-      {(person.theyOffer.length > 0 || person.youOffer.length > 0) && (
-        <div className="np-contributions">
-          {person.theyOffer.length > 0 && <div><h3>{firstName(person.profile)} can help you with</h3><TopicList items={person.theyOffer} empty="" /></div>}
-          {person.youOffer.length > 0 && <div><h3>You can help {firstName(person.profile)} with</h3><TopicList items={person.youOffer} empty="" /></div>}
-        </div>
-      )}
 
       {compatibility.source === "unavailable" && !loading && onRetry && (
         <button className="np-retry" type="button" onClick={onRetry}><RefreshCw size={14} />Try compatibility again</button>
@@ -303,7 +298,12 @@ function CompatibilitySection({ person, loading, onRetry }: { person: NetworkPer
       <details className="np-disclosure">
         <summary>{detailLabel} <ChevronDown size={15} aria-hidden="true" /></summary>
         <div className="np-breakdown">
-          <CompatibilityValue person={person} />
+          {(person.theyOffer.length > 0 || person.youOffer.length > 0) && (
+            <div className="np-contributions">
+              {person.theyOffer.length > 0 && <div><h3>{firstName(person.profile)} can help you with</h3><TopicList items={person.theyOffer} empty="" /></div>}
+              {person.youOffer.length > 0 && <div><h3>You can help {firstName(person.profile)} with</h3><TopicList items={person.youOffer} empty="" /></div>}
+            </div>
+          )}
           {routes.map((route) => (
             <div className="np-category" key={route.id}>
               <div>
@@ -609,7 +609,7 @@ export function NetworkProfile({ person, user, state, act, busy, notify, onClose
   const suggestedMessage = initialMessage(person);
   const [message, setMessage] = useState(suggestedMessage);
   const [messageOpen, setMessageOpen] = useState(false);
-  const [followUpOpen, setFollowUpOpen] = useState(true);
+  const [followUpOpen, setFollowUpOpen] = useState(false);
 
   useEffect(() => {
     setMessage(suggestedMessage);

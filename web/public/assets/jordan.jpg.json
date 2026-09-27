@@ -1,6 +1,7 @@
 {
-  "source": "https://www.pexels.com/photo/2379004/",
-  "download": "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=512&h=512&fit=crop",
+  "source": "https://www.pexels.com/photo/31630003/",
+  "photographer": "Shima Nia",
   "license": "https://www.pexels.com/license/",
-  "usage": "Stock photograph illustrating a fictional demo profile. The name, role, and biography are fictional; no endorsement is implied."
+  "processing": "Photographic source only. Crop 650x650+75+60 from an 800px-wide original and resize to 512px. No generative processing.",
+  "usage": "Stock photograph cast as a fictional demo persona; names and biographies do not identify the photographed person or imply endorsement."
 }
