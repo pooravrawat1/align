@@ -27,10 +27,25 @@ seconds. `GEMINI_MODEL` defaults to `gemini-3.8-flash`.
 
 The default address is `0.0.0.0:4323` so headsets on the **same private Wi-Fi or
 hotspot** can reach the laptop. The Unity URL is
-`http://<LAPTOP_LAN_IP>:4323`, never `localhost` on a headset. Verify the
+`http://<LAPTOP_LAN_IP>:4323` for a LAN build. Verify the
 laptop's LAN IP and firewall, and confirm Unity's Android build permits the
 chosen local HTTP connection. The HTTP endpoint has no authentication; use a
 private demo network and fictional profiles.
+
+For the current USB demo build (`http://127.0.0.1:4323` inside each Quest), keep
+the matcher running and start this watcher in a separate terminal:
+
+```sh
+npm run relay:usb -- 1WMHH8117K0363 1WMHHB65B82106
+```
+
+It checks only the named headsets every 2.5 seconds and restores their
+`tcp:4323` USB reverse mappings after reconnects or Unity restarting ADB.
+Keep both USB cables connected. If a headset is unauthorized, accept USB
+debugging in the headset and select **Always allow from this computer**;
+the watcher resumes automatically after authorization. Stop it with Ctrl+C.
+Use `--once` before the serials for a single repair/check. Set `ALIGN_ADB_PATH`
+if ADB is installed somewhere other than the pinned Unity SDK or your PATH.
 
 ```sh
 curl http://127.0.0.1:4323/health
@@ -38,6 +53,14 @@ npm run smoke -- alex maya
 npm run smoke -- alex sam
 npm test
 ```
+
+The same process also hosts the temporary private-LAN `POST /room/update`
+endpoint used by the current Quest integration. It accepts a bounded device ID,
+room code, requested demo profile, calibration flag, and calibrated pose. The
+response contains the assigned profile, active participants, and one
+authoritative match result. Members expire after five seconds without an
+update. This endpoint has no authentication and must never be exposed outside
+the private demo network.
 
 `MATCH_URL=http://<LAPTOP_LAN_IP>:4323 npm run smoke -- alex maya` runs the
 same request from another machine on the network. A real Quest-to-laptop check
@@ -80,8 +103,9 @@ version, and whether a key is configured without revealing the key.
 - Headset A is hard-coded to Alex. Headset B is Maya by default and can be
   switched to Sam through an **operator-only** control. No user profile editor
   or login is needed for this demo.
-- One Photon coordinator sends one match request after both profiles are ready.
-  It broadcasts the returned result to both headsets. Render only the other
+- The current LAN relay evaluates the pair once after both profiles are ready
+  and returns the same stored result to both headsets. A future Photon
+  coordinator should preserve this behavior. Render only the other
   person's name before matching; on `compatible: true`, turn both name cues
   green and show the exact same reason. Never render the score or full profile.
 - On Maya ↔ Sam switch, clear the old green state and reason **before** sending
