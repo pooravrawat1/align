@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode, type MouseEvent } from 'react';
 import { ArrowRight, Pencil } from 'lucide-react';
 import type { Action, Profile, State } from './types';
 import { Avatar, Button, Chip, PanelHeader, TextAction } from './ui';
@@ -28,17 +28,28 @@ export function HomeSections(props: Props) {
         <Button className="home-focus-action" onClick={() => { location.hash = peopleLink; }}>Find collaborators</Button>
       </> : <><p className="home-focus-statement">What are you working on?</p><p className="home-focus-hint">Share what you’re building and who you’d like to meet.</p><Button className="home-focus-action" onClick={() => { location.hash = '#/profile?section=focus'; }}>Set your focus</Button></>}
     </section>
-    <section className="product-panel product-connections-panel"><PanelHeader title="Recent connections" headingClassName="home-section-title" action={<TextAction href="#/network">View network</TextAction>} /><div className="product-connection-list">
-      {recent.map(person => <div className="product-connection-row" key={person.profile.id}>
-        <button className="home-connection-profile" aria-label={`View ${person.profile.name}'s profile`} onClick={() => openPersonProfile(person.profile.id, person.connection?.eventId, 'network')}>
+    <RecentConnectionsPanel people={recent} onOpen={id => { const person = recent.find(item => item.profile.id === id)!; openPersonProfile(id, person.connection?.eventId, 'network'); }} action={<TextAction href="#/network">View network</TextAction>}>
+      {recent.length === 0 && <div className="home-connections-empty"><h3>Your network starts in the room.</h3><p>Meet someone, find common ground, and save their profile here.</p><Button variant="secondary" onClick={() => { location.hash = peopleLink; }}>Find people</Button></div>}
+    </RecentConnectionsPanel>
+  </div>;
+}
+
+export function RecentConnectionsPanel({ people, onOpen, action, children }: {
+  people: { profile: Profile; topics: string[]; reason: string }[];
+  onOpen: (id: string, event: MouseEvent<HTMLButtonElement>) => void;
+  action: ReactNode;
+  children?: ReactNode;
+}) {
+  return <section className="product-panel product-connections-panel">
+    <PanelHeader title="Recent connections" headingClassName="home-section-title" action={action} />
+    <div className="product-connection-list">{people.map(person => <div className="product-connection-row" key={person.profile.id}>
+        <button className="home-connection-profile" aria-label={`View ${person.profile.name}'s profile`} onClick={event => onOpen(person.profile.id, event)}>
           <Avatar profile={person.profile} />
           <span className="product-connection-copy"><strong>{person.profile.name}<small>{person.profile.role}</small></strong>
-            {person.sharedInterests.length > 0 ? <span className="home-connection-topics">{person.sharedInterests.map(topic => <Chip key={topic}>{topic}</Chip>)}</span> : <span>{person.reason}</span>}
+            {person.topics.length > 0 ? <span className="home-connection-topics">{person.topics.map(topic => <Chip key={topic}>{topic}</Chip>)}</span> : <span>{person.reason}</span>}
           </span>
           <ArrowRight className="home-connection-arrow" size={17} aria-hidden="true" />
         </button>
-      </div>)}
-      {recent.length === 0 && <div className="home-connections-empty"><h3>Your network starts in the room.</h3><p>Meet someone, find common ground, and save their profile here.</p><Button variant="secondary" onClick={() => { location.hash = peopleLink; }}>Find people</Button></div>}
-    </div></section>
-  </div>;
+      </div>)}{children}</div>
+  </section>;
 }

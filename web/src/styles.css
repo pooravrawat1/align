@@ -1002,6 +1002,7 @@ svg {
   border-radius: var(--radius-control);
   background: var(--raised);
 }
+.entry-tags-field:focus-within { border-color: var(--text); }
 .entry-tag {
   gap: 4px;
 }
@@ -1059,6 +1060,7 @@ svg {
 }
 .sidebar > .brand {
   margin-left: 8px;
+  margin-bottom: var(--space-6);
 }
 .workspace-label {
   display: flex;
@@ -1145,26 +1147,6 @@ svg {
 .sidebar-bottom {
   margin-top: auto;
   padding-top: 30px;
-}
-.demo-note {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  padding: 20px 10px;
-  font-size: 9px;
-  color: #bcc4b5;
-  line-height: 1.6;
-}
-.demo-note .status-dot {
-  margin-top: 5px;
-  width: 4px;
-  height: 4px;
-}
-.demo-note small {
-  color: var(--quiet);
-  display: block;
-  font-size: 8px;
-  margin-top: 4px;
 }
 .account {
   margin-top: 15px;

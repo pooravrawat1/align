@@ -1,1 +1,6 @@
-{"prompt":"Sourced stock portrait inherited from QuestMatch v1. Origin: https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=160&h=160&fit=crop&crop=faces&q=85 . Used as an illustrative fictional demo identity; not an endorsement."}
+{
+  "source": "https://www.pexels.com/photo/2379004/",
+  "download": "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=512&h=512&fit=crop",
+  "license": "https://www.pexels.com/license/",
+  "usage": "Stock photograph illustrating a fictional demo profile. The name, role, and biography are fictional; no endorsement is implied."
+}

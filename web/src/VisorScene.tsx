@@ -81,14 +81,16 @@ export const VisorScene = forwardRef<VisorHandle, { children: ReactNode }>(funct
       const p = progress.current;
       const state = journeyState(p);
       const { approach: expansion, camera, reason, collapse, network, chip, portrait, identityDetail, reflection } = state;
-      const baseWidth = width < 700 ? Math.max(width * 1.4, height * 1.42) : Math.min(width * .94, height * 1.72);
+      const baseWidth = width < 700 ? Math.max(width * 1.4, height * 1.18) : Math.min(width * .94, height * (width >= 900 ? 1.4 : 1.72));
       // The nose relief must clear the bottom edge even on tall desktop viewports.
       const expandedWidth = Math.max(baseWidth * 2.75, height * 4.3);
       const lensWidth = baseWidth + (expandedWidth - baseWidth) * expansion;
       const lensHeight = lensWidth / 2;
       const drift = (1 - expansion) * (reduced.matches ? 0 : 1);
       const left = width / 2 - lensWidth / 2 + pointer.x * 19 * drift;
-      const top = height * .47 - lensHeight / 2 + pointer.y * 11 * drift;
+      // Reserve the lower band for the headline instead of crossing it with the rim.
+      const centerY = width < 700 ? .38 : width >= 900 ? .4 + .07 * expansion : .47;
+      const top = height * centerY - lensHeight / 2 + pointer.y * 11 * drift;
       const image = roomLayout(width, height, aspect, camera);
       const transform = `translate(${left} ${top}) scale(${lensWidth / 1600})`;
       contour.setAttribute('transform', transform);
@@ -111,6 +113,9 @@ export const VisorScene = forwardRef<VisorHandle, { children: ReactNode }>(funct
       host.style.setProperty('--chip', String(chip));
       host.style.setProperty('--identity-detail', String(identityDetail));
       host.style.setProperty('--saved', String(portrait));
+      host.dataset.expanded = network === 1 ? 'true' : 'false';
+      // Clip scene shading, not the glass ancestor: glass must sample the photo.
+      host.style.setProperty('--visor-shade-clip', expansion === 1 ? 'none' : `url(#${id})`);
       host.style.setProperty('--match-expanded', String(Math.max(reason * (1 - collapse), network)));
       const role = match.querySelector<HTMLElement>('.qv-match-identity small')!;
       role.style.visibility = identityDetail === 0 ? 'hidden' : 'visible';
@@ -240,6 +245,6 @@ export const VisorScene = forwardRef<VisorHandle, { children: ReactNode }>(funct
         <path d={VISOR_PATH} fill="none" stroke="#f0ffff" strokeOpacity=".17" data-reflection strokeWidth="1" transform="translate(0 3)" />
       </g>
     </svg>
-    <div className="qv-hud" style={{ clipPath: `url(#${id})` }}>{children}</div>
+    <div className="qv-hud">{children}</div>
   </div>;
 });

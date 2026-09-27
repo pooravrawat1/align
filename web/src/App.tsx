@@ -4,7 +4,6 @@ import {
   ArrowUpRight,
   CalendarDays,
   Check,
-  ChevronDown,
   Compass,
   ExternalLink,
   Glasses,
@@ -18,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 import seed from "../shared/demo-data.json";
-import { Avatar, Brand, Button, Empty, Mark, PageHeader } from "./ui";
+import { Brand, Button, Empty, Mark, PageHeader } from "./ui";
 import { Spatial } from "./Spatial";
 import { SidebarSelection } from "./SidebarSelection";
 import { Landing } from "./Landing";
@@ -29,12 +28,11 @@ import type { Action, Profile, State } from "./types";
 import { Onboarding, entryDraftKey, type OnboardingDetails } from "./Onboarding";
 import { DesignSystemPage } from "./DesignSystemPage";
 import { CompatibilityProvider } from "./CompatibilityContext";
-import { homeEvent } from "./eventModel";
 import { PersonProfileDialog } from "./PersonProfileDialog";
 import { RecapDemo } from "./RecapDemo";
 import { clearFollowUpDrafts } from "./followUpModel";
 
-const initial: State = { ...seed, profiles: seed.profiles as Profile[], matches: [], session: null, demo: true };
+const initial: State = { ...seed, profiles: seed.profiles as Profile[], connections: seed.connections as State["connections"], matches: [], session: null, demo: true };
 
 const route = () => {
   const p = location.hash.replace("#/", "").split("?")[0] || "landing";
@@ -323,7 +321,6 @@ export default function App() {
     setError('Your session expired. Enter the app again to continue.');
   };
   const sharedProps = { state, user, connected, act, busy, notify: setToast, onSessionExpired };
-  const event = homeEvent(state);
   const isPublic = ["landing", "login", "recap-demo"].includes(page);
   useEffect(() => {
     // Keep an unfinished entry refreshable even after a partial session creation.
@@ -402,13 +399,6 @@ export default function App() {
           <aside className={`sidebar ${menu ? "open" : ""}`}>
             <SidebarSelection page={page} />
             <Brand compact />
-            <div className="workspace-label">
-              <span className="workspace-monogram">{event?.name.replace(/^the\s+/i, "").charAt(0) || <CalendarDays size={17} />}</span>
-              <span>
-                {event?.name || "Choose an event"}
-                <small>{event ? "Your shared space" : "Your next conversation"}</small>
-              </span>
-            </div>
             <nav aria-label="Main navigation">
               {nav.map(({ id, name, icon: Icon }) => (
                 <a
@@ -435,23 +425,6 @@ export default function App() {
                 <span>Spatial preview</span>
               </a>
             </nav>
-            <div className="sidebar-bottom">
-              <div className="demo-note">
-                <span className="status-dot" />
-                <span>
-                  A little common ground.
-                  <small>Spatial Salon · interactive preview</small>
-                </span>
-              </div>
-              <button className="account" onClick={() => go("profile")}>
-                <Avatar profile={user} />
-                <span>
-                  {user.name}
-                  <small>Personal space</small>
-                </span>
-                <ChevronDown size={14} />
-              </button>
-            </div>
           </aside>
           {menu && (
             <button

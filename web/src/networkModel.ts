@@ -113,7 +113,7 @@ export function networkPerson(state: State, user: Profile, original: Profile, as
     goals: allowed("goals") ? original.goals : [],
     domains: allowed("domains") ? original.domains : [],
     experiences: allowed("experiences") ? original.experiences : [],
-    contact: audience === "network" && !withdrawn && !!connection && original.visibility?.contact === true ? original.contact : "",
+    contact: audience === "network" && !withdrawn && !!connection ? original.contact : "",
     linkedin: "",
     website: "",
     email: "",

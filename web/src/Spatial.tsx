@@ -5,9 +5,10 @@ import type { Action, Match, Profile, State } from "./types";
 import { initialRoomState, roomReducer, createReplayableRequest, selectActiveRemoteProfiles, selectSpatialCards, type ReliabilityKind, type RoomState } from "./SpatialState";
 import { networkPerson, ownedConnection } from "./networkModel";
 import { go } from "./App";
-import { activeEvent, eventPhoto } from "./eventModel";
+import { activeEvent, homeEvent, eventPhoto } from "./eventModel";
 import { SpatialScene } from "./SpatialScene";
 import "./SpatialV2.css";
+import "./SpatialSurface.css";
 
 type Props = { state: State; user: Profile; act: Action; busy: boolean; connected: string[]; onConnect: (id: string) => Promise<void>; notify: (message: string) => void };
 
@@ -42,8 +43,7 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
   soundRef.current = sound;
 
   const event = state.events.find(item => item.code.toUpperCase() === state.session?.code?.toUpperCase());
-  const selectedEvent = activeEvent(state);
-  const previewEvent = event ?? state.events.find(item => item.code.toUpperCase() === code.toUpperCase()) ?? selectedEvent;
+  const previewEvent = event ?? homeEvent(state);
   const participants = selectActiveRemoteProfiles(state.profiles.filter(person => event?.participantIds?.includes(person.id)), user);
   const cards = selectSpatialCards(participants);
   const sampleDemo = state.demo && event?.code.toUpperCase() === "DEMO";
@@ -214,16 +214,16 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
 
   return <div ref={stageRef} className="qmv2 spatial-content">
     <header className="qmv2-page-heading">
-      <div><TextAction icon={<ArrowLeft size={16} />} iconPosition="start" disabled={busy || savingProfileId !== null} onClick={() => entered ? void leavePreview() : go("home")}>Back to event</TextAction><h1>Spatial preview</h1></div>
+      <div><TextAction icon={<ArrowLeft size={16} />} iconPosition="start" disabled={busy || savingProfileId !== null} onClick={() => entered ? void leavePreview() : go("home")}>Back to event</TextAction><h1>Spatial preview</h1><p>Discover the people around you. Find a reason to connect.</p></div>
       <div className="qmv2-page-actions">
         {entered && room.kind !== "conversation" && <button className="qmv2-icon-button" aria-label="Preview controls" aria-expanded={recoveryOpen} onClick={openControls}><Settings2 size={19} /></button>}
         <button className="qmv2-icon-button" aria-label={fullscreen ? "Exit fullscreen" : "Expand spatial preview"} onClick={() => { const request = fullscreen ? document.exitFullscreen() : stageRef.current?.requestFullscreen(); void request?.catch(() => notify("Fullscreen is unavailable in this browser.")); }}>{fullscreen ? <Minimize size={19} /> : <Expand size={19} />}</button>
       </div>
     </header>
     <div className={`qmv2-stage ${entered ? "is-room" : "is-setup"} ${monochrome ? "is-monochrome" : ""} ${panelOpen ? "has-panel" : ""}`}>
-      {!entered && previewEvent && <img className="qmv2-scene" src={eventPhoto(previewEvent)} alt="" />}
+      {!entered && previewEvent && <img className="qmv2-scene" src={eventPhoto(previewEvent)} alt="" fetchPriority="high" />}
       {!entered && <div className="qmv2-atmosphere" />}
-      {!entered ? <section className="qmv2-entry" aria-labelledby="spatial-entry-title">
+      {!entered ? <section className="qmv2-entry spatial-surface spatial-surface--frosted" aria-labelledby="spatial-entry-title">
         <Glasses size={32} aria-hidden="true" />
         <h2 id="spatial-entry-title">{state.session?.code ? "Meet beyond the screen" : "Join your event"}</h2>
         <p>{state.session?.code ? "Explore the people in your event. Find a reason to say hello, then save the people you want to keep in touch with." : "Enter your event code to explore the people in the room."}</p>
@@ -257,8 +257,8 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
           <TextAction disabled={busy} onClick={() => void resetPreview()}><RotateCcw size={16} />Reset demo</TextAction>
         </PreviewPanel>}
         <div className={`qmv2-room-footer${room.kind === "conversation" ? " is-conversation" : ""}`}>
-          {room.kind === "conversation" ? <><button ref={finishConversationRef} className="qmv2-people-button" onClick={() => dispatch({ type: "FINISH_CONVERSATION" })}>Finish conversation<ArrowRight size={16} /></button></> : <>
-          <button ref={peopleButtonRef} className="qmv2-people-button" aria-expanded={room.kind === "ambient" && room.panel === "people"} disabled={!socialVisible} onClick={() => { triggerRef.current = peopleButtonRef.current; if (room.kind === "profile") dispatch({ type: "CLOSE_LAYER" }); dispatch({ type: "OPEN_PANEL", panel: "people" }); }}><Users size={18} />People<span>{participants.length}</span></button>
+          {room.kind === "conversation" ? <><button ref={finishConversationRef} className="qmv2-people-button spatial-surface" onClick={() => dispatch({ type: "FINISH_CONVERSATION" })}>Finish conversation<ArrowRight size={16} /></button></> : <>
+          <button ref={peopleButtonRef} className="qmv2-people-button spatial-surface" aria-expanded={room.kind === "ambient" && room.panel === "people"} disabled={!socialVisible} onClick={() => { triggerRef.current = peopleButtonRef.current; if (room.kind === "profile") dispatch({ type: "CLOSE_LAYER" }); dispatch({ type: "OPEN_PANEL", panel: "people" }); }}><Users size={18} />People<span>{participants.length}</span></button>
           <div className="qmv2-room-status" role="status">{matching ? <><LoaderCircle size={15} className="spin" />Finding common ground…</> : matchError ? <><span>Matching unavailable. You can still explore people.</span><button disabled={busy} onClick={() => void runMatches()}>Retry</button></> : <><span className="qmv2-match-dot" />{hasSampleMatches && "Sample match · "}Green means a reason to meet</>}</div>
           </>}
         </div>
@@ -270,7 +270,7 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
 function ParticipantCard({ profile, match, distance, conversation, relation, onOpen }: { profile: Profile; match?: Match; distance: number; conversation: boolean; relation: string | null; onOpen: () => void }) {
   const expanded = Boolean(match && relation) && distance <= 4.75 && !conversation;
   const Card = conversation ? "div" : "button";
-  return <Card className={`qmv2-card ${expanded ? "qmv2-card--expanded is-matched" : "qmv2-card--compact"}${conversation ? " is-conversation" : ""}`} role={conversation ? "status" : undefined} aria-label={conversation ? `In conversation with ${profile.name}` : `Open ${profile.name}`} onClick={conversation ? undefined : onOpen}>
+  return <Card className={`qmv2-card spatial-surface ${expanded ? "qmv2-card--expanded is-matched spatial-surface--matched" : "qmv2-card--compact"}${conversation ? " is-conversation" : ""}`} role={conversation ? "status" : undefined} aria-label={conversation ? `In conversation with ${profile.name}` : `Open ${profile.name}`} onClick={conversation ? undefined : onOpen}>
     <div className="qmv2-card-person"><strong>{profile.name}</strong>{expanded && <><span aria-hidden="true">·</span><small>{profile.role}</small></>}</div>
     {expanded && <p className="qmv2-card-reason" title={relation ?? undefined}>{relation}</p>}
     <span className="qmv2-card-tether" aria-hidden="true" />
@@ -300,7 +300,7 @@ function ProfileDrawer({ afterConversation, state, user, profile, match, sampleM
   const showFollowUp = afterConversation || !onStart;
   const shared = person.sharedInterests;
   const hasCommonGround = shared.length > 0 || person.theyOffer.length > 0 || person.youOffer.length > 0;
-  return <PreviewPanel title="Meet someone new" onClose={onClose} className="qmv2-person-panel" footer={
+  return <PreviewPanel title="Meet someone new" onClose={onClose} className="qmv2-person-panel spatial-surface" footer={
     <div ref={confirmationRef} className={`qmv2-connect${saved ? " is-saved" : ""}`}>
       {onStart && !afterConversation && <Button disabled={disabled || saving} onClick={onStart}><MessageCircle size={16} />Start conversation</Button>}
       {showFollowUp && (saved ? <><div className="qmv2-save-confirmation" role="status"><Check size={20} /><div><strong>Saved to your network</strong><p>Keep notes and follow up from Network.</p></div></div><Button onClick={onClose}>Back to the room<ArrowRight size={17} /></Button></> : <><h3>Keep the conversation going</h3><p>Save {profile.name.split(" ")[0]} to your Network so you can find them after the event.</p><Button busy={saving} disabled={disabled} onClick={onSave}><Bookmark size={17} />{error ? "Try saving again" : "Save connection"}</Button><small>Only saved to your network. No request is sent.</small></>)}
