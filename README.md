@@ -35,8 +35,8 @@ We built the demo on Meta Quest 2 because that's the hardware we had. The real h
  
 ```mermaid
 flowchart LR
-  questA["Quest A: Alex\nOpenXR + passthrough"]
-  questB["Quest B: Maya or Sam\nOpenXR + passthrough"]
+  questA["Quest A\nOpenXR + passthrough"]
+  questB["Quest B\nOpenXR + passthrough"]
   relay["Laptop: room DEMO relay\nport 4323"]
   matcher["Matcher\nschema + deadline"]
   gemini["Gemini\nscore + one reason"]
@@ -71,20 +71,19 @@ flowchart LR
 - The private-LAN relay has no authentication and is meant for a private network only.
 ## Tech stack
  
-**Matching and voice**
-- Gemini (`gemini-3.8-flash`) scores each pair and writes the conversation starter as structured JSON
-- ElevenLabs turns the match sentence into speech on the headset
-- Node.js 20.6+ zero-dependency matcher (`matcher/`) enforces the schema, the 3-second deadline, and the rubric fallback
-- Private-LAN room relay at `POST /room/update`
-**Headset**
-- Unity `6000.0.66f2`, C#, Unity OpenXR + Unity OpenXR: Meta
-- Meta Quest 2 passthrough (AR Foundation, no camera-frame access)
-- TextMeshPro world-space canvases
-- `HttpRoomTransport` today; Photon Fusion Shared Mode planned
-**Web companion**
-- React 19, TypeScript, Vite
-- Node HTTP session API deployed as a Vercel serverless function
-- MongoDB Atlas for the 400-person seeded catalogue, with an in-memory fallback for tests
+| Layer | Tech | Role |
+| --- | --- | --- |
+| Matching | Gemini (`gemini-3.8-flash`) | Scores each pair and writes the conversation starter as structured JSON |
+| Voice | ElevenLabs | Turns the match sentence into speech on the headset |
+| Matcher | Node.js 20.6+, zero dependencies (`matcher/`) | Enforces the schema, the 3-second deadline, and the rubric fallback |
+| Relay | Private-LAN room relay (`POST /room/update`) | Passes headset state between the Quests and the matcher |
+| Headset engine | Unity `6000.0.66f2`, C#, Unity OpenXR + Unity OpenXR: Meta | Builds and runs the Quest client |
+| Passthrough | Meta Quest 2, AR Foundation | Mixed-reality view with no camera-frame access |
+| Headset UI | TextMeshPro world-space canvases | Renders the match card |
+| Networking | `HttpRoomTransport` (Photon Fusion Shared Mode planned) | Connects the headset to the relay |
+| Web frontend | React 19, TypeScript, Vite | Companion site |
+| Web backend | Node HTTP session API on Vercel serverless | Profile and session endpoints |
+| Data | MongoDB Atlas (in-memory fallback for tests) | 400-person seeded catalogue |
 ## Run it locally
  
 **Web companion**
@@ -95,7 +94,7 @@ npm ci
 npm run dev
 ```
  
-Then open `http://127.0.0.1:4320`. Use the Alex profile and room code `DEMO`. See [web/README.md](web/README.md) for the API port, tests, and the `MONGODB_URI` env var.
+Then open `http://127.0.0.1:4320`. See [web/README.md](web/README.md) for the API port, tests, and the `MONGODB_URI` env var.
  
 **Matcher**
  
