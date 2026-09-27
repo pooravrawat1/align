@@ -82,7 +82,6 @@ flowchart LR
   api --> matcher
   api --> mongo
 ```
- 
  - **Gemini does the matching.** It gets both profiles and returns structured JSON: a 0 to 100 score across the six categories in the [matching rubric](assets/align-matching-rubric.md), plus one conversation starter grounded in what both people wrote. 70 or above is a match. Nobody ever sees the number.
 - **The card.** A viewer-fixed glass panel 1.35 m in front of the wearer, 64 cm wide, black type on a translucent surface. On a match it tints pale green and shows the other person's name and the conversation starter. On a nonmatch it stays empty.
 - **The voice.** On a match, ElevenLabs reads the starter aloud. Your eyes stay on the person, not the panel. A low-vision wearer hears the intro instead of hunting for text.
@@ -93,9 +92,7 @@ flowchart LR
 - The score is never shown to anyone, match or not.
 - Gemini only sees the interests, skills, and experiences people wrote. Contact and social links never leave the device. They are display fields, not matching inputs.
 - No facial recognition, no camera pixels, no inference about who is in the room. The Quest 2 app never requests passthrough image frames. Only people wearing a connected headset are represented.
-- Only fictional demo profiles (Alex, Maya, Sam) go on the Quest. There is no login on the headset.
-- The private-LAN relay has no authentication and is meant for a private demo network only.
-- Run the demo in a marked, obstacle-free area with passthrough and headset boundaries enabled.
+- The private-LAN relay has no authentication and is meant for a private network only.
 ## Tech stack
  
 **Matching and voice**
