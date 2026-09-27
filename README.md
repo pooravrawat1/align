@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="web/public/assets/catalyst-logo-wordmark-white.png" alt="Catalyst" width="280">
+  <img src="docs/brand/catalyst-logo.png" alt="Catalyst" width="420">
 </p>
 
 <h3 align="center">Your people. In plain sight.</h3>
 
 <p align="center">
-  A colocated mixed-reality networking experience for events. Look at someone through your headset, see a shared green cue and one reason to say hello.
+  AI that brings people together in the same room. Gemini reads both profiles and gives both of you the same green cue and one reason to say hello.
 </p>
 
 <p align="center">
@@ -17,12 +17,11 @@
 </p>
 
 <p align="center">
-  <img alt="Meta Quest 2" src="https://img.shields.io/badge/Meta%20Quest%202-000?logo=meta&logoColor=white">
+  <img alt="Meta track" src="https://img.shields.io/badge/Meta%20track-AI%20that%20brings%20people%20together-0668E1?logo=meta&logoColor=white">
+  <img alt="Gemini API track" src="https://img.shields.io/badge/Gemini%20API%20track-matching-4285F4?logo=googlegemini&logoColor=white">
+  <img alt="Meta Quest 2" src="https://img.shields.io/badge/Demo%20hardware-Quest%202-000?logo=meta&logoColor=white">
   <img alt="Unity 6000.0" src="https://img.shields.io/badge/Unity-6000.0.66f2-000?logo=unity&logoColor=white">
-  <img alt="React" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white">
-  <img alt="Node 20" src="https://img.shields.io/badge/Node-20.6%2B-3C873A?logo=node.js&logoColor=white">
-  <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-Atlas-13AA52?logo=mongodb&logoColor=white">
-  <img alt="Gemini" src="https://img.shields.io/badge/Gemini-optional-4285F4?logo=googlegemini&logoColor=white">
+  <img alt="ElevenLabs" src="https://img.shields.io/badge/ElevenLabs-spoken%20match-000">
 </p>
 
 <sub align="center"><i>Formerly known as Align. The Unity project, APK filename, and Android package still use the Align name.</i></sub>
@@ -31,7 +30,11 @@
 
 ## The pitch
 
-Big events put you in a room with the right people and no reliable way to find them. Catalyst puts an invisible layer on top of the room: when two people wearing Quest 2 headsets look at each other, they see the other person's name and, when their interests align, the same green cue and one specific reason to start a conversation. Nothing about the other person is inferred from their face, their posture, or a camera image; you only see people who chose to wear a headset and join the room.
+Big events put you in a room with the right people and no reliable way to find them. Catalyst is built for the Meta track: use AI to bring people together. Gemini is the matcher. It reads what both people actually wrote about themselves and returns one shared result, a match or a quiet nonmatch, plus a single concrete reason to start talking. Both people see the same cue. Nobody gets ranked in public.
+
+The form factor this is for is glasses you can wear while you have a conversation: Meta Ray-Ban glasses and the newer Meta headsets, where your face stays visible and the match can live in your ear. We shipped the working demo on Quest 2 because that is the hardware we had in the room. A full headset is a weak networking device. It covers your face, and the whole point is to look at someone and say hello. Quest 2 was enough to prove passthrough, a shared room, and an AI match card. Glasses are where it belongs.
+
+Nothing about the other person is inferred from their face, their posture, or a camera image. You only meet people who chose to join the room.
 
 ## Try it in a browser
 
@@ -62,8 +65,9 @@ flowchart LR
   questA["Quest A: Alex\nOpenXR + passthrough"]
   questB["Quest B: Maya or Sam\nOpenXR + passthrough"]
   relay["Laptop: room DEMO relay\nport 4323"]
-  matcher["Matcher engine\nrubric scoring"]
-  gemini["Gemini\n(optional, live mode)"]
+  matcher["Matcher\nrubric + Gemini schema"]
+  gemini["Gemini API\nscore, route, one reason"]
+  voice["ElevenLabs\nspoken match on glasses"]
   web["Web companion\nReact + Vite"]
   api["Node session API\nsame process, /api/*"]
   mongo[("MongoDB Atlas\n400 seeded people")]
@@ -71,7 +75,9 @@ flowchart LR
   questA <-->|"private Wi-Fi"| relay
   questB <-->|"private Wi-Fi"| relay
   relay --> matcher
-  matcher -->|"3 s timeout, then fixture"| gemini
+  matcher -->|"both profiles"| gemini
+  gemini -->|"score and one reason"| matcher
+  gemini -->|"same sentence, spoken"| voice
   web --> api
   api --> matcher
   api --> mongo
@@ -79,8 +85,9 @@ flowchart LR
 
 - **Calibration.** Both wearers stand on a shared marker and press A or X. After calibration, A or X hides or shows their own card. B or Y on the second headset switches Maya and Sam for a nonmatch demo.
 - **The card.** A viewer-fixed glass panel 1.35 m in front of the wearer, 64 cm wide, with black type on a translucent surface. On a match the same panel tints pale green and reveals one conversation starter.
-- **The score.** Six weighted networking categories score 0 to 100 against the [team rubric](assets/align-matching-rubric.md). Anything at 70 or above is a match. Judges never see the number.
-- **The judged run.** `npm run start:demo` in `matcher/` forces the bundled fixture with no Gemini call, so the demo works with no internet. Live mode calls Gemini with a 3 s deadline and falls back to the same fixture result.
+- **Gemini does the matching.** This project is in the Gemini API track, and the model is the product, not a plug-in. Gemini receives both profiles and must return structured JSON: a 0–100 score across the six [rubric](assets/align-matching-rubric.md) categories, the route it took, and one conversation starter grounded in what both people wrote. A score of 70 or above is a match. The headset shows the cue and the sentence. It never shows the number.
+- **A deadline, then the same rubric.** The call has a 3-second budget so two people are not standing there waiting on a model. If Gemini is slow, unreachable, or returns something that fails the schema, the deterministic rubric returns the same shape of result. `npm run start:demo` forces that path so a judged run still completes with no network. Live matching is the Gemini call.
+- **Spoken, for people who cannot read the card.** The match is already one short sentence. On Ray-Ban glasses that sentence does not have to be read. ElevenLabs turns it into speech: who this person is, and why you should say hello. Someone with low vision hears the introduction instead of hunting for a floating panel. The Quest build draws the card because that is what this headset can show. The same Gemini sentence is what the glasses would say. That is the accessibility path, and it is why the output is a sentence instead of a dashboard.
 
 ## Privacy and safety
 
@@ -92,15 +99,16 @@ flowchart LR
 
 ## Tech stack
 
-**Headset**
-- Unity `6000.0.66f2`, C#, Unity OpenXR + Unity OpenXR: Meta
-- Meta Quest 2 passthrough (AR Foundation, no camera-frame access)
-- TextMeshPro world-space canvases
+**Where it runs**
+- Built for Meta Ray-Ban glasses and newer Meta headsets, where you can still see the other person's face and hear a match in your ear
+- Demo hardware is Meta Quest 2: Unity `6000.0.66f2`, C#, Unity OpenXR + Unity OpenXR: Meta, passthrough with no camera-frame access
+- TextMeshPro world-space canvases for the glass match card
 - `HttpRoomTransport` today; Photon Fusion Shared Mode planned
 
-**Backend and AI**
-- Node.js 20.6+, zero-dependency HTTP matcher (`matcher/`)
-- Rules-based rubric with an optional Gemini structured-JSON adapter and a 3-second fallback
+**Matching**
+- Gemini API (`gemini-3.8-flash`) returns structured JSON: score, route, and one conversation starter
+- Node.js 20.6+ matcher (`matcher/`) enforces the schema, a 3-second deadline, and the rubric fallback
+- ElevenLabs speaks that same sentence on glasses, so a low-vision wearer hears the match instead of reading a card
 - Private-LAN room relay at `POST /room/update`
 
 **Web companion**
@@ -127,7 +135,7 @@ cd matcher
 npm run start:demo
 ```
 
-This is the deterministic judged-demo path: fixture only, no Gemini, no `.env`. Live-first mode and the LAN relay watcher are in [matcher/README.md](matcher/README.md).
+This forces the rubric fixture so a judged run still finishes with no network. The live path, which calls Gemini, is `npm run start:env` with a key in `.env`. Setup is in [matcher/README.md](matcher/README.md).
 
 **Unity client**
 
@@ -148,11 +156,11 @@ The build lands in `unity/Builds/Quest/Align.apk`. Full setup, controller mappin
 
 ## Team
 
-Built at HackGT as a 24-hour Meta Quest 2 hackathon MVP. Ownership from [assets/TASKS.md](assets/TASKS.md):
+Built at HackGT for the Meta track and the Gemini API track. Ownership from [assets/TASKS.md](assets/TASKS.md):
 
 - **Quest / MR lead** — Unity project, Quest builds, passthrough, profile-card rendering
 - **Multiplayer / spatial lead** — Room networking, pose sync, interpolation, calibration
-- **Backend / AI lead** — Profile and match schema, matcher API, Gemini adapter, deterministic fallback, MongoDB catalogue
+- **Backend / AI lead** — Profile and match schema, Gemini matching, rubric fallback, MongoDB catalogue
 - **UX / demo / integration lead** — Profile creation UI, preset and demo flow, match states, recovery controls, QA
 
 ## Documentation
