@@ -1181,14 +1181,25 @@ if (executedDirectly) {
   const envFile = new URL('../.env', import.meta.url);
   if (existsSync(envFile)) loadEnvFile(envFile);
   const port = configuredPort();
-  await bootstrapDataSource();
+  await ensureDataSource();
   createServer().listen(port, HOST, () => {
     console.log(`Catalyst demo API listening at http://${HOST}:${port} (data: ${getActiveStore().source})`);
   });
 }
 
+let bootstrapping = null;
+
+// Safe to call on every request: serverless instances load MongoDB once and
+// reuse the store while warm. A failed load is retried on the next call.
+export function ensureDataSource() {
+  bootstrapping ??= bootstrapDataSource().then((loaded) => {
+    if (!loaded) bootstrapping = null;
+  });
+  return bootstrapping;
+}
+
 async function bootstrapDataSource() {
-  if (!process.env.MONGODB_URI) return;
+  if (!process.env.MONGODB_URI) return true;
   try {
     const { getDb } = await import('./mongodb.mjs');
     const { createMongoStore, setActiveStore } = await import('./store.mjs');
@@ -1196,7 +1207,9 @@ async function bootstrapDataSource() {
     const store = await createMongoStore(db);
     setActiveStore(store);
     console.log(`Loaded ${store.snapshot().profiles.length} profiles from MongoDB (${db.databaseName}).`);
+    return true;
   } catch (error) {
     console.warn(`MongoDB startup failed, falling back to bundled seed: ${error?.message ?? error}`);
+    return false;
   }
 }
