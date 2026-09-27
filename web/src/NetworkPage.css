@@ -76,6 +76,9 @@
 @keyframes nx-profile-arrive { from { opacity: 0; transform: scale(.975); } to { opacity: 1; transform: scale(1); } }
 .nx-profile-layer::-webkit-scrollbar { width: 6px; }
 .nx-profile-layer::-webkit-scrollbar-thumb { background: #ffffff26; border-radius: 6px; }
+.nx-network-view-toggle { display: inline-flex; gap: 2px; background: var(--surface-recessed); border: 1px solid var(--border-subtle); border-radius: 999px; padding: 3px; margin: 0 2px 18px; align-self: flex-start; }
+.nx-network-view-toggle button { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; padding: 7px 14px; background: transparent; color: #a1a4ad; font-size: 12px; min-height: 34px; cursor: pointer; }
+.nx-network-view-toggle button[aria-pressed="true"] { color: var(--text-primary); background: var(--surface-selected); box-shadow: 0 2px 5px #00000024; }
 .nx-footnote { display: flex; justify-content: space-between; gap: 15px; font-size: var(--type-label); color: var(--text-tertiary); margin: 15px 2px 0; line-height: 1.6; }
 .nx-footnote > span { white-space: nowrap; }
 .nx-discover-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: start; gap: 18px; padding: 28px 24px; }
@@ -105,6 +108,8 @@
 .nx-workspace-people .nx-people-list { padding-top: 4px; }
 .nx-person-row { position: relative; width: calc(100% + 24px); margin: 0 -12px; display: flex; align-items: center; gap: 14px; padding: 16px 12px; background: transparent; border: 0; border-radius: var(--radius-control); color: var(--text); text-align: left; }
 .nx-person-row:not(:last-child)::after { content: ""; position: absolute; left: 78px; right: 12px; bottom: 0; border-bottom: 1px solid var(--nx-divider); pointer-events: none; }
+.nx-person-row--plain { gap: 0; padding: 14px 12px; }
+.nx-person-row--plain:not(:last-child)::after { left: 12px; }
 .nx-person-row .avatar { width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0; }
 .nx-row-identity { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
 .nx-row-identity > strong { font-size: 15px; font-weight: 600; line-height: 1.4; letter-spacing: -.01em; overflow-wrap: anywhere; }
