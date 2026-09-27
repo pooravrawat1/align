@@ -39,18 +39,6 @@ We built the demo on Meta Quest 2 because that's the hardware we had. The real h
 2. Continue with the prepared **Alex** profile.
 3. Explore Home, Events, Network, and Profile.
 4. Open **Spatial preview** and enter `DEMO` to walk through the room in your browser.
-## Screenshots
- 
-<table>
-  <tr>
-    <td width="50%"><img src="docs/screenshots/01-landing.png" alt="Landing page: Your people. In plain sight."></td>
-    <td width="50%"><img src="docs/screenshots/02-home.png" alt="Home tab with event card, recent connections, and focus"></td>
-  </tr>
-  <tr>
-    <td width="50%"><img src="docs/screenshots/03-profile.png" alt="Profile editor with a live spatial card preview"></td>
-    <td width="50%"><img src="docs/screenshots/04-spatial.png" alt="Spatial preview with floating name labels in a room"></td>
-  </tr>
-</table>
 
 ## How it works
  
