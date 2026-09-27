@@ -12,6 +12,13 @@ export function assessmentScore(assessment: PairAssessment | null | undefined) {
   return assessment?.status === "ready" ? assessment.score : null;
 }
 
+export function assessmentMatchLabel(assessment: PairAssessment | null | undefined) {
+  const score = assessmentScore(assessment);
+  if (score === null) return "Fit not assessed";
+  if (score >= MATCH_THRESHOLD) return "Strong match";
+  return score === 0 ? "Different focus" : "Limited match";
+}
+
 export function assessmentRouteLabel(route: PairAssessment["route"]) {
   if (route === "networking") return "Networking fit";
   if (route === "professional") return "Professional experience";

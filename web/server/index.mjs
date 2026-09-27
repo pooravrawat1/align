@@ -11,7 +11,6 @@ import { MATCH_THRESHOLD, experienceRoutes } from '../../matcher/src/rubric.mjs'
 import { matchingProfile } from './assessment.mjs';
 import { validateProfile as validateMatchProfile } from '../../matcher/src/profiles.mjs';
 import { getActiveStore } from './store.mjs';
-import { buildGraph } from './graph.mjs';
 
 const HOST = '127.0.0.1';
 const DEFAULT_PORT = 4311;
@@ -725,25 +724,6 @@ async function handleRequest(request, response, sessions, assessmentService, req
 
   if (request.method === 'GET' && url.pathname === '/api/health') {
     sendJson(response, 200, { ok: true, demo: true });
-    return;
-  }
-
-  if (request.method === 'GET' && url.pathname === '/api/graph') {
-    const store = getActiveStore();
-    const eventId = url.searchParams.get('eventId') ?? null;
-    const hubsParam = url.searchParams.get('hubs');
-    const allowedHubs = new Set(['interest', 'skill', 'event']);
-    const hubs = hubsParam
-      ? hubsParam.split(',').map((value) => value.trim()).filter((value) => allowedHubs.has(value))
-      : [...allowedHubs];
-    const graph = await buildGraph(store, {
-      eventId,
-      hubs,
-      viewerId: request.headers['x-session-id']
-        ? sessions.get(request.headers['x-session-id'])?.session?.userId ?? null
-        : null,
-    });
-    sendJson(response, 200, graph);
     return;
   }
 

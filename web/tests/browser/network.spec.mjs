@@ -64,10 +64,13 @@ for (const width of [390, 900, 1440]) {
   });
 }
 
-test('profile opens in the centered shared dialog and Gemini assessment is requested once', async ({ page }) => {
+test('profile opens in the centered shared dialog and reuses its list assessment', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   const { traffic } = await openNetwork(page);
-  await page.getByRole('button', { name: "View Leo Park's profile" }).click();
+  const row = page.getByRole('button', { name: "View Leo Park's profile" });
+  await expect(row.locator('.nx-fit')).toContainText('89/100');
+  const initialRequestCount = traffic.filter(({ path }) => path === '/api/compatibility').length;
+  await row.click();
   const dialog = page.getByRole('dialog', { name: 'Leo Park — full profile' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText('89')).toBeVisible();
@@ -75,30 +78,23 @@ test('profile opens in the centered shared dialog and Gemini assessment is reque
   const box = await dialog.boundingBox();
   expect(Math.abs(box.x + box.width / 2 - 720)).toBeLessThan(2);
   expect(Math.abs(box.y + box.height / 2 - 500)).toBeLessThan(2);
-  await expect.poll(() => traffic.filter(({ path }) => path === '/api/compatibility').length).toBe(1);
-  const request = traffic.find(({ path }) => path === '/api/compatibility');
+  expect(traffic.filter(({ path }) => path === '/api/compatibility')).toHaveLength(initialRequestCount);
+  const request = traffic.find(({ path, body }) => path === '/api/compatibility' && body.participantId === 'leo');
   expect(request.body).toEqual({ participantId: 'leo', eventId: 'demo', audience: 'network' });
   expect(request.headers['x-session-id']).toBe('network-test');
   await page.goBack();
   await expect(dialog).toHaveCount(0);
 });
 
-test('map camera and portraits do not shift while the profile dialog is open', async ({ page }) => {
+test('network retains the list behind the profile dialog without map controls', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 620 });
   await openNetwork(page);
-  await page.getByRole('button', { name: 'Map', exact: true }).click();
-  await page.getByRole('button', { name: 'Zoom in' }).click();
-  const zoom = await page.getByLabel('Current zoom').textContent();
-  const self = page.locator('.nm-self');
-  const before = await self.boundingBox();
-  await page.getByRole('button', { name: 'View Jordan Lee, Creative technologist' }).click();
+  await expect(page.getByRole('button', { name: /^(Map|Graph)$/ })).toHaveCount(0);
+  await page.getByRole('button', { name: "View Jordan Lee's profile" }).click();
   await expect(page.getByRole('dialog', { name: 'Jordan Lee — full profile' })).toBeVisible();
-  const opened = await self.boundingBox();
-  expect(Math.abs(opened.x - before.x)).toBeLessThan(1);
-  expect(Math.abs(opened.y - before.y)).toBeLessThan(1);
-  await page.getByRole('button', { name: "Close Jordan Lee's profile" }).click();
+  await page.getByRole('button', { name: 'Back to network' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByLabel('Current zoom')).toHaveText(zoom);
+  await expect(page.getByRole('button', { name: "View Jordan Lee's profile" })).toBeVisible();
 });
 
 test('unsaving removes the person without exposing them as global discovery', async ({ page }) => {
