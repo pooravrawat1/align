@@ -1,0 +1,650 @@
+{
+  "nodes": [
+    {
+      "id": "alex",
+      "type": "person",
+      "label": "Alex Morgan",
+      "group": null,
+      "degree": 10,
+      "avatar": "/assets/alex.jpg",
+      "role": "Hardware engineer",
+      "synthetic": false
+    },
+    {
+      "id": "maya",
+      "type": "person",
+      "label": "Maya Chen",
+      "group": null,
+      "degree": 6,
+      "avatar": "/assets/maya.jpg",
+      "role": "Computer vision engineer",
+      "synthetic": false
+    },
+    {
+      "id": "jordan",
+      "type": "person",
+      "label": "Jordan Lee",
+      "group": null,
+      "degree": 8,
+      "avatar": "/assets/jordan.jpg",
+      "role": "Creative technologist",
+      "synthetic": false
+    },
+    {
+      "id": "sam",
+      "type": "person",
+      "label": "Sam Rivera",
+      "group": null,
+      "degree": 6,
+      "avatar": "/assets/sam.jpg",
+      "role": "Product designer",
+      "synthetic": false
+    },
+    {
+      "id": "nina",
+      "type": "person",
+      "label": "Nina Patel",
+      "group": null,
+      "degree": 7,
+      "avatar": "/assets/nina.jpg",
+      "role": "Full-stack developer",
+      "synthetic": false
+    },
+    {
+      "id": "leo",
+      "type": "person",
+      "label": "Leo Park",
+      "group": null,
+      "degree": 7,
+      "avatar": "/assets/leo.jpg",
+      "role": "Robotics researcher",
+      "synthetic": false
+    },
+    {
+      "id": "priya",
+      "type": "person",
+      "label": "Priya Shah",
+      "group": null,
+      "degree": 5,
+      "avatar": null,
+      "role": "Accessibility researcher",
+      "synthetic": false
+    },
+    {
+      "id": "mateo",
+      "type": "person",
+      "label": "Mateo Alvarez",
+      "group": null,
+      "degree": 4,
+      "avatar": null,
+      "role": "Climate data engineer",
+      "synthetic": false
+    },
+    {
+      "id": "amina",
+      "type": "person",
+      "label": "Amina Okafor",
+      "group": null,
+      "degree": 4,
+      "avatar": null,
+      "role": "Civic technology organizer",
+      "synthetic": false
+    },
+    {
+      "id": "theo",
+      "type": "person",
+      "label": "Theo Nguyen",
+      "group": null,
+      "degree": 5,
+      "avatar": null,
+      "role": "Industrial designer",
+      "synthetic": false
+    },
+    {
+      "id": "elena",
+      "type": "person",
+      "label": "Elena Petrova",
+      "group": null,
+      "degree": 7,
+      "avatar": null,
+      "role": "Spatial audio engineer",
+      "synthetic": false
+    },
+    {
+      "id": "interest:assistive-technology",
+      "type": "interest",
+      "label": "Assistive technology",
+      "group": "interest",
+      "degree": 4,
+      "avatar": null
+    },
+    {
+      "id": "interest:robotics",
+      "type": "interest",
+      "label": "Robotics",
+      "group": "interest",
+      "degree": 4,
+      "avatar": null
+    },
+    {
+      "id": "interest:open-source",
+      "type": "interest",
+      "label": "Open source",
+      "group": "interest",
+      "degree": 6,
+      "avatar": null
+    },
+    {
+      "id": "skill:c",
+      "type": "skill",
+      "label": "C++",
+      "group": "skill",
+      "degree": 2,
+      "avatar": null
+    },
+    {
+      "id": "skill:python",
+      "type": "skill",
+      "label": "Python",
+      "group": "skill",
+      "degree": 4,
+      "avatar": null
+    },
+    {
+      "id": "skill:computer-vision",
+      "type": "skill",
+      "label": "Computer vision",
+      "group": "skill",
+      "degree": 2,
+      "avatar": null
+    },
+    {
+      "id": "interest:spatial-computing",
+      "type": "interest",
+      "label": "Spatial computing",
+      "group": "interest",
+      "degree": 2,
+      "avatar": null
+    },
+    {
+      "id": "interest:design",
+      "type": "interest",
+      "label": "Design",
+      "group": "interest",
+      "degree": 3,
+      "avatar": null
+    },
+    {
+      "id": "skill:unity",
+      "type": "skill",
+      "label": "Unity",
+      "group": "skill",
+      "degree": 2,
+      "avatar": null
+    },
+    {
+      "id": "skill:prototyping",
+      "type": "skill",
+      "label": "Prototyping",
+      "group": "skill",
+      "degree": 4,
+      "avatar": null
+    },
+    {
+      "id": "interest:creative-tools",
+      "type": "interest",
+      "label": "Creative tools",
+      "group": "interest",
+      "degree": 4,
+      "avatar": null
+    },
+    {
+      "id": "interest:communities",
+      "type": "interest",
+      "label": "Communities",
+      "group": "interest",
+      "degree": 4,
+      "avatar": null
+    },
+    {
+      "id": "event:demo",
+      "type": "event",
+      "label": "The Builders Room",
+      "group": "event",
+      "degree": 11,
+      "avatar": null
+    },
+    {
+      "id": "event:spatial",
+      "type": "event",
+      "label": "Spatial Sessions",
+      "group": "event",
+      "degree": 5,
+      "avatar": null
+    },
+    {
+      "id": "event:prototype",
+      "type": "event",
+      "label": "Prototype Night",
+      "group": "event",
+      "degree": 6,
+      "avatar": null
+    }
+  ],
+  "links": [
+    {
+      "source": "alex",
+      "target": "interest:assistive-technology",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "maya",
+      "target": "interest:assistive-technology",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "leo",
+      "target": "interest:assistive-technology",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "priya",
+      "target": "interest:assistive-technology",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "alex",
+      "target": "interest:robotics",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "maya",
+      "target": "interest:robotics",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "leo",
+      "target": "interest:robotics",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "theo",
+      "target": "interest:robotics",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "alex",
+      "target": "interest:open-source",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "jordan",
+      "target": "interest:open-source",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "nina",
+      "target": "interest:open-source",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "leo",
+      "target": "interest:open-source",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "mateo",
+      "target": "interest:open-source",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "elena",
+      "target": "interest:open-source",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "alex",
+      "target": "skill:c",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "elena",
+      "target": "skill:c",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "maya",
+      "target": "skill:python",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "nina",
+      "target": "skill:python",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "leo",
+      "target": "skill:python",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "mateo",
+      "target": "skill:python",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "maya",
+      "target": "skill:computer-vision",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "leo",
+      "target": "skill:computer-vision",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "jordan",
+      "target": "interest:spatial-computing",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "elena",
+      "target": "interest:spatial-computing",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "jordan",
+      "target": "interest:design",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "sam",
+      "target": "interest:design",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "theo",
+      "target": "interest:design",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "jordan",
+      "target": "skill:unity",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "elena",
+      "target": "skill:unity",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "jordan",
+      "target": "skill:prototyping",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "sam",
+      "target": "skill:prototyping",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "priya",
+      "target": "skill:prototyping",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "theo",
+      "target": "skill:prototyping",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "sam",
+      "target": "interest:creative-tools",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "nina",
+      "target": "interest:creative-tools",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "amina",
+      "target": "interest:creative-tools",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "elena",
+      "target": "interest:creative-tools",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "sam",
+      "target": "interest:communities",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "nina",
+      "target": "interest:communities",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "priya",
+      "target": "interest:communities",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "amina",
+      "target": "interest:communities",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "alex",
+      "target": "event:demo",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "maya",
+      "target": "event:demo",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "jordan",
+      "target": "event:demo",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "sam",
+      "target": "event:demo",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "nina",
+      "target": "event:demo",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "leo",
+      "target": "event:demo",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "priya",
+      "target": "event:demo",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "mateo",
+      "target": "event:demo",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "amina",
+      "target": "event:demo",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "theo",
+      "target": "event:demo",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "elena",
+      "target": "event:demo",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "alex",
+      "target": "event:spatial",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "maya",
+      "target": "event:spatial",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "jordan",
+      "target": "event:spatial",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "elena",
+      "target": "event:spatial",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "theo",
+      "target": "event:spatial",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "alex",
+      "target": "event:prototype",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "sam",
+      "target": "event:prototype",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "nina",
+      "target": "event:prototype",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "priya",
+      "target": "event:prototype",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "amina",
+      "target": "event:prototype",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "mateo",
+      "target": "event:prototype",
+      "type": "tag",
+      "weight": 1
+    },
+    {
+      "source": "alex",
+      "target": "jordan",
+      "type": "connection",
+      "weight": 3
+    },
+    {
+      "source": "alex",
+      "target": "nina",
+      "type": "connection",
+      "weight": 3
+    },
+    {
+      "source": "alex",
+      "target": "leo",
+      "type": "connection",
+      "weight": 3
+    }
+  ],
+  "meta": {
+    "source": "memory",
+    "generatedAt": "1970-01-01T00:00:00.000Z",
+    "eventId": null,
+    "hubs": [
+      "event",
+      "interest",
+      "skill"
+    ],
+    "viewerId": null,
+    "counts": {
+      "people": 11,
+      "hubs": 15,
+      "matches": 0,
+      "connections": 3,
+      "orphans": 0
+    }
+  }
+}

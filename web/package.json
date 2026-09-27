@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4320",
     "test": "node --test tests/*.test.mjs",
-    "dev:quest": "node scripts/dev.mjs --quest"
+    "dev:quest": "node scripts/dev.mjs --quest",
+    "seed": "node --env-file=.env scripts/seed.mjs"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
@@ -16,10 +17,13 @@
     "@gsap/react": "^2.1.2",
     "gsap": "^3.15.0",
     "lucide-react": "^0.468.0",
+    "mongodb": "^6.21.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "three": "^0.186.1"
+    "react-force-graph-2d": "^1.29.1",
+    "three": "^0.186.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@playwright/test": "^1.51.0",
