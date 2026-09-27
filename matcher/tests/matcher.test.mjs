@@ -9,6 +9,7 @@ import { createMatcher, demoFixtures } from '../src/service.mjs';
 
 const { alex, maya, sam } = demoFixtures.profiles;
 const emptyFixtures = { rubricVersion: RUBRIC_VERSION, profiles: {}, offlineResults: [] };
+const reviewedDemoIntroduction = 'You share a vision for wearable assistive technology. Combining computer vision with embedded hardware could turn that idea into something people can use every day.';
 const servers = [];
 
 after(async () => {
@@ -67,6 +68,8 @@ test('fixture profiles track the web seed while adding Quest-only matching field
     assert.equal(result.compatible, result.score >= 70);
     assert.ok(result.reason === '' || result.reason.split(/\s+/u).length <= 30);
   }
+  assert.equal(demoFixtures.offlineResults[0].reason, reviewedDemoIntroduction);
+  assert.equal(demoFixtures.offlineResults.filter(result => result.compatible).length, 1);
 });
 
 test('professional experience: same edition, different edition, and different hackathons', () => {

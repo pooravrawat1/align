@@ -18,7 +18,7 @@ namespace Align.Quest
         [SerializeField] private RemoteProfileCardPresenter cardPresenter;
         [SerializeField] private Camera viewerCamera;
         [SerializeField, Min(0.5f)] private float demoDistanceMeters = 2.5f;
-        [SerializeField] private string canonicalPreviewMatchReason = "Alex builds wearable hardware. Maya builds computer vision. You could turn visual assistance into a working wearable together.";
+        [SerializeField] private string canonicalPreviewMatchReason = "You share a vision for wearable assistive technology. Combining computer vision with embedded hardware could turn that idea into something people can use every day.";
 
         private InputDevice _leftController;
         private InputDevice _rightController;

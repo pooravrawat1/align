@@ -14,6 +14,9 @@ namespace Align.Integration
         private UnityWebRequest _request;
         private Coroutine _routine;
         private string _matchKey = string.Empty;
+        private bool _applicationPaused;
+
+        public NarrationPlaybackState PlaybackState { get; private set; } = NarrationPlaybackState.Idle;
 
         private void Awake()
         {
@@ -28,12 +31,15 @@ namespace Align.Integration
             if (!isActiveAndEnabled || string.IsNullOrEmpty(matchKey) || _matchKey == matchKey) return;
             ClearMatch();
             _matchKey = matchKey;
+            PlaybackState = NarrationPlaybackState.Loading;
             _routine = StartCoroutine(ReadMatchIntroduction(baseUrl, roomCode, clientId, profileId));
         }
 
-        // Dismissing a card stops speech without replaying it on the next room poll.
+        // Cancellation is not completion; it must not unlock dismissal for a new match.
         public void StopPlayback()
         {
+            if (PlaybackState == NarrationPlaybackState.Loading || PlaybackState == NarrationPlaybackState.Speaking)
+                PlaybackState = NarrationPlaybackState.Idle;
             if (_routine != null) StopCoroutine(_routine);
             _routine = null;
             if (_request != null)
@@ -53,9 +59,11 @@ namespace Align.Integration
         {
             StopPlayback();
             _matchKey = string.Empty;
+            PlaybackState = NarrationPlaybackState.Idle;
         }
 
         private void OnDisable() => ClearMatch();
+        private void OnApplicationPause(bool paused) => _applicationPaused = paused;
 
         private IEnumerator ReadMatchIntroduction(string baseUrl, string roomCode, string clientId, string profileId)
         {
@@ -70,8 +78,14 @@ namespace Align.Integration
 
             if (_request.result == UnityWebRequest.Result.Success)
             {
-                _audio.clip = DownloadHandlerAudioClip.GetContent(_request);
-                if (_audio.clip != null) _audio.Play();
+                try
+                {
+                    _audio.clip = DownloadHandlerAudioClip.GetContent(_request);
+                }
+                catch (Exception)
+                {
+                    Debug.Log("[Align] Match narration could not be decoded.");
+                }
             }
             else
             {
@@ -80,6 +94,21 @@ namespace Align.Integration
             }
             _request.Dispose();
             _request = null;
+
+            if (_audio.clip == null || _audio.clip.length <= 0f)
+            {
+                PlaybackState = NarrationPlaybackState.Failed;
+                _routine = null;
+                yield break;
+            }
+
+            PlaybackState = NarrationPlaybackState.Speaking;
+            _audio.Play();
+            // Waiting for the actual AudioSource, not the HTTP response or a timer,
+            // keeps A/X from cutting off the introduction halfway through.
+            yield return null;
+            while (_audio.isPlaying || AudioListener.pause || _applicationPaused) yield return null;
+            PlaybackState = NarrationPlaybackState.Completed;
             _routine = null;
         }
 

@@ -23,7 +23,7 @@ Align does not use computer vision or camera-pixel access on Quest 2. Every part
 
 Quest 2 passthrough shows the physical person. The current two-headset demo presents the other participant in a viewer-fixed glass card, 1.35 m in front of the wearer. Its 64 cm width and black typography stay at a consistent readable size as either person moves. A compatible match gives the glass a pale green tint and expands the same card with the conversation starter.
 
-The name card appears for a connected same-room peer with a recent tracked pose, even before calibration. It hides when the peer disconnects, stops tracking, or stops sending poses. Because this panel represents the connected peer rather than a physical location, it does not depend on their distance, viewing direction, or shared-origin alignment. Both users still press A/X to calibrate and enable matching. After calibration, A/X hides or shows the complete card on the local headset; dismissing it preserves the session and match.
+The name card appears for a connected same-room peer with a recent tracked pose, even before calibration. It hides when the peer disconnects, stops tracking, or stops sending poses. Because this panel represents the connected peer rather than a physical location, it does not depend on their distance, viewing direction, or shared-origin alignment. Both users press A/X once to calibrate and enable matching; names still stay visible alone. A later A/X press by either person reveals the shared green summary for both through the relay. A press while generation is pending waits for that result without hiding the name. Speech starts only after this shared reveal. Once it finishes, a new A/X press hides your local card; another shows it without replaying audio. A failed or disabled voice also allows dismissal of the displayed introduction. Profile changes, reconnects, and resets clear the shared reveal and dismissal.
 
 The desktop simulation retains the original above-head spatial labels and their distance/view/calibration gating. People who are not wearing a connected headset are outside the Quest 2 MVP.
 
@@ -43,8 +43,15 @@ See [narration setup](matcher/README.md#shared-match-narration-elevenlabs) for t
 server API key, voice settings, and required Quest rebuild.
 
 Set `MATCH_MODE=live` with a server-side `GEMINI_API_KEY` for AI-written shared
-introductions. Live mode never replaces failed generation with scripted text;
-`auto` and `fixture` modes can still use templates or precomputed demo results.
+introductions. Add `MATCH_LIVE_FALLBACK=true` and `MATCH_FALLBACK_TIMEOUT_MS=3000`
+to use shared-connection templates when AI takes over three seconds or fails.
+Without this opt-in, live mode requires AI-written text. Fallback summaries are
+marked as rules/fallback in diagnostics and stay stable during narration.
+
+The physical Quest demo currently uses `MATCH_MODE=fixture`: its reviewed
+Alex/Maya introduction is deterministic, Gemini is not called, and the two Sam
+pairings remain nonmatches. ElevenLabs reads the same hardcoded summary shown
+on both green cards.
 
 ## Planned stack
 

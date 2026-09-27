@@ -65,7 +65,9 @@ function adapt(assessment, fingerprint, profiles) {
 export function createAssessmentService({ fetchImpl = globalThis.fetch, env = process.env } = {}) {
   const matcher = createMatcher({
     mode: env.MATCH_MODE || 'auto', apiKey: env.GEMINI_API_KEY || '', model: env.GEMINI_MODEL || 'gemini-3.8-flash',
-    timeoutMs: Math.max(1, Math.min(15000, Number(env.GEMINI_TIMEOUT_MS) || 15000)),
+    timeoutMs: Math.max(1, Math.min(env.MATCH_MODE === 'live' ? 30000 : 15000, Number(env.GEMINI_TIMEOUT_MS) || 15000)),
+    liveFallback: env.MATCH_LIVE_FALLBACK === 'true',
+    ...(env.MATCH_FALLBACK_TIMEOUT_MS ? { fallbackTimeoutMs: Number(env.MATCH_FALLBACK_TIMEOUT_MS) } : {}),
     geminiEvaluator: (first, second, options) => requestGemini(first, second, { ...options, fetchImpl }),
   });
   const fixtureMatcher = createMatcher({ mode: 'fixture' });
@@ -84,7 +86,8 @@ export function createAssessmentService({ fetchImpl = globalThis.fetch, env = pr
       if (inFlight.has(fingerprint)) return structuredClone(await inFlight.get(fingerprint));
       const work = (async () => {
         let result;
-        // Live mode never downgrades to scripted text, including the prepared demo button.
+        // The demo button cannot bypass live generation; only the server's
+        // explicit fallback setting permits shared-connection templates.
         try { result = adapt(await (context.fixture && env.MATCH_MODE !== 'live' ? fixtureMatcher : matcher).assess({ profileA: profiles[0], profileB: profiles[1] }), fingerprint, profiles); }
         catch { result = unavailable(fingerprint, profiles); }
         if (result.source === 'unavailable') {

@@ -117,7 +117,21 @@ export async function requestGemini(profileA, profileB, {
     }),
     signal,
   });
-  if (!response.ok) throw new Error(`Gemini HTTP ${response.status}`);
+  if (!response.ok) {
+    const error = new Error(`Gemini HTTP ${response.status}`);
+    error.status = response.status;
+    if (response.status === 429) {
+      // Classify quota failures, but never expose provider bodies or credentials.
+      const details = await response.json().catch(() => ({}));
+      error.dailyQuota = /requests per day|per[_ ]day|daily|PerDay/u.test(JSON.stringify(details));
+      const seconds = Number(response.headers.get('retry-after')) || 30;
+      error.retryAfterMs = error.dailyQuota ? 60 * 60 * 1000
+        : Math.max(30000, Math.min(5 * 60 * 1000, seconds * 1000));
+    } else {
+      await response.body?.cancel();
+    }
+    throw error;
+  }
   const interaction = await response.json();
   if (interaction.status !== 'completed' || !Array.isArray(interaction.steps)) {
     throw new Error('Gemini did not complete');

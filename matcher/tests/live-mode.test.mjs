@@ -23,6 +23,56 @@ afterEach(async () => {
   await Promise.all(servers.splice(0).map(server => new Promise(resolve => server.close(resolve))));
 });
 
+test('unchanged live profiles keep their verified introduction past 30 minutes without another API call', async () => {
+  let clock = 0;
+  let calls = 0;
+  const matcher = createMatcher({ mode: 'live', apiKey: 'test', now: () => clock,
+    geminiEvaluator: async () => { calls++; return assessment(); } });
+  const first = await matcher.match(pair);
+  clock += 2 * 60 * 60 * 1000;
+  const cached = await matcher.match({ profileA: maya, profileB: alex });
+  assert.equal(cached.source, 'cache');
+  assert.deepEqual(cached.result, first.result);
+  assert.equal(calls, 1);
+  await matcher.match({ profileA: { ...alex, bio: alex.bio + ' Updated.' }, profileB: maya });
+  assert.equal(calls, 2);
+  matcher.clear();
+  await matcher.match(pair);
+  assert.equal(calls, 3);
+});
+
+test('Gemini daily-quota errors are classified without forwarding provider secrets or retrying every few seconds', async () => {
+  await assert.rejects(requestGemini(alex, maya, {
+    apiKey: 'test', fetchImpl: async () => new Response(JSON.stringify({ error: {
+      message: '20 requests per day exceeded. private-secret-value',
+    } }), { status: 429, headers: { 'retry-after': '3' } }),
+  }), error => error.status === 429 && error.dailyQuota === true
+    && error.retryAfterMs === 3600000 && !error.message.includes('private-secret-value'));
+});
+
+test('a provider quota cooldown covers all live pairs but leaves cached verified summaries usable', async () => {
+  let clock = 0;
+  let calls = 0;
+  const matcher = createMatcher({ mode: 'live', apiKey: 'test', now: () => clock,
+    geminiEvaluator: async () => {
+      calls++;
+      if (calls === 2) throw Object.assign(new Error('private-provider-error'),
+        { status: 429, dailyQuota: true, retryAfterMs: 3600000 });
+      return assessment();
+    } });
+  await matcher.match(pair);
+  await assert.rejects(matcher.match({ profileA: alex, profileB: sam }), { status: 429 });
+  assert.equal(matcher.health().geminiRateLimited, true);
+  assert.equal((await matcher.match(pair)).result.reason, introduction.text);
+  const edited = { profileA: { ...alex, bio: alex.bio + ' New detail.' }, profileB: maya };
+  clock += 31000;
+  await assert.rejects(matcher.match(edited), { status: 429 });
+  assert.equal(calls, 2);
+  clock = 3600001;
+  assert.equal((await matcher.match(edited)).result.reason, introduction.text);
+  assert.equal(calls, 3);
+});
+
 test('live mode replaces a winning experience template with a grounded AI introduction', async () => {
   let calls = 0;
   const matcher = createMatcher({ mode: 'live', apiKey: 'test', geminiEvaluator: async (_a, _b, options) => {
@@ -66,6 +116,22 @@ test('a failed live request is not cached and can recover', async () => {
   await assert.rejects(matcher.match(pair));
   assert.equal((await matcher.match(pair)).result.reason, introduction.text);
   assert.equal(calls, 2);
+});
+
+test('live failure logs classify errors without copying private provider messages', async () => {
+  for (const [failure, expected] of [
+    [new Error('Gemini deadline exceeded'), 'gemini-timeout'],
+    [Object.assign(new Error('private-provider-body'), { status: 503 }), 'gemini-http-503'],
+    [new Error('Gemini introduction is missing'), 'gemini-invalid-response'],
+    [new Error('private-provider-body secret-key'), 'gemini-request-failed'],
+  ]) {
+    const events = [];
+    const matcher = createMatcher({ mode: 'live', apiKey: 'test', logger: event => events.push(event),
+      geminiEvaluator: async () => { throw failure; } });
+    await assert.rejects(matcher.match(pair), { status: 502 });
+    assert.equal(events.at(-1).errorCode, expected);
+    assert.ok(!/private-provider|secret-key/.test(JSON.stringify(events)));
+  }
 });
 
 test('nonmatches stay silent without inventing an introduction', async () => {
@@ -130,6 +196,8 @@ test('headset pose polls return immediately while one live request runs in the b
   const ready = await relay.update(update('a'));
   assert.equal(ready.matchStatus, 'ready');
   assert.equal(ready.match.reason, introduction.text);
+  assert.equal(ready.introductionRevealed, false);
+  await relay.update(update('a', { revealIntroduction: true, presentationId: ready.presentationId }));
   assert.deepEqual(relay.narrationMatch({ roomCode: 'LIVE', clientId: 'a', profileId: 'maya' }),
     { compatible: true, reason: introduction.text });
 });

@@ -14,8 +14,8 @@ if (!profileA || !profileB || firstId === secondId) {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ profileA, profileB }),
-      // Live mode allows up to 15 seconds for generation; pose polling stays separate.
-      signal: AbortSignal.timeout(20000),
+      // Live mode can allow up to 30 seconds; pose polling stays separate.
+      signal: AbortSignal.timeout(35000),
     });
     const result = await response.json();
     console.log(JSON.stringify({

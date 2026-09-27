@@ -202,6 +202,11 @@ namespace Align.Tests
                     Interests = new[] { "Private interest" },
                     SocialLinks = new[] { new SocialLinkData { Platform = "Private", UrlOrHandle = "handle" } }
                 });
+                // Initial/pending state exposes just the name, never a bio or reason.
+                Assert.That(name.gameObject.activeSelf, Is.True);
+                Assert.That(reason.gameObject.activeSelf, Is.False);
+                Assert.That(reason.text, Is.Empty);
+                Assert.That(bio.gameObject.activeSelf, Is.False);
                 presenter.SetMatchState(true, "A useful reason to meet.");
 
                 Assert.That(name.text, Is.EqualTo("maya chen"));

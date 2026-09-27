@@ -132,7 +132,10 @@ test('Quest narration requires an active matched peer and rechecks after audio g
   });
   await relay.update(update('quest-a'));
   assert.equal((await request()).status, 403);
-  await relay.update(update('quest-b'));
+  const ready = await relay.update(update('quest-b'));
+  assert.equal((await request()).status, 403); // Ready is not yet revealed.
+  assert.equal(calls, 0);
+  await relay.update(update('quest-a', { revealIntroduction: true, presentationId: ready.presentationId }));
   const response = await request();
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('content-type'), 'audio/mpeg');

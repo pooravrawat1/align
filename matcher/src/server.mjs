@@ -90,8 +90,10 @@ function start() {
     apiKey: process.env.GEMINI_API_KEY ?? '',
     model: process.env.GEMINI_MODEL ?? 'gemini-3.8-flash',
     ...(process.env.GEMINI_TIMEOUT_MS ? { timeoutMs: Number(process.env.GEMINI_TIMEOUT_MS) } : {}),
-    logger: ({ source, pair, score }) => {
-      console.log(`[match] pair=${pair} source=${source} score=${score}`);
+    liveFallback: process.env.MATCH_LIVE_FALLBACK === 'true',
+    ...(process.env.MATCH_FALLBACK_TIMEOUT_MS ? { fallbackTimeoutMs: Number(process.env.MATCH_FALLBACK_TIMEOUT_MS) } : {}),
+    logger: ({ source, pair, score, errorCode }) => {
+      console.log(`[match] pair=${pair} source=${source} score=${score}${errorCode ? ` error=${errorCode}` : ''}`);
     },
   });
   const server = createMatchServer(matcher);

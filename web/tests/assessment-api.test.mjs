@@ -72,6 +72,23 @@ test('live web demo does not publish a compatible scripted match when Gemini fai
   const state = await api('/api/bootstrap', { sessionId: alex.session.id });
   assert.ok(!state.value.matches.some(item => item.compatible));
 });
+
+test('live web demo can explicitly opt into shared fallback after a bounded AI wait', async () => {
+  const signals = [];
+  const { api, login } = await harness(async (_url, { signal }) => {
+    signals.push(signal);
+    return new Promise(() => {});
+  }, { GEMINI_API_KEY: 'test', MATCH_MODE: 'live', MATCH_LIVE_FALLBACK: 'true', MATCH_FALLBACK_TIMEOUT_MS: '15' });
+  const alex = await login('alex');
+  await api('/api/room', { sessionId: alex.session.id, body: { code: 'DEMO' } });
+  await api('/api/matches', { sessionId: alex.session.id, body: { demo: true } });
+  const state = await api('/api/bootstrap', { sessionId: alex.session.id });
+  const matched = state.value.matches.find(item => item.userB === 'maya' && item.compatible);
+  assert.ok(signals.length > 0 && signals.every(signal => signal.aborted));
+  assert.equal(matched?.source, 'rules');
+  assert.match(matched?.reason, /^You both attended Build Together/);
+  assert.ok(!state.value.matches.some(item => item.userB === 'sam' && item.compatible));
+});
 // Remove experience-route evidence to isolate the networking route in its tests.
 async function networkingOnly(api, sessionId) {
   await api('/api/profile', { method: 'PATCH', sessionId, body: { experiences: [] } });

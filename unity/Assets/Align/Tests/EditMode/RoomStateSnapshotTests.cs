@@ -26,6 +26,17 @@ namespace Align.Tests.EditMode
             Assert.IsTrue(snapshot.matchAvailable);
             Assert.IsTrue(snapshot.match.compatible);
             Assert.AreEqual("A shared introduction", snapshot.match.reason);
+            Assert.IsFalse(snapshot.introductionRevealed); // Fail closed to names only.
+        }
+
+        [Test]
+        public void SharedRevealStateSurvivesDeserialization()
+        {
+            var snapshot = JsonUtility.FromJson<RoomStateSnapshot>(
+                "{\"presentationId\":\"pair-1\",\"introductionRequested\":true,\"introductionRevealed\":true}");
+            Assert.AreEqual("pair-1", snapshot.presentationId);
+            Assert.IsTrue(snapshot.introductionRequested);
+            Assert.IsTrue(snapshot.introductionRevealed);
         }
     }
 }
