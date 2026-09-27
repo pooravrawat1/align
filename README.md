@@ -145,14 +145,6 @@ The build lands in `unity/Builds/Quest/Align.apk`. Full setup, controller mappin
 | [`web/`](web/) | React + Vite companion site and Vercel deployment |
 | [`assets/`](assets/) | Rubric, PRD, task plan, demo fixtures, laptop-relay walkthrough |
  
-## Team
- 
-Built in 24 hours at HackGT. Ownership from [assets/TASKS.md](assets/TASKS.md):
- 
-- **Quest / MR lead:** Unity project, Quest builds, passthrough, profile-card rendering
-- **Multiplayer / spatial lead:** room networking, pose sync, interpolation, calibration
-- **Backend / AI lead:** profile and match schema, Gemini matching, ElevenLabs voice, rubric fallback, MongoDB catalogue
-- **UX / demo / integration lead:** profile creation UI, preset and demo flow, match states, recovery controls, QA
 ## Documentation
  
 - [Cable-free laptop relay setup and demo walkthrough](assets/LAPTOP_RELAY_DEMO.md)
