@@ -3,13 +3,15 @@ import { existsSync, readFileSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
 import { createServer as createHttpServer } from 'node:http';
 import { pathToFileURL } from 'node:url';
-import { assessmentFingerprint, createAssessmentService } from './assessment.mjs';
+import { ASSESSMENT_VERSION, assessmentFingerprint, createAssessmentService } from './assessment.mjs';
 import { createConnectionRequestStore } from './connection-requests.mjs';
 import { createFollowUpService } from './follow-up.mjs';
 import { followUpContext } from './follow-up-context.mjs';
 import { MATCH_THRESHOLD, experienceRoutes } from '../../matcher/src/rubric.mjs';
 import { matchingProfile } from './assessment.mjs';
 import { validateProfile as validateMatchProfile } from '../../matcher/src/profiles.mjs';
+import { getActiveStore } from './store.mjs';
+import { buildGraph } from './graph.mjs';
 
 const HOST = '127.0.0.1';
 const DEFAULT_PORT = 4311;
@@ -47,10 +49,12 @@ const FOLLOW_UP_VALUES = new Set(['needed', 'contacted', 'none']);
 const GOAL_LIMIT = 3;
 const VISIBILITY_FIELDS = new Set(Object.keys(DEFAULT_VISIBILITY));
 
-const seed = JSON.parse(
-  readFileSync(new URL('../shared/demo-data.json', import.meta.url), 'utf8'),
-);
-const knownRoomCodes = new Set(seed.events.map((event) => event.code.toUpperCase()));
+function seed() {
+  return getActiveStore().snapshot();
+}
+function knownRoomCodes() {
+  return new Set(seed().events.map((event) => event.code.toUpperCase()));
+}
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -105,9 +109,9 @@ function withConnectionDefaults(connection) {
 }
 
 function cloneSeedData() {
-  const data = clone(seed);
+  const data = seed();
   data.profiles = data.profiles.map(withProfileDefaults);
-  data.connections = data.connections.map(withConnectionDefaults);
+  data.connections = (data.connections ?? []).map(withConnectionDefaults);
   return data;
 }
 
@@ -579,6 +583,29 @@ async function calculateMatches(state, demoMode, assessmentService, requestStore
   };
 }
 
+async function persistAssessment(store, userA, userB, assessment, context) {
+  try {
+    const [firstId, secondId] = canonicalPair(userA, userB);
+    await store.saveAssessment({
+      pairKey: `${firstId}:${secondId}`,
+      userA: firstId,
+      userB: secondId,
+      score: assessment.score,
+      route: assessment.route ?? null,
+      reason: assessment.reason ?? '',
+      source: assessment.source,
+      audience: context.audience,
+      eventId: context.eventId ?? null,
+      fingerprint: assessment.fingerprint,
+      version: ASSESSMENT_VERSION,
+      savedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    // Persistence is a best-effort cache. Never block the request on it.
+    console.warn('Failed to persist assessment:', error?.message ?? error);
+  }
+}
+
 function eventForId(state, eventId) {
   return state.events.find((event) => event.id === eventId);
 }
@@ -701,6 +728,35 @@ async function handleRequest(request, response, sessions, assessmentService, req
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/graph') {
+    const store = getActiveStore();
+    const eventId = url.searchParams.get('eventId') ?? null;
+    const hubsParam = url.searchParams.get('hubs');
+    const allowedHubs = new Set(['interest', 'skill', 'event']);
+    const hubs = hubsParam
+      ? hubsParam.split(',').map((value) => value.trim()).filter((value) => allowedHubs.has(value))
+      : [...allowedHubs];
+    const graph = await buildGraph(store, {
+      eventId,
+      hubs,
+      viewerId: request.headers['x-session-id']
+        ? sessions.get(request.headers['x-session-id'])?.session?.userId ?? null
+        : null,
+    });
+    sendJson(response, 200, graph);
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname.startsWith('/api/people/')) {
+    const store = getActiveStore();
+    const id = decodeURIComponent(url.pathname.slice('/api/people/'.length));
+    if (!id) throw apiError(400, 'person id required');
+    const profile = await store.findPerson(id);
+    if (!profile) throw apiError(404, 'Person not found');
+    sendJson(response, 200, withProfileDefaults(projectRequestPeer(withProfileDefaults(profile), 'network')));
+    return;
+  }
+
   if (request.method === 'POST' && (url.pathname === '/api/follow-up-demo' || url.pathname === '/api/follow-up')) {
     const body = await readJson(request);
     const state = url.pathname === '/api/follow-up' ? requireSession(request, sessions) : null;
@@ -805,10 +861,11 @@ async function handleRequest(request, response, sessions, assessmentService, req
       if (field !== 'code' && field !== 'create') throw apiError(400, `Unknown room field: ${field}`);
     }
     const code = body.code.toUpperCase();
-    if (!knownRoomCodes.has(code) && !state.customRoomCodes.has(code) && body.create !== true) {
+    const rooms = knownRoomCodes();
+    if (!rooms.has(code) && !state.customRoomCodes.has(code) && body.create !== true) {
       throw apiError(404, 'Room not found');
     }
-    if (!knownRoomCodes.has(code) && !state.customRoomCodes.has(code) && body.create === true) {
+    if (!rooms.has(code) && !state.customRoomCodes.has(code) && body.create === true) {
       state.customRoomCodes.add(code);
       state.events.push({
         id: code,
@@ -912,6 +969,9 @@ async function handleRequest(request, response, sessions, assessmentService, req
     ({ current, participant } = compatibilityProfiles(state, requestStore, body.participantId, body.audience));
     if (!current || !participant || before !== assessmentFingerprint(current, participant, context)) {
       throw apiError(409, 'Profiles changed while compatibility was being generated');
+    }
+    if (assessment.status === 'ready') {
+      await persistAssessment(getActiveStore(), current.id, participant.id, assessment, context);
     }
     sendJson(response, 200, assessment);
     return;
@@ -1121,7 +1181,22 @@ if (executedDirectly) {
   const envFile = new URL('../.env', import.meta.url);
   if (existsSync(envFile)) loadEnvFile(envFile);
   const port = configuredPort();
-  createServer({ seedConnectionRequests: seed.demoRequests }).listen(port, HOST, () => {
-    console.log(`Catalyst demo API listening at http://${HOST}:${port}`);
+  await bootstrapDataSource();
+  createServer().listen(port, HOST, () => {
+    console.log(`Catalyst demo API listening at http://${HOST}:${port} (data: ${getActiveStore().source})`);
   });
+}
+
+async function bootstrapDataSource() {
+  if (!process.env.MONGODB_URI) return;
+  try {
+    const { getDb } = await import('./mongodb.mjs');
+    const { createMongoStore, setActiveStore } = await import('./store.mjs');
+    const db = await getDb();
+    const store = await createMongoStore(db);
+    setActiveStore(store);
+    console.log(`Loaded ${store.snapshot().profiles.length} profiles from MongoDB (${db.databaseName}).`);
+  } catch (error) {
+    console.warn(`MongoDB startup failed, falling back to bundled seed: ${error?.message ?? error}`);
+  }
 }
