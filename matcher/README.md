@@ -14,16 +14,80 @@ From this directory:
 npm run start:demo
 ```
 
-`start:demo` forces fixture mode and does not load `.env` or call Gemini. This
-is the reliable judged-demo path. Keep the optional Gemini integration in the
-code, but describe fixture results as rubric-scored demo results, not live AI.
-Never show the API key.
+`start:demo` forces fixture mode and does not load `.env` or call Gemini.
+Describe those results as scripted demo results, not live AI. Never show the API key.
 
-For live-first matching, copy `.env.example` to `.env`, put the key in the local
+The current physical demo also sets `MATCH_MODE=fixture` in `matcher/.env` and
+runs `npm run start:env`, so ElevenLabs remains enabled while Gemini is skipped.
+Alex/Maya receive the reviewed shared introduction from
+`assets/quest-demo-fixtures.json`; Alex/Sam and Maya/Sam remain nonmatches.
+
+For live AI introductions, copy `.env.example` to `.env`, put the key in the local
 `.env` file, then run `npm run start:env`. Do not commit `.env` or put the key
-in a Quest build. `MATCH_MODE=fixture` also forces demo results when a key is
-present; the default `auto` tries Gemini first and falls back within three
-seconds. `GEMINI_MODEL` defaults to `gemini-3.8-flash`.
+in a Quest build. Set `MATCH_MODE=live`, `GEMINI_MODEL=gemini-3.8-flash`, and
+`GEMINI_TIMEOUT_MS=15000`. Live mode uses the
+[Gemini Interactions API](https://ai.google.dev/gemini-api/docs/interactions-overview)
+with stateless structured output. Gemini evaluates networking fit and writes
+the shared introduction in one request. The existing rubric still determines
+the winning score. Without the fallback opt-in below, the displayed/spoken
+introduction must be AI-generated, even when a shared-experience rule wins.
+No fixture result overrides a valid live output.
+Live deployments may raise `GEMINI_TIMEOUT_MS` up to 30000 for a slower model;
+the background relay keeps pose updates responsive during generation.
+
+Live prose must be at most 30 words and contain validated evidence from both
+profiles. It is shared by both wearers and cached for the relay session (up to
+256 entries), keyed by the complete profiles, model, and rubric. Unchanged
+people do not consume a fresh generation every 30 minutes; profile changes
+still require a new assessment. Restarting the relay clears this in-memory cache.
+With fallback disabled, missing keys, timeout, invalid output, or provider failure
+never produce scripted speech. The headset shows pending/unavailable status, room
+poses continue updating, and failed generations normally retry after 30 seconds.
+Rate limits are reported as HTTP 429 and shared across requests: temporary limits
+back off for at least 30 seconds; an exhausted daily quota backs off for one hour
+instead of repeatedly asking an exhausted model. Cached valid AI summaries still
+work during a quota failure. Set `GEMINI_MODEL` to a model with available quota
+and restart when necessary; do not use a new key to work around project quotas.
+See [Gemini rate limits](https://ai.google.dev/gemini-api/docs/rate-limits).
+`GET /health` reports `mode: "live"`, `geminiConfigured: true`, and
+`introductionMode: "gemini-required"` when configured. `/match` still returns
+the frozen result shape and `x-align-match-source: gemini` (or `cache` on reuse).
+
+### Three-second shared-summary fallback
+
+For a resilient demo, set these on the relay (or the web server) and restart:
+
+```dotenv
+MATCH_MODE=live
+MATCH_LIVE_FALLBACK=true
+MATCH_FALLBACK_TIMEOUT_MS=3000
+```
+
+These are enabled in `matcher/.env.example`; the code default remains strict
+unless `MATCH_LIVE_FALLBACK` is exactly `true`. AI gets up to three seconds
+(or the shorter `GEMINI_TIMEOUT_MS`) to return a valid summary. On timeout,
+missing credentials, invalid output, or an API error, the server uses the
+existing shared-experience templates. For Alex/Maya this is “You both attended
+Build Together in 2025. What stayed with each of you from it?” It never reads
+their individual bios or treats unrelated people as a match. Edited profiles
+are scored from their current shared fields, not just their demo IDs.
+
+Slow requests are aborted. The chosen result, including a fallback, is cached
+for the relay session and shared by both headsets; a late AI answer cannot
+replace it during narration or trigger another speech playback. Profile edits
+or restarting the relay allow a fresh attempt; unchanged cached fallbacks do
+not automatically upgrade to AI. Cache clearing is also available internally.
+`/health` reports `introductionMode: "gemini-with-fallback"` and
+`fallbackAfterMs: 3000`; `/match` uses source `fallback` on first delivery, and
+cached assessments retain `rules` provenance. Do not describe that text as
+AI-generated. Quota cooldowns still apply, with immediate fallback during them.
+No headset rebuild is needed, and A/X dismissal works exactly as for AI prose.
+This is a text fallback only; ElevenLabs still needs internet and API credits
+to speak it.
+
+Legacy `MATCH_MODE=auto` tries Gemini and permits fixture/rule fallback; it does
+not guarantee AI-written prose. `MATCH_MODE=fixture` forces scripted demo
+results even with a key. The default mode remains `auto` unless configured.
 
 The default address is `0.0.0.0:4323` so headsets on the **same private Wi-Fi or
 hotspot** can reach the laptop. The Unity URL is
@@ -66,6 +130,58 @@ the private demo network.
 same request from another machine on the network. A real Quest-to-laptop check
 still needs the Unity build and both devices.
 
+## Shared match narration (ElevenLabs)
+
+Copy `.env.example` to `.env` and set `ELEVENLABS_API_KEY` to a key with
+Text to Speech permission and available credits. The default female voice is
+Sarah (`EXAVITQu4vr4xnSDxMaL`); optionally set `ELEVENLABS_VOICE_ID` to your
+preferred female voice from My Voices. `ELEVENLABS_MODEL_ID` defaults to
+`eleven_flash_v2_5`. The provider request follows the
+[ElevenLabs speech API](https://elevenlabs.io/docs/api-reference/text-to-speech/convert).
+
+Run `npm run start:env` to load these settings. For fixture matching with live
+speech, set `MATCH_MODE=fixture` in `.env` and use `start:env`; `start:demo` does
+not load `.env`. When starting everything with `npm run dev:quest` from `web/`,
+put the settings in **web/.env** instead; that launcher shares them with the
+matcher. Restart the service after changing credentials or voice settings.
+
+`POST /room/narration` accepts only `{ "roomCode": "DEMO", "clientId": "…",
+"profileId": "maya" }` and returns `audio/mpeg`. It requires a recent tracked,
+calibrated room member matched to that remote profile, after the shared reveal
+has been requested. Before reveal, narration returns HTTP 403. The server reads the
+shared reason from the current match and rechecks the match after
+generation. No arbitrary narration text or voice selection comes from clients.
+`GET /health` includes `narration.enabled`, `voiceId`, `modelId`, and
+`content: "match-reason"`, never the key.
+
+Both Quests initially show names only, even when a compatible result is ready.
+After both calibrate, a fresh A/X press by either wearer requests reveal through
+`POST /room/update` with `revealIntroduction: true` and the snapshot's current
+`presentationId`. The relay returns `introductionRequested` and
+`introductionRevealed` to both devices. If generation is pending, the request
+waits for that one result; both then show and speak the same summary. Duplicate
+requests never toggle it off. A reset, membership/calibration change, or profile
+switch changes `presentationId`, invalidating stale queued presses. The clients
+observe this through their normal room polls; rendering is not frame-locked.
+
+Repeated room polls do not replay speech. A/X cannot hide the initial name or
+interrupt narration: dismissal unlocks after the shared introduction is shown
+and playback completes (or audio fails/is disabled). It requires a fresh button
+press; completion alone never hides the card. Profile switches, resets, lost
+tracking/connection, and disabling the controller cancel
+pending or active audio. Maya → Sam → Maya reads the shared introduction again.
+Rebuild/reinstall the APK to include this client behavior. Speech runs alongside
+pose updates, so it does not delay matching or room polling.
+
+The server sends only the match reason to ElevenLabs, never individual bios. Successful audio
+is cached in memory for up to 30 minutes (32 clips maximum); duplicate requests
+share one generation. Errors have a 30-second cooldown, requests time out after
+15 seconds by default (`ELEVENLABS_TIMEOUT_MS`, maximum 30 seconds), and missing
+credentials or provider failures leave the visual experience usable. There is
+no offline speech fallback. Keep the key on the server, never in Unity or a
+browser `VITE_*` variable. This endpoint shares the relay's private-LAN-only
+security boundary.
+
 ## Frozen Unity contract
 
 `POST /match` with `Content-Type: application/json` accepts exactly
@@ -81,7 +197,7 @@ The response contains **only** `userA`, `userB`, `compatible`, `score`, and
 `reason`. IDs are sorted, `score` is an integer percentage, and `reason` is
 empty for a nonmatch. The `X-Align-Match-Source` header is `gemini`, `cache`, or
 `fallback` for developer diagnostics; do not present a fallback as live AI.
-For the bundled Alex/Maya profiles, the response is:
+The reviewed hardcoded Alex/Maya response in fixture mode is:
 
 ```json
 {
@@ -89,11 +205,12 @@ For the bundled Alex/Maya profiles, the response is:
   "userB": "maya",
   "compatible": true,
   "score": 100,
-  "reason": "You both attended Build Together in 2025 and care about assistive technology. How could Maya's computer vision complement Alex's wearable hardware?"
+  "reason": "You share a vision for wearable assistive technology. Combining computer vision with embedded hardware could turn that idea into something people can use every day."
 }
 ```
 
-For Alex/Sam, `compatible` is `false`, `score` is `0`, and `reason` is empty.
+In fixture mode, Alex/Sam has `compatible: false`, `score: 0`, and an empty
+`reason`; live results depend on the actual AI assessment and rubric.
 Malformed, oversized, or extra fields—including social/contact/location—are
 rejected before any model call. `GET /health` reports the mode, model, rubric
 version, and whether a key is configured without revealing the key.
@@ -106,21 +223,26 @@ version, and whether a key is configured without revealing the key.
 - The current LAN relay evaluates the pair once after both profiles are ready
   and returns the same stored result to both headsets. A future Photon
   coordinator should preserve this behavior. Render only the other
-  person's name before matching; on `compatible: true`, turn both name cues
-  green and show the exact same reason. Never render the score or full profile.
+  person's name until the shared reveal, even if `compatible: true` is ready.
+  Only `introductionRevealed: true` turns both cards green and shows the exact
+  same reason. Never render the score or full profile. Deploy the updated relay
+  and rebuild/reinstall both headset clients together for this protocol.
 - On Maya ↔ Sam switch, clear the old green state and reason **before** sending
   the new profile ID and rerunning the pair. Prevent stale or duplicate results
   from applying after the switch.
-- Use a five-second Quest request timeout. If the laptop cannot be reached,
-  use the matching `offlineResults` entry bundled from the same fixture file.
-  The backend also uses these results when Gemini is missing, slow, or invalid.
+- Keep pose-update requests short. In live mode the relay runs generation in
+  the background and publishes pending/error status. The explicit
+  `MATCH_LIVE_FALLBACK` option permits shared-experience templates, never
+  individual-bio blurbs; legacy `auto` mode permits fixture fallback.
 - Rehearse Maya → Sam → Maya three times on both physical headsets. A live
   Gemini call cannot be verified without a configured key; an actual LAN/Quest
   check requires the Unity teammate's build and devices.
 
 ## Privacy and scoring
 
-Only names and match reasons appear to attendees. Matching fields travel over
+Only names and match reasons appear on screen. Optional narration reads the
+same shared match reason to both wearers and sends only that text to ElevenLabs.
+Matching fields travel over
 Photon to the coordinator and, in live mode, to Gemini; this is **not** a
 zero-sharing design. The Gemini request is stateless (`store: false`) and
 contains only whitelisted matching fields. The service does not log profile

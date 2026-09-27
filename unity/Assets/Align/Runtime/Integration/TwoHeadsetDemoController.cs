@@ -21,11 +21,13 @@ namespace Align.Integration
         [SerializeField] private MonoBehaviour roomTransportBehaviour;
         [SerializeField] private RemoteParticipantView remoteParticipant;
         [SerializeField] private RemoteProfileCardPresenter remoteCard;
+        [SerializeField] private bool narrateMatchBios = true;
 
         private readonly SharedOriginCalibration _calibration = new();
         private IHeadPoseProvider _poseProvider;
         private IAlignRoomTransport _transport;
         private RemoteCardVisibility _remoteVisibility;
+        private BioNarrationPlayer _narration;
         private XRInputDevice _leftController;
         private XRInputDevice _rightController;
         private bool _wasPrimaryPressed;
@@ -39,6 +41,11 @@ namespace Align.Integration
         private int _lastResetGeneration = -1;
         private string _lastError = string.Empty;
         private string _lastStatus = string.Empty;
+        private bool _hasMatchIntroduction;
+        private string _cardMatchKey = string.Empty;
+        private string _presentationId = string.Empty;
+        private bool _introductionRequested;
+        private bool _canRequestIntroduction;
 
         public void Configure(
             MonoBehaviour poseProvider,
@@ -72,6 +79,9 @@ namespace Align.Integration
 
         private void OnDisable()
         {
+            _canRequestIntroduction = false;
+            ResetCardDismissal();
+            _narration?.ClearMatch();
             if (_transport != null)
             {
                 _transport.SnapshotReceived -= ApplySnapshot;
@@ -104,24 +114,7 @@ namespace Align.Integration
                 (Keyboard.current?.cKey.isPressed ?? false);
             if (primary && !_wasPrimaryPressed)
             {
-                if (_calibration.IsCalibrated)
-                {
-                    if (_remoteVisibility != null)
-                    {
-                        _remoteVisibility.SetDismissed(!_remoteVisibility.IsDismissed);
-                        UpdateStatus(_remoteVisibility.IsDismissed
-                            ? "Card hidden. Press A or X to show it again."
-                            : "Card enabled. Waiting for a live peer.");
-                    }
-                }
-                else
-                {
-                    _calibration.Capture(_poseProvider.CurrentPose);
-                    _lastError = string.Empty;
-                    UpdateStatus(_calibration.IsCalibrated
-                        ? "Calibrated. Press A or X again to hide the card."
-                        : "Head tracking is unavailable; calibration was not captured.");
-                }
+                HandlePrimaryPress();
             }
             _wasPrimaryPressed = primary;
 
@@ -130,6 +123,9 @@ namespace Align.Integration
             if (secondary && !_wasSecondaryPressed && _assignedProfileId != "alex")
             {
                 _requestedProfileId = _assignedProfileId == "sam" ? "maya" : "sam";
+                _canRequestIntroduction = false;
+                ResetCardDismissal();
+                _narration?.ClearMatch();
                 remoteCard?.SetMatchState(false, string.Empty);
                 UpdateStatus($"Switching local demo profile to {_requestedProfileId}…");
             }
@@ -140,6 +136,9 @@ namespace Align.Integration
             if (menu && !_wasMenuPressed)
             {
                 _calibration.Reset();
+                _canRequestIntroduction = false;
+                ResetCardDismissal();
+                _narration?.ClearMatch();
                 remoteParticipant?.ClearPose();
                 remoteParticipant?.SetSessionState(false, false, false);
                 _remoteVisibility?.SetDismissed(false);
@@ -148,6 +147,62 @@ namespace Align.Integration
                 UpdateStatus("Room reset. Press A or X to recalibrate.");
             }
             _wasMenuPressed = menu;
+        }
+
+        private void HandlePrimaryPress()
+        {
+            if (!_calibration.IsCalibrated)
+            {
+                _calibration.Capture(_poseProvider.CurrentPose);
+                _lastError = string.Empty;
+                UpdateStatus(_calibration.IsCalibrated
+                    ? "Calibrated. Names stay visible. Once both people are ready, press A/X again to reveal the shared introduction for both."
+                    : "Head tracking is unavailable; calibration was not captured.");
+                return;
+            }
+
+            if (!_hasMatchIntroduction)
+            {
+                if (_canRequestIntroduction && !_introductionRequested && !string.IsNullOrEmpty(_presentationId))
+                {
+                    _transport?.RequestIntroductionReveal(_presentationId);
+                    UpdateStatus("Showing the shared introduction for both people when it is ready.");
+                }
+                else
+                {
+                    UpdateStatus(_introductionRequested
+                        ? "The shared introduction is loading for both people. Names stay visible until it is ready."
+                        : "Names stay visible. Both people must be calibrated and matched before revealing an introduction.");
+                }
+                return;
+            }
+
+            if (_remoteVisibility == null) return;
+            if (_remoteVisibility.IsDismissed)
+            {
+                _remoteVisibility.SetDismissed(false);
+                UpdateStatus("Card shown.");
+                return;
+            }
+
+            if (!MatchCardDismissalPolicy.CanDismiss(_hasMatchIntroduction, narrateMatchBios,
+                _narration != null ? _narration.PlaybackState : NarrationPlaybackState.Idle))
+            {
+                UpdateStatus(_hasMatchIntroduction
+                    ? "The introduction is still playing or loading. Press A or X after it finishes to hide the card."
+                    : "The name stays visible until a match introduction has finished.");
+                return;
+            }
+
+            _remoteVisibility.SetDismissed(true);
+            UpdateStatus("Card hidden. Press A or X to show it again.");
+        }
+
+        private void ResetCardDismissal()
+        {
+            _hasMatchIntroduction = false;
+            _cardMatchKey = string.Empty;
+            _remoteVisibility?.SetDismissed(false);
         }
 
         private void ApplySnapshot(RoomStateSnapshot snapshot)
@@ -160,6 +215,8 @@ namespace Align.Integration
             {
                 _lastResetGeneration = snapshot.resetGeneration;
                 _calibration.Reset();
+                ResetCardDismissal();
+                _narration?.ClearMatch();
                 remoteParticipant?.ClearPose();
                 remoteParticipant?.SetSessionState(false, false, false);
                 _remoteVisibility?.SetDismissed(false);
@@ -192,6 +249,9 @@ namespace Align.Integration
 
             if (remote == null)
             {
+                _canRequestIntroduction = false;
+                ResetCardDismissal();
+                _narration?.ClearMatch();
                 remoteParticipant?.SetSessionState(false, _calibration.IsCalibrated, false);
                 remoteParticipant?.ClearPose();
                 remoteCard?.SetMatchState(false, string.Empty);
@@ -201,6 +261,7 @@ namespace Align.Integration
 
             if (_remoteProfileId != remote.profileId)
             {
+                ResetCardDismissal();
                 _remoteProfileId = remote.profileId;
                 remoteCard?.Bind(DemoProfileCatalog.Get(_remoteProfileId));
                 remoteCard?.SetMatchState(false, string.Empty);
@@ -220,10 +281,43 @@ namespace Align.Integration
 
             bool matched = snapshot.matchAvailable && snapshot.match != null &&
                 snapshot.match.compatible;
-            remoteCard?.SetMatchState(matched, matched ? snapshot.match.reason : string.Empty);
+            bool pairIsCurrent = matched &&
+                ((snapshot.match.userA == _assignedProfileId && snapshot.match.userB == remote.profileId) ||
+                 (snapshot.match.userB == _assignedProfileId && snapshot.match.userA == remote.profileId));
+            bool profileSwitchPending = _requestedProfileId != "auto" && _requestedProfileId != _assignedProfileId;
+            _presentationId = snapshot.presentationId ?? string.Empty;
+            _introductionRequested = snapshot.introductionRequested;
+            _canRequestIntroduction = !profileSwitchPending && _calibration.IsCalibrated && remote.calibrated &&
+                (!snapshot.matchAvailable || pairIsCurrent);
+            bool hasIntroduction = snapshot.introductionRevealed && pairIsCurrent && !profileSwitchPending && _calibration.IsCalibrated &&
+                remote.calibrated && !string.IsNullOrWhiteSpace(snapshot.match.reason);
+            string key = hasIntroduction
+                ? $"{snapshot.roomCode}:{snapshot.resetGeneration}:{_presentationId}:{_assignedProfileId}:{remote.clientId}:{remote.profileId}:{snapshot.match.reason}"
+                : string.Empty;
+            if (key != _cardMatchKey) ResetCardDismissal();
+            _cardMatchKey = key;
+            _hasMatchIntroduction = hasIntroduction;
+            remoteCard?.SetMatchState(hasIntroduction, hasIntroduction ? snapshot.match.reason : string.Empty);
+            if (hasIntroduction && _remoteVisibility != null && _remoteVisibility.IsDismissed)
+            {
+                // Dismissal is possible only after the audio attempt ends. Preserve
+                // that completed attempt across tracking gaps, so showing the card
+                // again does not unexpectedly replay the introduction.
+            }
+            else if (narrateMatchBios && hasIntroduction && remote.pose != null && remote.pose.tracked &&
+                _poseProvider.CurrentPose.IsTracked && _transport is HttpRoomTransport http)
+            {
+                _narration.SetMatch(http.MatcherBaseUrl, snapshot.roomCode, http.ClientId, remote.profileId, key);
+            }
+            else
+            {
+                _narration?.ClearMatch();
+            }
             string matchState = snapshot.matchAvailable
-                ? (matched ? "MATCH" : "neutral")
-                : "pending";
+                ? (matched ? (hasIntroduction ? "MATCH — shared introduction revealed" : "MATCH ready — names only; press A/X to reveal for both") : "neutral")
+                : snapshot.matchStatus == "unavailable"
+                    ? "AI unavailable; retrying"
+                    : snapshot.matchStatus == "pending" ? "AI introduction pending" : "pending";
             UpdateStatus(
                 $"{_assignedProfileId} ↔ {_remoteProfileId} | " +
                 $"calibrated={_calibration.IsCalibrated && remote.calibrated} | {matchState}");
@@ -231,6 +325,9 @@ namespace Align.Integration
 
         private void ApplyTransportError(string message)
         {
+            _canRequestIntroduction = false;
+            ResetCardDismissal();
+            _narration?.ClearMatch();
             _lastError = message ?? "Room transport error";
             remoteParticipant?.SetSessionState(false, _calibration.IsCalibrated, false);
             UpdateStatus(_lastError);
@@ -240,6 +337,8 @@ namespace Align.Integration
         {
             _poseProvider = poseProviderBehaviour as IHeadPoseProvider;
             _transport = roomTransportBehaviour as IAlignRoomTransport;
+            if (_narration == null)
+                _narration = GetComponent<BioNarrationPlayer>() ?? gameObject.AddComponent<BioNarrationPlayer>();
             _remoteVisibility = remoteParticipant != null
                 ? remoteParticipant.GetComponent<RemoteCardVisibility>()
                 : null;

@@ -22,6 +22,7 @@ namespace Align.Networking
         private bool _hasLocalState;
         private bool _requestInFlight;
         private bool _resetRequested;
+        private string _revealPresentationId = string.Empty;
         private float _nextPollAt;
         private string _clientId;
 
@@ -29,6 +30,7 @@ namespace Align.Networking
         public event Action<string> TransportError;
 
         public string ClientId => _clientId ??= ResolveClientId();
+        public string MatcherBaseUrl => matcherBaseUrl;
         public bool IsConnected { get; private set; }
 
         public void Configure(string baseUrl, string targetRoom = "DEMO")
@@ -47,7 +49,15 @@ namespace Align.Networking
 
         public void RequestRoomReset()
         {
+            _revealPresentationId = string.Empty;
             _resetRequested = true;
+            _nextPollAt = 0f;
+        }
+
+        public void RequestIntroductionReveal(string presentationId)
+        {
+            if (string.IsNullOrWhiteSpace(presentationId)) return;
+            _revealPresentationId = presentationId;
             _nextPollAt = 0f;
         }
 
@@ -67,6 +77,7 @@ namespace Align.Networking
             _requestInFlight = true;
             bool resetRoom = _resetRequested;
             _resetRequested = false;
+            string revealId = _revealPresentationId;
             var body = new RoomUpdateRequest
             {
                 roomCode = roomCode,
@@ -76,7 +87,9 @@ namespace Align.Networking
                     : _localState.RequestedProfileId,
                 calibrated = _localState.Calibrated,
                 pose = RoomPosePayload.FromPose(_localState.Pose, _localState.Sequence),
-                resetRoom = resetRoom
+                resetRoom = resetRoom,
+                revealIntroduction = !string.IsNullOrEmpty(revealId),
+                presentationId = revealId
             };
             byte[] bytes = Encoding.UTF8.GetBytes(JsonUtility.ToJson(body));
             string endpoint = $"{matcherBaseUrl.TrimEnd('/')}/room/update";
@@ -118,6 +131,11 @@ namespace Align.Networking
             }
 
             IsConnected = true;
+            // Retry on network errors; stop once acknowledged or this pairing
+            // is gone. Never carry an old press into a new match context.
+            if (_revealPresentationId == revealId &&
+                (snapshot.introductionRequested || snapshot.presentationId != revealId))
+                _revealPresentationId = string.Empty;
             SnapshotReceived?.Invoke(snapshot);
         }
 

@@ -12,5 +12,6 @@ namespace Align.Networking
 
         void SetLocalState(in LocalRoomState state);
         void RequestRoomReset();
+        void RequestIntroductionReveal(string presentationId);
     }
 }

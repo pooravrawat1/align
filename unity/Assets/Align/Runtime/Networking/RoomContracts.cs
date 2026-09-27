@@ -65,6 +65,8 @@ namespace Align.Networking
         public bool calibrated;
         public RoomPosePayload pose;
         public bool resetRoom;
+        public bool revealIntroduction;
+        public string presentationId;
     }
 
     [Serializable]
@@ -94,9 +96,14 @@ namespace Align.Networking
         public string assignedProfileId;
         public int revision;
         public int resetGeneration;
+        public string presentationId;
+        public bool introductionRequested;
+        public bool introductionRevealed;
         public RoomParticipantPayload[] participants;
         public bool matchAvailable;
         public string matchSource;
+        public string matchStatus;
+        public string matchError;
         public RoomMatchPayload match;
     }
 

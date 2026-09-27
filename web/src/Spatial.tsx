@@ -7,6 +7,7 @@ import { networkPerson, ownedConnection } from "./networkModel";
 import { go } from "./App";
 import { activeEvent, homeEvent, eventPhoto } from "./eventModel";
 import { SpatialScene } from "./SpatialScene";
+import { MatchNarrator, type NarrationStatus } from "./matchNarration";
 import "./SpatialV2.css";
 import "./SpatialSurface.css";
 
@@ -19,6 +20,10 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
   const [monochrome, setMonochrome] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [sound, setSound] = useState(() => { try { return localStorage.getItem("questmatch-sounds") === "true"; } catch { return false; } });
+  const [narrationEnabled, setNarrationEnabled] = useState(() => { try { return localStorage.getItem("align-bio-narration") !== "false"; } catch { return true; } });
+  const [narrationStatus, setNarrationStatus] = useState<NarrationStatus>('idle');
+  const narratorRef = useRef<MatchNarrator | null>(null);
+  if (!narratorRef.current) narratorRef.current = new MatchNarrator(setNarrationStatus);
   const [matching, setMatching] = useState(false);
   const [displayedMatches, setDisplayedMatches] = useState<Match[]>([]);
   const [sampleMatches, setSampleMatches] = useState(false);
@@ -65,6 +70,25 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
   const panelOpen = room.kind === "profile" || (room.kind === "ambient" && room.panel !== null) || recoveryOpen;
   const socialVisible = room.kind === "ambient" || room.kind === "profile" || room.kind === "conversation";
   const selectedPersonAvailable = (room.kind !== "profile" && room.kind !== "conversation") || participants.some(person => person.id === room.profileId);
+
+  const narrationMatches = JSON.stringify(participants.flatMap(profile => {
+    const match = matchFor(profile.id);
+    const current = state.matches.find(item => item.compatible &&
+      ((item.userA === user.id && item.userB === profile.id) || (item.userB === user.id && item.userA === profile.id)));
+    return match && current && match.reason === current.reason ? [{ id: profile.id, reason: match.reason }] : [];
+  }));
+  const narrationActive = entered && socialVisible && room.kind !== "conversation" && narrationEnabled;
+  useEffect(() => {
+    narratorRef.current?.update(state.session?.id ?? '', event?.id ?? '', JSON.parse(narrationMatches), narrationActive);
+  }, [state.session?.id, event?.id, narrationMatches, narrationActive]);
+  useEffect(() => () => narratorRef.current?.dispose(), []);
+
+  function toggleNarration() {
+    const next = !narrationEnabled;
+    setNarrationEnabled(next);
+    if (next) narratorRef.current?.retry();
+    try { localStorage.setItem("align-bio-narration", String(next)); } catch { /* Keep in memory. */ }
+  }
 
   useEffect(() => {
     if (!selectedPersonAvailable) dispatch({ type: "RETURN_AMBIENT" });
@@ -158,6 +182,7 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
 
   async function enterPreview() {
     if (busy || actionPendingRef.current) return;
+    if (narrationEnabled) narratorRef.current?.unlock();
     actionPendingRef.current = true;
     try {
       if (!state.session?.code) await act("room", { code: code.trim().toUpperCase() });
@@ -216,6 +241,7 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
     <header className="qmv2-page-heading">
       <div><TextAction icon={<ArrowLeft size={16} />} iconPosition="start" disabled={busy || savingProfileId !== null} onClick={() => entered ? void leavePreview() : go("home")}>Back to event</TextAction><h1>Spatial preview</h1><p>Discover the people around you. Find a reason to connect.</p></div>
       <div className="qmv2-page-actions">
+        {entered && <button className="qmv2-icon-button" aria-label={narrationEnabled ? "Mute match narration" : "Enable match narration"} aria-pressed={narrationEnabled} onClick={toggleNarration}>{narrationEnabled ? <Volume2 size={19} /> : <VolumeX size={19} />}</button>}
         {entered && room.kind !== "conversation" && <button className="qmv2-icon-button" aria-label="Preview controls" aria-expanded={recoveryOpen} onClick={openControls}><Settings2 size={19} /></button>}
         <button className="qmv2-icon-button" aria-label={fullscreen ? "Exit fullscreen" : "Expand spatial preview"} onClick={() => { const request = fullscreen ? document.exitFullscreen() : stageRef.current?.requestFullscreen(); void request?.catch(() => notify("Fullscreen is unavailable in this browser.")); }}>{fullscreen ? <Minimize size={19} /> : <Expand size={19} />}</button>
       </div>
@@ -231,6 +257,7 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
           {!state.session?.code && <label className="qmv2-code-label">Event code<input value={code} onChange={event => setCode(event.target.value.toUpperCase())} placeholder="DEMO" required pattern="[A-Z0-9]{3,8}" minLength={3} maxLength={8} autoComplete="off" spellCheck={false} /></label>}
           <Button busy={busy} type="submit">{state.session?.code ? "Enter preview" : "Join and enter"}<ArrowRight size={17} /></Button>
         </form>
+        <div className="qmv2-toggle-row"><span>Read match introductions aloud</span><Toggle checked={narrationEnabled} onChange={toggleNarration} label="Read match introductions aloud" /></div>
         <p className="qmv2-entry-note">{state.session?.code ? "Browser preview · simulated people and distances" : "Try DEMO for a sample event. No headset needed."}</p>
       </section> : <>
         <div className="qmv2-room-guide"><span><Glasses size={16} />Illustrative room · browser preview</span><p>{room.kind === "conversation" ? "" : "Select a label, or explore everyone in People."}</p></div>
@@ -260,6 +287,9 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
           {room.kind === "conversation" ? <><button ref={finishConversationRef} className="qmv2-people-button spatial-surface" onClick={() => dispatch({ type: "FINISH_CONVERSATION" })}>Finish conversation<ArrowRight size={16} /></button></> : <>
           <button ref={peopleButtonRef} className="qmv2-people-button spatial-surface" aria-expanded={room.kind === "ambient" && room.panel === "people"} disabled={!socialVisible} onClick={() => { triggerRef.current = peopleButtonRef.current; if (room.kind === "profile") dispatch({ type: "CLOSE_LAYER" }); dispatch({ type: "OPEN_PANEL", panel: "people" }); }}><Users size={18} />People<span>{participants.length}</span></button>
           <div className="qmv2-room-status" role="status">{matching ? <><LoaderCircle size={15} className="spin" />Finding common ground…</> : matchError ? <><span>Matching unavailable. You can still explore people.</span><button disabled={busy} onClick={() => void runMatches()}>Retry</button></> : <><span className="qmv2-match-dot" />{hasSampleMatches && "Sample match · "}Green means a reason to meet</>}</div>
+          {narrationActive && narrationStatus !== 'idle' && <div className="qmv2-room-status" role="status">
+            {narrationStatus === 'loading' ? <><LoaderCircle size={15} className="spin" />Preparing introduction…</> : narrationStatus === 'speaking' ? <><Volume2 size={15} />Reading your shared introduction</> : narrationStatus === 'blocked' ? <button onClick={() => narratorRef.current?.unlock()}>Play match introductions</button> : <><span>Match audio unavailable.</span><button onClick={() => narratorRef.current?.retry()}>Retry audio</button></>}
+          </div>}
           </>}
         </div>
       </>}

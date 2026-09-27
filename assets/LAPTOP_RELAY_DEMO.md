@@ -41,6 +41,10 @@ Quest B: local VR app  <-- private Wi-Fi -->  Laptop: same relay, port 4323
 
 Each headset renders passthrough and its own glass card locally. It sends its device identifier, requested demo profile, calibration state, and tracked head pose to the laptop. The laptop assigns the demo roles, maintains the room, and sends back the other participant's state and the shared match result.
 
+The current relay runs `MATCH_MODE=fixture`. Its Alex/Maya summary is reviewed
+and hardcoded; it does not call Gemini. ElevenLabs still speaks that same shared
+text. The Sam pairings remain intentional nonmatches.
+
 The relay endpoint is `http://<MAC_WIFI_IP>:4323`. Both headsets must use the **same Mac address**. Inside a headset, `127.0.0.1` means that headset, not the laptop; it only worked previously because USB forwarding bridged the connection.
 
 The implementation attempts room updates roughly every 0.1 seconds when no request is already in flight. This is not a promised network frame rate. The relay removes members after more than five seconds without updates; the card can hide sooner if poses become stale or tracking is lost.
@@ -171,9 +175,9 @@ Both clients automatically join room `DEMO`; there is no attendee login or room-
 1. **Show the name cards.** Once both headsets are connected and tracking, Alex sees Maya's name and Maya sees Alex's name. Each wearer sees the other person's card, not their own. The panel is rounded, pale translucent glass with black text, fixed about 1.35 m in front of its wearer. It can appear before calibration.
 2. **Calibrate Alex.** Alex stands on the shared floor marker, faces the arrow, and presses A on the right controller or X on the left controller once. Alex then moves clear of the marker.
 3. **Calibrate Maya.** Maya stands on the same marker, faces the same arrow, and presses A or X once. Do this sequentially, not with both people standing on the marker together. Calibration requires active head tracking.
-4. **Reveal the match.** Once both calibration states reach the relay, the Alex/Maya fixture produces a compatible result. Both glass panels turn pale green and show the same conversation starter. The percentage score and full profile stay hidden. The old black diagnostic panel is not shown.
+4. **Reveal the match together.** Once both calibration states reach the relay, the Alex/Maya result is prepared, but both panels still show only names. Either person presses A/X again. That shared request turns both glass panels pale green and shows the same conversation starter when ready, then starts speech. The other person need not press. The percentage score and full profile stay hidden. The old black diagnostic panel is not shown.
 5. **Demonstrate cable-free movement.** With both USB cables unplugged, take a few slow steps inside the clear area. The card follows each wearer's view; it does not float over the other person's head. Stay within the safe physical boundaries and reliable Wi-Fi coverage.
-6. **Hide and restore the card.** After calibration, press A or X again to hide the complete local card. Release and press again to show it. This does not disconnect either headset, reset calibration, or hide the other wearer's card.
+6. **Hide and restore the card.** After the summary has been revealed and speech finishes, press A or X to hide the complete local card. Release and press again to show it without replaying speech. Presses while loading or speaking do not hide it. This does not disconnect either headset, reset calibration, or hide the other wearer's card.
 7. **Show a nonmatch.** On the Maya headset, press B on the right controller or Y on the left controller once. Its demo profile changes to Sam. Alex now sees Sam; Sam still sees Alex. Both cards become neutral and the match reason disappears.
 8. **Restore the match.** On that same second headset, press B or Y again to return to Maya. The green cards and the matching reason return after the updated result arrives.
 
@@ -183,7 +187,7 @@ There is no required walking distance or face-to-face gaze trigger for this vers
 
 | Control | Before successful calibration | After calibration |
 | --- | --- | --- |
-| A (right) or X (left) | Capture calibration while tracked | Toggle the complete card off/on locally |
+| A (right) or X (left) | Capture calibration while tracked | First reveal the summary for both; after speech, toggle your own card off/on |
 | B (right) or Y (left), on Maya/Sam headset | Switch Maya/Sam once connected | Switch Maya/Sam and refresh the shared match |
 | B or Y, on Alex headset | No profile switch | No profile switch |
 | Left controller menu button, while delivered to the app | Reset the room | Reset the room and clear calibration on both clients |
@@ -202,8 +206,9 @@ Do not call the wireless setup ready until all of these pass:
 - [ ] Both have the newly built wireless APK, not the old loopback/USB build.
 - [ ] Both USB cables are physically unplugged.
 - [ ] Both headsets remain connected and show the other person's name while worn and tracked.
-- [ ] Both users calibrate and receive the green Alex/Maya result.
-- [ ] A/X hides and restores the complete card on each headset independently.
+- [ ] Both users calibrate and continue seeing only names, even after the match is ready.
+- [ ] One person's next A/X press reveals the green Alex/Maya summary for both, then starts speech.
+- [ ] A/X cannot hide during speech; afterward it hides/restores each local card independently.
 - [ ] Maya → Sam → Maya produces green → neutral → green on both headsets.
 - [ ] The sequence can be repeated three times without restarting the relay.
 - [ ] Both users can move around the intended cleared area without persistent card loss or disconnection.
@@ -219,8 +224,8 @@ For later sessions on the same network and unchanged Mac IP, you normally only n
 | It works plugged in but fails immediately when unplugged | Suspect the old `127.0.0.1` USB build. Rebuild with the verified Mac Wi-Fi address and reinstall on both headsets. USB forwarding does not make a loopback build wireless. |
 | Internet works but the Mac health page does not | Local traffic may be blocked, the address may be wrong, or the firewall may reject the relay. Use a private network that allows peer access; internet connectivity alone is insufficient. |
 | `EADDRINUSE` on relay startup | Check the service already listening on 4323. Reuse a healthy fixture relay or stop its known terminal process before starting another. Do not kill unrelated processes. |
-| `calibrated=false`, or neutral cards that never match | Both people must press A/X once while tracking. Vicinity does not calibrate. If unsure, reset the room and repeat the marker sequence on both headsets. |
-| A/X hides the card instead of recalibrating | That headset is already calibrated. A/X is now the visibility toggle. Use a room reset before recalibrating. |
+| `calibrated=false`, or names that never reveal a summary | Both people must press A/X once while tracking to calibrate. Either then presses again to reveal for both. Vicinity does not calibrate. If unsure, reset and repeat the marker sequence. |
+| A/X hides the card instead of recalibrating | That headset is calibrated and its revealed introduction has finished. A/X is now the local visibility toggle. Use a room reset before recalibrating. |
 | No card, but the app is running | Check whether it was dismissed, whether the peer is connected and worn/tracking, and whether poses are fresh. Once calibrated, A/X can restore a dismissed card. Also check the relay if neither headset shows a card. |
 | Green cue disappears after B/Y | The second headset may have switched to Sam, which intentionally does not match Alex. Press B/Y on that headset again to return to Maya. |
 | Names are on the opposite headsets from the planned roles | The first active room member becomes Alex. Close both apps, wait at least six seconds, then launch the intended Alex headset first and Maya second. |
@@ -285,4 +290,4 @@ Both cables must stay connected for that fallback. Starting this watcher does no
 - [Controller buttons and calibration flow](../unity/Assets/Align/Runtime/Integration/TwoHeadsetDemoController.cs)
 - [Demo scene and relay-address selection](../unity/Assets/Align/Editor/QuestDemoSceneFactory.cs)
 
-Next step for the current setup: unplug both USB cables, put on both headsets, calibrate each with A/X on the shared marker, and confirm the cards remain visible and turn green. Then test local hide/show and a short, safe walk. The Mac is on the hotspot at `172.20.10.8`; keep it awake with the relay running and on this network.
+Next step for the current setup: unplug both USB cables, put on both headsets, and calibrate each with A/X on the shared marker. Confirm names stay visible until either person presses A/X again, which reveals the green summary for both. After speech, test local hide/show and a short, safe walk. The Mac is on the hotspot at `172.20.10.8`; keep it awake with the relay running and on this network.

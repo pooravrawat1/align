@@ -50,7 +50,7 @@
       "userB": "maya",
       "compatible": true,
       "score": 100,
-      "reason": "Alex builds wearable hardware. Maya builds computer vision. You could turn visual assistance into a working wearable together."
+      "reason": "You share a vision for wearable assistive technology. Combining computer vision with embedded hardware could turn that idea into something people can use every day."
     },
     { "userA": "alex", "userB": "sam", "compatible": false, "score": 0, "reason": "" },
     { "userA": "maya", "userB": "sam", "compatible": false, "score": 0, "reason": "" }

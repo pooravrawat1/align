@@ -63,7 +63,7 @@ namespace Align.Editor
             Selection.activeGameObject = controllerObject;
             Debug.Log(
                 $"Created two-headset QuestDemo. Matcher={ResolveMatcherUrl()}. " +
-                "A/X calibrates once, then hides/shows the card; B/Y switches Maya/Sam; Menu resets the room.");
+                "A/X calibrates once; a later A/X press reveals the introduction for both. After speech, A/X hides/shows your card. B/Y switches Maya/Sam; Menu resets the room.");
         }
 
         private static Camera CreateXrOrigin()
