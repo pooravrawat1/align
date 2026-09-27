@@ -22,8 +22,7 @@
   <img alt="Node 20" src="https://img.shields.io/badge/Node-20.6%2B-3C873A?logo=node.js&logoColor=white">
   <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-Atlas-13AA52?logo=mongodb&logoColor=white">
 </p> 
----
- 
+
 ## The pitch
  
 Big events put you in a room with the right people and no reliable way to find them.
