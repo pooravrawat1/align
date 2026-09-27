@@ -90,3 +90,16 @@
   .lp-event-grid .event-cover { height: 200px; }
   .lp-event-caption { align-items: flex-start; gap: 20px; }
 }
+
+/* A distinct, content-sized chapter between the event preview and closing CTA. */
+.lp-connection {
+  min-height: auto;
+  padding-block: clamp(72px, 9vw, 128px);
+  background: var(--surface-panel);
+  border-block: 1px solid var(--border-subtle);
+}
+.lp-connection .lp-profile { background: var(--surface-deep); }
+.lp-connection-copy h2 span { color: #b5d8c3; }
+@media (max-width: 700px) {
+  .lp-connection { padding-block: 64px; }
+}

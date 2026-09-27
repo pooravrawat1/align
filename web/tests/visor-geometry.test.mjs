@@ -24,7 +24,7 @@ test('Maya expands directly from her identity into one combined connection card'
     assert.equal(identity.height, 76);
     const saved = matchLayout(width, height, image, journeyState(JOURNEY.network));
     assert.equal(saved.width, 380);
-    assert.equal(saved.height, 448);
+    assert.equal(saved.height, 408);
     for (let i = 0; i <= 200; i++) {
       const p = i / 200;
       const state = journeyState(p);
@@ -54,5 +54,14 @@ test('the camera push holds Maya in place so her image-space HUD anchor cannot d
     const end = roomLayout(width, height, 1672 / 941, 1);
     assert.ok(Math.abs(start.left + start.width * .586 - end.left - end.width * .586) < 1e-8);
     assert.ok(Math.abs(start.top + start.height * .411 - end.top - end.height * .411) < 1e-8);
+  }
+});
+
+test('chapter copy visibility is derived from the same frame on arrival, reversal and restore', () => {
+  for (const progress of [1, 0, .8, 1, .3, 1]) {
+    const opacity = journeyState(progress).networkCopy;
+    if (progress === 1) assert.equal(opacity, 1);
+    if (progress <= JOURNEY_TRACKS.networkIn[0]) assert.equal(opacity, 0);
+    assert.equal(opacity, journeyState(progress).networkCopy);
   }
 });

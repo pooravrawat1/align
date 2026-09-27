@@ -18,7 +18,6 @@ export const JOURNEY_TRACKS = {
   worldDim: [.26, .72],
   savedShell: [.28, .72], networkIn: [.64, .88],
   portrait: [.5, .7], savedIn: [.74, .94],
-  connectionIn: [.88, 1],
 } as const;
 
 export function journeyState(progress: number) {
@@ -28,7 +27,7 @@ export function journeyState(progress: number) {
   const network = at(JOURNEY_TRACKS.savedShell);
   return {
     approach: at(JOURNEY_TRACKS.lens), camera: at(JOURNEY_TRACKS.camera),
-    reason: network, collapse, network,
+    reason: network, collapse, network, networkCopy: at(JOURNEY_TRACKS.networkIn),
     chip: collapse * (1 - network),
     portrait: at(JOURNEY_TRACKS.portrait),
     identityDetail: clamp(1 - smooth(0, .3, collapse) + smooth(.68, .85, network)),
@@ -47,9 +46,9 @@ export function matchLayout(width: number, height: number, image: ReturnType<typ
   const mix = (a: number, b: number, t: number) => a + (b - a) * t;
   return {
     x: mix(mix(initialX, clamp(headX + 26, 24, width - 108), collapse), Math.min(width * .64, width * .95 - 380), network),
-    y: mix(mix(initialY, clamp(headY - 22, 110, height - 52), collapse), Math.max(104, height * .49 - 224), network),
+    y: mix(mix(initialY, clamp(headY - 22, 110, height - 52), collapse), Math.max(104, height * .49 - 204), network),
     width: mix(mix(cardWidth, 84, collapse), 380, network),
-    height: mix(mix(76 + reason * 198, 28, collapse), 448, network),
+    height: mix(mix(76 + reason * 198, 28, collapse), 408, network),
   };
 }
 
