@@ -54,6 +54,7 @@ The [live web demo](https://catalystathackgt.vercel.app) is the full companion e
     <td width="50%"><img src="docs/screenshots/04-spatial.png" alt="Spatial preview with floating name labels in a room"></td>
   </tr>
 </table>
+
 ## How it works
  
 ```mermaid
