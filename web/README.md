@@ -27,6 +27,36 @@ npm run dev
 
 The website uses temporary demo identities. Connection requests work between local identities. No password, OAuth service, external invitation, email, or push notification is sent. A follow-up date is stored only as local-session metadata. Restarting the mock service resets demo sessions; the reset control restores sample content.
 
+## Shared match narration
+
+For genuinely AI-written introductions, also set `GEMINI_API_KEY` and
+`MATCH_MODE=live`. This requires Gemini text even for the prepared demo;
+failures leave matching unavailable rather than silently using scripted prose.
+The existing scoring rubric still applies. `auto` and `fixture` modes may use
+templates/precomputed text. Both Gemini and ElevenLabs keys remain server-only.
+
+Set `ELEVENLABS_API_KEY` in **web/.env** (use `.env.example` for the full settings)
+and restart `npm run dev` or `npm run dev:quest`. The key needs Text to Speech
+access and available credits. `ELEVENLABS_VOICE_ID` optionally selects another
+female voice; the default is Sarah. No key is exposed to the browser. Deployments
+must configure the same variables on the API server.
+
+Spatial preview reads the shared introduction for each new match once.
+Narration starts after **Enter preview**, queues multiple matches, and does not
+repeat on Refresh matches. Use **Read match introductions aloud** before entry or the
+speaker button afterward to mute; the preference stays on this browser. Starting
+a conversation, leaving, or losing the match stops audio. If the browser blocks
+autoplay, select **Play match introductions**; if generation fails, **Retry audio** retries
+without disrupting matching. The existing optional Match sound chime is separate.
+
+`POST /api/narration` takes `{ "participantId": "maya" }` with `x-session-id` and
+returns MP3 audio. The server requires a current compatible match in the joined
+event, rejects stale matches after privacy changes, and rechecks authorization
+after generation. Only the current match reason goes to ElevenLabs; individual
+bios and raw matching inputs are excluded. Both participants hear the same
+introduction. Generation and bounded caching are shared with the Quest service
+implementation. See [matcher setup](../matcher/README.md#shared-match-narration-elevenlabs).
+
 ## Checks
 
 ```sh

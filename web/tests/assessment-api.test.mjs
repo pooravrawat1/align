@@ -45,6 +45,33 @@ function modelAssessment(overrides = {}) {
 function geminiResponse(value = modelAssessment()) {
   return new Response(JSON.stringify({ status: 'completed', steps: [{ type: 'model_output', content: [{ type: 'text', text: JSON.stringify(value) }] }] }), { status: 200, headers: { 'content-type': 'application/json' } });
 }
+
+test('live mode uses Gemini introductions even when the prepared demo requests fixtures', async () => {
+  let calls = 0;
+  const text = 'You both care about Robotics. What could your complementary skills help you build together?';
+  const { api, login } = await harness(async () => {
+    calls++;
+    return geminiResponse(modelAssessment({ introduction: { text, evidenceA: 'Robotics', evidenceB: 'Robotics' } }));
+  }, { GEMINI_API_KEY: 'test', MATCH_MODE: 'live' });
+  const alex = await login('alex');
+  await api('/api/room', { sessionId: alex.session.id, body: { code: 'DEMO' } });
+  await api('/api/matches', { sessionId: alex.session.id, body: { demo: true } });
+  const state = await api('/api/bootstrap', { sessionId: alex.session.id });
+  const matched = state.value.matches.find(item => item.userB === 'maya' && item.compatible);
+  assert.ok(calls > 0);
+  assert.equal(matched?.reason, text);
+  assert.equal(matched?.source, 'gemini');
+});
+
+test('live web demo does not publish a compatible scripted match when Gemini fails', async () => {
+  const { api, login } = await harness(async () => new Response('{}', { status: 503 }),
+    { GEMINI_API_KEY: 'test', MATCH_MODE: 'live' });
+  const alex = await login('alex');
+  await api('/api/room', { sessionId: alex.session.id, body: { code: 'DEMO' } });
+  await api('/api/matches', { sessionId: alex.session.id, body: { demo: true } });
+  const state = await api('/api/bootstrap', { sessionId: alex.session.id });
+  assert.ok(!state.value.matches.some(item => item.compatible));
+});
 // Remove experience-route evidence to isolate the networking route in its tests.
 async function networkingOnly(api, sessionId) {
   await api('/api/profile', { method: 'PATCH', sessionId, body: { experiences: [] } });

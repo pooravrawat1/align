@@ -83,7 +83,10 @@ function publicMember(member) {
   };
 }
 
-export function createRoomRelay({ matcher, fixtures, now = () => Date.now(), memberTtlMs = DEFAULT_MEMBER_TTL_MS }) {
+export function createRoomRelay({
+  matcher, fixtures, now = () => Date.now(), memberTtlMs = DEFAULT_MEMBER_TTL_MS,
+  backgroundMatching = matcher?.health?.().mode === 'live',
+}) {
   if (!matcher || typeof matcher.match !== 'function') throw new TypeError('matcher is required');
   if (!fixtures?.profiles || !Array.isArray(fixtures.offlineResults)) {
     throw new TypeError('fixtures are required');
@@ -104,6 +107,9 @@ export function createRoomRelay({ matcher, fixtures, now = () => Date.now(), mem
         resetGeneration: 0,
         pendingPair: '',
         pending: null,
+        matchError: '',
+        failedPair: '',
+        retryAt: 0,
       };
       rooms.set(code, room);
     }
@@ -156,16 +162,21 @@ export function createRoomRelay({ matcher, fixtures, now = () => Date.now(), mem
       room.match = null;
       room.matchSource = '';
       room.matchPair = '';
+      room.matchError = '';
+      room.failedPair = '';
       return;
     }
     if (room.match && room.matchPair === pair.key) return;
     if (room.pending && room.pendingPair === pair.key) {
-      await room.pending;
+      if (!backgroundMatching) await room.pending;
       return;
     }
+    if (room.failedPair === pair.key && now() < room.retryAt) return;
     room.match = null;
     room.matchSource = '';
     room.matchPair = '';
+    room.matchError = '';
+    room.failedPair = '';
     const generation = ++room.matchGeneration;
     room.pendingPair = pair.key;
     room.pending = matcher.match({
@@ -177,13 +188,20 @@ export function createRoomRelay({ matcher, fixtures, now = () => Date.now(), mem
       room.matchSource = source;
       room.matchPair = pair.key;
       room.revision += 1;
+    }).catch(() => {
+      if (generation !== room.matchGeneration || activePair(room)?.key !== pair.key) return;
+      room.matchSource = 'unavailable';
+      room.matchError = 'AI introduction unavailable. Retrying shortly; no scripted fallback.';
+      room.failedPair = pair.key;
+      room.retryAt = now() + 30000;
+      room.revision += 1;
     }).finally(() => {
       if (generation === room.matchGeneration) {
         room.pending = null;
         room.pendingPair = '';
       }
     });
-    await room.pending;
+    if (!backgroundMatching) await room.pending;
   }
 
   function snapshot(room, clientId) {
@@ -198,6 +216,8 @@ export function createRoomRelay({ matcher, fixtures, now = () => Date.now(), mem
       participants: members.map(publicMember),
       matchAvailable: Boolean(room.match),
       matchSource: room.matchSource,
+      matchStatus: room.match ? 'ready' : room.matchError ? 'unavailable' : room.pendingPair ? 'pending' : 'waiting',
+      matchError: room.matchError,
       match: room.match ?? { userA: '', userB: '', compatible: false, score: 0, reason: '' },
     };
   }
@@ -217,6 +237,8 @@ export function createRoomRelay({ matcher, fixtures, now = () => Date.now(), mem
       room.matchSource = '';
       room.matchPair = '';
       room.pendingPair = '';
+      room.matchError = '';
+      room.failedPair = '';
       room.matchGeneration += 1;
       room.revision += 1;
     }
@@ -236,6 +258,8 @@ export function createRoomRelay({ matcher, fixtures, now = () => Date.now(), mem
       room.matchSource = '';
       room.matchPair = '';
       room.pendingPair = '';
+      room.matchError = '';
+      room.failedPair = '';
       room.matchGeneration += 1;
       room.revision += 1;
     }
@@ -245,6 +269,26 @@ export function createRoomRelay({ matcher, fixtures, now = () => Date.now(), mem
 
   return {
     update,
+    narrationMatch(raw) {
+      exactKeys(raw, new Set(['roomCode', 'clientId', 'profileId']), 'request');
+      const roomCode = String(raw.roomCode ?? '').trim().toUpperCase();
+      if (!ROOM_CODE.test(roomCode) || typeof raw.clientId !== 'string' || !CLIENT_ID.test(raw.clientId)
+        || !['alex', 'maya', 'sam'].includes(raw.profileId)) {
+        throw new InputError('Invalid narration request');
+      }
+      const room = rooms.get(roomCode);
+      if (!room) throw new InputError('Room not found', 404);
+      removeStale(room, now());
+      const pair = activePair(room);
+      const member = room.members.get(raw.clientId);
+      const peer = pair?.members.find(item => item.clientId !== raw.clientId);
+      if (!member || !pair?.members.includes(member) || !peer || peer.profileId !== raw.profileId
+        || !member.pose.tracked || !peer.pose.tracked
+        || !room.match?.compatible || room.matchPair !== pair.key) {
+        throw new InputError('An active match with this person is required for narration', 403);
+      }
+      return { compatible: true, reason: room.match.reason };
+    },
     clear: () => rooms.clear(),
     roomCount: () => rooms.size,
   };

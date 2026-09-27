@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { requestGemini, validateGeminiAssessment } from './gemini.mjs';
-import { pairCacheKey, validateMatchRequest, validateProfile } from './profiles.mjs';
+import { requestGemini, validateGeminiAssessment, validateGeminiIntroduction } from './gemini.mjs';
+import { InputError, pairCacheKey, validateMatchRequest, validateProfile } from './profiles.mjs';
 import { chooseRoute, experienceRoutes, RUBRIC_VERSION } from './rubric.mjs';
 
 const CACHE_LIMIT = 256;
@@ -44,12 +44,12 @@ export function createMatcher({
   mode = 'auto',
   apiKey = '',
   model = 'gemini-3.8-flash',
-  timeoutMs = 3000,
+  timeoutMs = mode === 'live' ? 15000 : 3000,
   geminiEvaluator = requestGemini,
   fixtures = demoFixtures,
   logger = () => {},
 } = {}) {
-  if (mode !== 'auto' && mode !== 'fixture') throw new Error('MATCH_MODE must be auto or fixture');
+  if (!['auto', 'fixture', 'live'].includes(mode)) throw new Error('MATCH_MODE must be auto, fixture, or live');
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 15000) {
     throw new Error('Gemini timeout must be between 1 and 15000 milliseconds');
   }
@@ -92,6 +92,9 @@ export function createMatcher({
       professional: routes.professional.score,
       personal: routes.personal.score,
     };
+    if (mode === 'live' && !apiKey) {
+      throw new InputError('Live AI introductions require GEMINI_API_KEY on the matcher server.', 503);
+    }
     if (mode === 'fixture' || !apiKey) {
       const selected = deterministicAssessment(profileA, profileB, routes, fixture);
       return {
@@ -102,24 +105,36 @@ export function createMatcher({
     }
     try {
       const raw = await withDeadline(
-        (signal) => geminiEvaluator(profileA, profileB, { apiKey, model, signal }),
+        (signal) => geminiEvaluator(profileA, profileB, {
+          apiKey, model, signal,
+          ...(mode === 'live' ? { introductionContext: {
+            professional: routes.professional.score, personal: routes.personal.score,
+          } } : {}),
+        }),
         timeoutMs,
       );
       const networking = validateGeminiAssessment(raw, profileA, profileB);
       const selected = chooseRoute(profileA, profileB, routes, networking);
-      if (fixture && selected.result.compatible !== fixture.compatible) {
+      if (mode !== 'live' && fixture && selected.result.compatible !== fixture.compatible) {
         throw new Error('Gemini contradicted a demo fixture');
+      }
+      if (mode === 'live' && selected.result.compatible) {
+        // Scoring still uses the rubric, but no winning rule/template supplies live prose.
+        selected.result.reason = validateGeminiIntroduction(raw.introduction, profileA, profileB);
       }
       return {
         ...selected,
         source: 'gemini',
-        provenance: selected.route === 'networking' ? 'gemini' : 'rules',
+        provenance: mode === 'live' || selected.route === 'networking' ? 'gemini' : 'rules',
         routes: { ...routeScores, networking: networking.score },
         criteria: networking.criteria,
         available: true,
         cacheable: true,
       };
     } catch {
+      if (mode === 'live') {
+        throw new InputError('AI introduction unavailable. Check the Gemini key, model, quota, or retry shortly. No scripted fallback was used.', 502);
+      }
       const selected = deterministicAssessment(profileA, profileB, routes, fixture);
       return {
         ...selected, source: 'fallback', routes: routeScores, criteria: null,
@@ -175,6 +190,7 @@ export function createMatcher({
       geminiConfigured: Boolean(apiKey),
       model,
       rubricVersion: RUBRIC_VERSION,
+      introductionMode: mode === 'live' ? 'gemini-required' : 'mixed',
     }),
   };
 }

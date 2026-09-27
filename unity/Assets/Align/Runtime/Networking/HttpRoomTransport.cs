@@ -29,6 +29,7 @@ namespace Align.Networking
         public event Action<string> TransportError;
 
         public string ClientId => _clientId ??= ResolveClientId();
+        public string MatcherBaseUrl => matcherBaseUrl;
         public bool IsConnected { get; private set; }
 
         public void Configure(string baseUrl, string targetRoom = "DEMO")

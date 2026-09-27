@@ -84,7 +84,8 @@ export function createAssessmentService({ fetchImpl = globalThis.fetch, env = pr
       if (inFlight.has(fingerprint)) return structuredClone(await inFlight.get(fingerprint));
       const work = (async () => {
         let result;
-        try { result = adapt(await (context.fixture ? fixtureMatcher : matcher).assess({ profileA: profiles[0], profileB: profiles[1] }), fingerprint, profiles); }
+        // Live mode never downgrades to scripted text, including the prepared demo button.
+        try { result = adapt(await (context.fixture && env.MATCH_MODE !== 'live' ? fixtureMatcher : matcher).assess({ profileA: profiles[0], profileB: profiles[1] }), fingerprint, profiles); }
         catch { result = unavailable(fingerprint, profiles); }
         if (result.source === 'unavailable') {
           failures.set(fingerprint, { value: result, expiresAt: Date.now() + failureTtl });

@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { InputError } from './profiles.mjs';
 import { createRoomRelay } from './rooms.mjs';
 import { createMatcher, demoFixtures } from './service.mjs';
+import { createMatchNarrator, matchNarrationText, sendNarration } from './narration.mjs';
 
 const MAX_BODY_BYTES = 16 * 1024;
 
@@ -37,12 +38,12 @@ async function readJson(request) {
   }
 }
 
-export function createMatchServer(matcher, roomRelay = createRoomRelay({ matcher, fixtures: demoFixtures })) {
+export function createMatchServer(matcher, roomRelay = createRoomRelay({ matcher, fixtures: demoFixtures }), narrator = createMatchNarrator()) {
   return createServer(async (request, response) => {
     try {
       const path = new URL(request.url, 'http://localhost').pathname;
       if (request.method === 'GET' && path === '/health') {
-        sendJson(response, 200, matcher.health());
+        sendJson(response, 200, { ...matcher.health(), narration: narrator.health() });
         return;
       }
       if (request.method === 'POST' && path === '/match') {
@@ -55,6 +56,17 @@ export function createMatchServer(matcher, roomRelay = createRoomRelay({ matcher
         const body = await readJson(request);
         const state = await roomRelay.update(body);
         sendJson(response, 200, state);
+        return;
+      }
+      if (request.method === 'POST' && path === '/room/narration') {
+        const body = await readJson(request);
+        const match = roomRelay.narrationMatch(body);
+        const audio = await narrator.narrate(match);
+        // A switch, disconnect or reset during generation invalidates this response.
+        if (matchNarrationText(roomRelay.narrationMatch(body)) !== matchNarrationText(match)) {
+          throw new InputError('The match introduction changed during narration', 409);
+        }
+        sendNarration(response, audio);
         return;
       }
       sendJson(response, 404, { error: 'Not found' });
@@ -77,6 +89,7 @@ function start() {
     mode: process.env.MATCH_MODE ?? 'auto',
     apiKey: process.env.GEMINI_API_KEY ?? '',
     model: process.env.GEMINI_MODEL ?? 'gemini-3.8-flash',
+    ...(process.env.GEMINI_TIMEOUT_MS ? { timeoutMs: Number(process.env.GEMINI_TIMEOUT_MS) } : {}),
     logger: ({ source, pair, score }) => {
       console.log(`[match] pair=${pair} source=${source} score=${score}`);
     },

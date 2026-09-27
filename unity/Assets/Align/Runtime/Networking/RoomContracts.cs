@@ -97,6 +97,8 @@ namespace Align.Networking
         public RoomParticipantPayload[] participants;
         public bool matchAvailable;
         public string matchSource;
+        public string matchStatus;
+        public string matchError;
         public RoomMatchPayload match;
     }
 

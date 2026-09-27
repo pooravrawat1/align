@@ -21,11 +21,13 @@ namespace Align.Integration
         [SerializeField] private MonoBehaviour roomTransportBehaviour;
         [SerializeField] private RemoteParticipantView remoteParticipant;
         [SerializeField] private RemoteProfileCardPresenter remoteCard;
+        [SerializeField] private bool narrateMatchBios = true;
 
         private readonly SharedOriginCalibration _calibration = new();
         private IHeadPoseProvider _poseProvider;
         private IAlignRoomTransport _transport;
         private RemoteCardVisibility _remoteVisibility;
+        private BioNarrationPlayer _narration;
         private XRInputDevice _leftController;
         private XRInputDevice _rightController;
         private bool _wasPrimaryPressed;
@@ -72,6 +74,7 @@ namespace Align.Integration
 
         private void OnDisable()
         {
+            _narration?.ClearMatch();
             if (_transport != null)
             {
                 _transport.SnapshotReceived -= ApplySnapshot;
@@ -109,6 +112,7 @@ namespace Align.Integration
                     if (_remoteVisibility != null)
                     {
                         _remoteVisibility.SetDismissed(!_remoteVisibility.IsDismissed);
+                        if (_remoteVisibility.IsDismissed) _narration?.StopPlayback();
                         UpdateStatus(_remoteVisibility.IsDismissed
                             ? "Card hidden. Press A or X to show it again."
                             : "Card enabled. Waiting for a live peer.");
@@ -130,6 +134,7 @@ namespace Align.Integration
             if (secondary && !_wasSecondaryPressed && _assignedProfileId != "alex")
             {
                 _requestedProfileId = _assignedProfileId == "sam" ? "maya" : "sam";
+                _narration?.ClearMatch();
                 remoteCard?.SetMatchState(false, string.Empty);
                 UpdateStatus($"Switching local demo profile to {_requestedProfileId}…");
             }
@@ -140,6 +145,7 @@ namespace Align.Integration
             if (menu && !_wasMenuPressed)
             {
                 _calibration.Reset();
+                _narration?.ClearMatch();
                 remoteParticipant?.ClearPose();
                 remoteParticipant?.SetSessionState(false, false, false);
                 _remoteVisibility?.SetDismissed(false);
@@ -160,6 +166,7 @@ namespace Align.Integration
             {
                 _lastResetGeneration = snapshot.resetGeneration;
                 _calibration.Reset();
+                _narration?.ClearMatch();
                 remoteParticipant?.ClearPose();
                 remoteParticipant?.SetSessionState(false, false, false);
                 _remoteVisibility?.SetDismissed(false);
@@ -192,6 +199,7 @@ namespace Align.Integration
 
             if (remote == null)
             {
+                _narration?.ClearMatch();
                 remoteParticipant?.SetSessionState(false, _calibration.IsCalibrated, false);
                 remoteParticipant?.ClearPose();
                 remoteCard?.SetMatchState(false, string.Empty);
@@ -221,9 +229,27 @@ namespace Align.Integration
             bool matched = snapshot.matchAvailable && snapshot.match != null &&
                 snapshot.match.compatible;
             remoteCard?.SetMatchState(matched, matched ? snapshot.match.reason : string.Empty);
+            bool pairIsCurrent = matched &&
+                ((snapshot.match.userA == _assignedProfileId && snapshot.match.userB == remote.profileId) ||
+                 (snapshot.match.userB == _assignedProfileId && snapshot.match.userA == remote.profileId));
+            bool profileSwitchPending = _requestedProfileId != "auto" && _requestedProfileId != _assignedProfileId;
+            if (narrateMatchBios && pairIsCurrent && !profileSwitchPending &&
+                _calibration.IsCalibrated && remote.calibrated && remote.pose != null && remote.pose.tracked &&
+                _poseProvider.CurrentPose.IsTracked && _transport is HttpRoomTransport http)
+            {
+                string key = $"{snapshot.roomCode}:{snapshot.resetGeneration}:{_assignedProfileId}:{remote.clientId}:{remote.profileId}";
+                _narration.SetMatch(http.MatcherBaseUrl, snapshot.roomCode, http.ClientId, remote.profileId, key);
+                if (_remoteVisibility != null && _remoteVisibility.IsDismissed) _narration.StopPlayback();
+            }
+            else
+            {
+                _narration?.ClearMatch();
+            }
             string matchState = snapshot.matchAvailable
                 ? (matched ? "MATCH" : "neutral")
-                : "pending";
+                : snapshot.matchStatus == "unavailable"
+                    ? "AI unavailable; retrying"
+                    : snapshot.matchStatus == "pending" ? "AI introduction pending" : "pending";
             UpdateStatus(
                 $"{_assignedProfileId} ↔ {_remoteProfileId} | " +
                 $"calibrated={_calibration.IsCalibrated && remote.calibrated} | {matchState}");
@@ -231,6 +257,7 @@ namespace Align.Integration
 
         private void ApplyTransportError(string message)
         {
+            _narration?.ClearMatch();
             _lastError = message ?? "Room transport error";
             remoteParticipant?.SetSessionState(false, _calibration.IsCalibrated, false);
             UpdateStatus(_lastError);
@@ -240,6 +267,8 @@ namespace Align.Integration
         {
             _poseProvider = poseProviderBehaviour as IHeadPoseProvider;
             _transport = roomTransportBehaviour as IAlignRoomTransport;
+            if (_narration == null)
+                _narration = GetComponent<BioNarrationPlayer>() ?? gameObject.AddComponent<BioNarrationPlayer>();
             _remoteVisibility = remoteParticipant != null
                 ? remoteParticipant.GetComponent<RemoteCardVisibility>()
                 : null;

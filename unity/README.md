@@ -2,6 +2,30 @@
 
 This is the mixed-reality client for Align. The first slice establishes a head-pose contract, editor simulation, Quest 2 OpenXR/passthrough setup, remote profile presentation, and visibility gating that Person 2 can connect to networking.
 
+## Shared match audio
+
+Set `MATCH_MODE=live` and `GEMINI_API_KEY` on the laptop relay to generate the
+shared introduction with Gemini. This build shows **AI introduction pending**
+while generating and **AI unavailable; retrying** on failure; pose polling
+continues in both cases. There is no scripted fallback in live mode.
+
+The two-headset controller automatically attaches `BioNarrationPlayer`. A
+compatible match reads the shared match introduction through the server's
+ElevenLabs integration, once per match. The default voice is female (Sarah).
+Set `ELEVENLABS_API_KEY` on the matcher server as described in
+[narration setup](../matcher/README.md#shared-match-narration-elevenlabs), then
+rebuild/reinstall the Quest APK. The Unity client uses the existing matcher's
+URL and carries no provider credentials. Audio and UnityWebRequestAudio built-in
+modules are enabled in the package manifest.
+
+A/X dismissal stops speech. Nonmatches, profile switches, resets, loss of
+tracking/connection, and disabling the controller cancel audio. Unavailable
+speech leaves the visual match intact. Uncheck **Narrate Match Bios** on
+`TwoHeadsetDemoController` to disable narration for a build. Verify on both
+headsets: Alex and Maya hear the same shared match reason, Sam stays silent, and
+switching back to Maya reads the shared introduction once. Neither profile bio
+is narrated. Editor tests do not verify physical output.
+
 ## Required editor
 
 - Unity `6000.0.66f2` or newer (Apple Silicon build on Apple Silicon Macs)

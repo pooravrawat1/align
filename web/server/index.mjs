@@ -10,6 +10,7 @@ import { followUpContext } from './follow-up-context.mjs';
 import { MATCH_THRESHOLD, experienceRoutes } from '../../matcher/src/rubric.mjs';
 import { matchingProfile } from './assessment.mjs';
 import { validateProfile as validateMatchProfile } from '../../matcher/src/profiles.mjs';
+import { matchNarrationText, createMatchNarrator, sendNarration } from '../../matcher/src/narration.mjs';
 import { getActiveStore } from './store.mjs';
 
 const HOST = '127.0.0.1';
@@ -635,6 +636,21 @@ function requireJoinedRoom(state) {
   }
 }
 
+function narrationMatch(state, requestStore, participantId) {
+  requireJoinedRoom(state);
+  requireRosterPair(state, connectionEventId(state), participantId);
+  const current = sessionBootstrap(state); // Discard matches invalidated by profile/visibility edits.
+  const matched = current.matches.find(match => match.compatible &&
+    ((match.userA === state.session.userId && match.userB === participantId) ||
+     (match.userB === state.session.userId && match.userA === participantId)));
+  if (!matched) throw apiError(403, 'An active match with this person is required for narration');
+  const profile = requestStore.profile(participantId) ?? state.profiles.find(person => person.id === participantId);
+  if (!profile) throw apiError(404, 'Participant not found');
+  if (profile.visibility?.activeInEvent === false) throw apiError(403, 'This person is not sharing with this event');
+  // The existing match is derived from shared fields; never narrate either raw profile.
+  return { compatible: true, reason: matched.reason };
+}
+
 function connectionEventId(state) {
   if (state.session.code === null) return state.session.activeEventId ?? 'demo';
   const event = state.events.find(
@@ -714,7 +730,7 @@ function materializeAcceptedConnection(state, requestStore, participantId) {
   return connection;
 }
 
-async function handleRequest(request, response, sessions, assessmentService, requestStore, followUpService) {
+async function handleRequest(request, response, sessions, assessmentService, requestStore, followUpService, narrator) {
   const url = new URL(request.url, `http://${request.headers.host || `${HOST}:${DEFAULT_PORT}`}`);
 
   if (request.method === 'OPTIONS') {
@@ -918,6 +934,22 @@ async function handleRequest(request, response, sessions, assessmentService, req
     state.matches = clone(calculated.matches);
     state.matchFingerprints = calculated.fingerprints;
     sendJson(response, 200, sessionBootstrap(state));
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/narration') {
+    const body = await readJson(request);
+    if (Object.keys(body).some(key => key !== 'participantId') || typeof body.participantId !== 'string') {
+      throw apiError(400, 'Narration requires only a participantId');
+    }
+    const match = narrationMatch(state, requestStore, body.participantId);
+    const roomCode = state.session.code;
+    const audio = await narrator.narrate(match);
+    if (sessions.get(state.session.id) !== state || state.session.code !== roomCode
+      || matchNarrationText(narrationMatch(state, requestStore, body.participantId)) !== matchNarrationText(match)) {
+      throw apiError(409, 'The match changed while narration was being generated');
+    }
+    sendNarration(response, audio);
     return;
   }
 
@@ -1129,8 +1161,9 @@ export function createRequestHandler(sessions = new Map(), options = {}) {
   const requestStore = options.connectionRequestStore ?? createConnectionRequestStore();
   for (const request of options.seedConnectionRequests ?? []) requestStore.send(request);
   const followUpService = options.followUpService ?? createFollowUpService(options);
+  const narrator = options.narrator ?? createMatchNarrator(options);
   return (request, response) => {
-    handleRequest(request, response, sessions, assessmentService, requestStore, followUpService).catch((error) => {
+    handleRequest(request, response, sessions, assessmentService, requestStore, followUpService, narrator).catch((error) => {
       if (response.headersSent) {
         response.destroy();
         return;
