@@ -2,7 +2,10 @@
   "name": "Align.Tests.EditMode",
   "rootNamespace": "Align.Tests",
   "references": [
-    "Align.Runtime"
+    "Align.Runtime",
+    "Align.Editor",
+    "Unity.TextMeshPro",
+    "UnityEngine.UI"
   ],
   "includePlatforms": [
     "Editor"

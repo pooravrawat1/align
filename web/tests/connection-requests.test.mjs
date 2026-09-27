@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
 import { createServer } from '../server/index.mjs';
+import { readFileSync } from 'node:fs';
 
 const servers = [];
 async function harness(options) {
@@ -16,6 +17,24 @@ async function harness(options) {
   return { api, login };
 }
 afterEach(async () => { await Promise.all(servers.splice(0).map((server) => new Promise((resolve) => server.close(resolve)))); });
+
+test('seeded demo requests can be accepted or declined without creating private bookmarks', async () => {
+  const seed = JSON.parse(readFileSync(new URL('../shared/demo-data.json', import.meta.url), 'utf8'));
+  const { api, login } = await harness({ seedConnectionRequests: seed.demoRequests });
+  const alex = await login('alex');
+  const incoming = alex.connectionRequests.find(request => request.senderId === 'priya');
+  assert.equal(incoming.recipientId, 'alex');
+  assert.equal(incoming.status, 'pending');
+  const accepted = await api(`/api/connection-requests/${incoming.id}`, { method: 'PATCH', sessionId: alex.session.id, body: { action: 'accept' } });
+  assert.equal(accepted.status, 200);
+  assert.equal(accepted.value.connections.find(connection => connection.participantId === 'priya').saved, false);
+  const maya = await login('maya');
+  const jordan = maya.connectionRequests.find(request => request.senderId === 'jordan');
+  const declined = await api(`/api/connection-requests/${jordan.id}`, { method: 'PATCH', sessionId: maya.session.id, body: { action: 'decline' } });
+  assert.equal(declined.status, 200);
+  assert.equal(declined.value.connections.some(connection => connection.participantId === 'jordan'), false);
+  assert.equal((await login('maya')).connectionRequests.find(request => request.id === jordan.id).status, 'declined');
+});
 
 test('send, receive, and accept expose one mutual network relation without sharing bookmarks', async () => {
   const { api, login } = await harness();

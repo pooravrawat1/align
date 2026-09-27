@@ -11,7 +11,7 @@ export type FollowUpPerson = {
   savedPrivately?: boolean;
   withdrawn: boolean;
   contacts: { kind: string; label: string; href: string }[];
-  example?: { notes: string; message: string; nextStep: string };
+  example?: { notes: string; message: string; nextStep: string; reason?: string; durationMinutes?: number | null };
 };
 export type FollowUpResult = { source: 'gemini'; summary: string; nextStep: string; message: string; evidence: string[] };
 export type FollowUpDraft = { message: string; context: string; evidenceContext?: string; source: 'prepared' | 'gemini' | 'edited'; summary?: string; nextStep?: string };

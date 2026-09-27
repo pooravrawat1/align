@@ -75,7 +75,7 @@
 
 .home-event-content {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 250px;
+  grid-template-columns: minmax(0, 1fr) 280px;
   align-items: end;
   gap: 24px;
   margin-top: 40px;
@@ -115,33 +115,14 @@
   flex-direction: column;
   gap: var(--card-section-gap);
   width: 100%;
-  max-width: 250px;
+  max-width: 280px;
   padding: 14px;
-  border: 1px solid transparent;
   border-radius: 18px;
-  background: var(--glass-milky);
-  background-color: #36373a99;
   color: var(--text);
-  box-shadow: 0 12px 32px #00000026;
-  backdrop-filter: var(--spatial-glass-filter);
-  -webkit-backdrop-filter: var(--spatial-glass-filter);
   text-align: left;
   transition: background-color 160ms ease;
 }
 
-.home-profile-card::before {
-  position: absolute;
-  inset: -1px;
-  padding: 1px;
-  border-radius: inherit;
-  background: var(--glass-stroke);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  content: "";
-}
 
 .home-profile-card:hover,
 .home-profile-card:focus-visible {

@@ -1,1 +1,7 @@
-{"prompt":"Sourced stock portrait inherited from QuestMatch v1. Origin: https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=160&h=160&fit=crop&crop=faces&q=85 . Used as an illustrative fictional demo identity; not an endorsement."}
+{
+  "source": "https://www.pexels.com/photo/7626623/",
+  "photographer": "Dziana Hasanbekava",
+  "license": "https://www.pexels.com/license/",
+  "processing": "Photographic source only. Crop 800x800+0+100 from an 800px-wide original and resize to 512px. No generative processing.",
+  "usage": "Stock photograph cast as a fictional demo persona; names and biographies do not identify the photographed person or imply endorsement."
+}

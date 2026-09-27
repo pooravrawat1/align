@@ -16,6 +16,11 @@ test('draft keys separate owners, events and people; context includes notes and 
   assert.notEqual(context, followUpContext({ ...person, notes: 'New note' }, 'Builders', 'Alex'));
   assert.notEqual(context, followUpContext({ ...person, withdrawn: true }, 'Builders', 'Alex'));
 });
+test('prepared demo draft keys separate fixture versions and personas', () => {
+  const alex = draftStorageKey('completed-demo:v2:alex', 'demo', 'leo');
+  assert.notEqual(alex, draftStorageKey('completed-demo:v2:maya', 'demo', 'leo'));
+  assert.notEqual(alex, draftStorageKey('completed-demo:v3:alex', 'demo', 'leo'));
+});
 test('corrupt or unavailable browser storage never prevents opening a report', () => {
   assert.equal(readDraft({ getItem: () => '{broken' }, 'x'), null);
   assert.equal(readDraft({ getItem: () => { throw new Error('blocked'); } }, 'x'), null);

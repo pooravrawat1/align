@@ -8,6 +8,7 @@ import { networkPerson } from './networkModel';
 import { openPersonProfile } from './PeopleDirectory';
 import { TextAction } from './ui';
 import { requestFollowUp } from './requestFollowUp';
+import { demoRecapHref } from './demoJourney';
 
 
 
@@ -24,7 +25,7 @@ export function EventRecap({ state, user, eventId, act, busy, notify, onSessionE
     contacts: networkPerson(state, user, profile).contacts,
   }));
   return <div className="event-recap">
-    <ConferenceReport key={`${state.session?.id}:${user.id}:${eventId}`} people={people} eventId={eventId} eventName={event?.name ?? 'this event'} senderName={user.name}
+    <ConferenceReport key={`${state.session?.id}:${user.id}:${eventId}`} people={people} eventId={eventId} eventName={event?.name ?? 'this event'} senderName={user.name} demoHref={demoRecapHref(user.id)}
       ownerKey={`${state.session?.id ?? 'session'}:${user.id}`} pendingCount={pending.length} notify={notify}
       onProfile={id => openPersonProfile(id, eventId, 'network')}
       onSave={async (id, patch) => { await act(`connections/${encodeURIComponent(id)}`, { ...('notes' in patch ? { notes: patch.notes } : {}), ...('contacted' in patch ? { followUp: patch.contacted ? 'contacted' : 'needed' } : {}) }, 'PATCH'); }}

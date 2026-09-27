@@ -25,7 +25,6 @@ export function sharedContactLinks(profile: Profile): ContactLink[] {
   if (profile.visibility?.previousConnections === false) return [];
   const fields = [["linkedin", "LinkedIn"], ["website", "Website"], ["email", "Email"]] as const;
   return fields.flatMap(([kind, label]) => {
-    if (profile.visibility?.[kind] !== true) return [];
     const href = contactHref(kind, profile[kind]);
     return href ? [{ kind, label, href }] : [];
   });

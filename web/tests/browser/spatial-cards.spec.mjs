@@ -59,9 +59,13 @@ test('conversation focus hides other labels and finishing does not save until Sa
       const panel = getComputedStyle(document.querySelector('.qmv2-person-panel'));
       const photo = getComputedStyle(document.querySelector('.qmv2-card-field .qmv2-scene'));
       const label = getComputedStyle(document.querySelector('.qmv2-card'));
-      return { background: panel.backgroundImage, blur: panel.backdropFilter, photoOpacity: photo.opacity, labelOpacity: label.opacity };
+      return { background: panel.backgroundColor, blur: panel.backdropFilter, photoOpacity: photo.opacity, labelOpacity: label.opacity };
     });
-    expect(material.background).not.toBe('none');
+    // The shared glass token is a translucent color, not a gradient.
+    expect(material.background).toMatch(/^rgba\(/);
+    const alpha = Number(material.background.split(',').at(-1).replace(')', '').trim());
+    expect(alpha).toBeGreaterThan(0);
+    expect(alpha).toBeLessThan(1);
     expect(material.blur).toContain('blur(');
     expect(material.photoOpacity).toBe('1');
     expect(Number(material.labelOpacity)).toBeLessThan(1);

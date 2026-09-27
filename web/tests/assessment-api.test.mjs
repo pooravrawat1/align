@@ -33,8 +33,8 @@ function modelAssessment(overrides = {}) {
     reason: 'Robotics connects your work. How could Embedded systems support the prototype?',
     criteria: {
       skillToNeed: { score: 28, evidenceA: 'Embedded systems', evidenceB: 'Computer vision' },
-      networkingGoals: { score: 25, evidenceA: 'Collaboration', evidenceB: 'Collaboration' },
-      projectAlignment: { score: 14, evidenceA: 'wearable navigation system', evidenceB: 'visual assistance software' },
+      networkingGoals: { score: 25, evidenceA: 'computer-vision collaborator', evidenceB: 'hardware collaborator' },
+      projectAlignment: { score: 14, evidenceA: 'wearable navigation prototype', evidenceB: 'visual-assistance demo' },
       mutualBenefit: { score: 14, evidenceA: 'Computer vision', evidenceB: 'Embedded systems' },
       sharedInterests: { score: 10, evidenceA: 'Robotics', evidenceB: 'Robotics' },
       conversationPotential: { score: 5, evidenceA: 'Robotics', evidenceB: 'Robotics' },
@@ -266,6 +266,9 @@ test('explicit connection event provenance is validated against its roster', asy
 test('shared past experiences use the Quest score while keeping networking breakdown unavailable', async () => {
   const { api, login } = await harness(() => { throw new Error('No live call allowed'); }, {});
   const alex = await login('alex');
+  // Leave the prepared fixture: shared experience must still establish a match
+  // when an attendee changes their networking goal and no model is available.
+  await api('/api/profile', { sessionId: alex.session.id, method: 'PATCH', body: { goals: ['Explore new ideas'] } });
   const body = { participantId: 'maya', eventId: 'demo', audience: 'event' };
   const first = await api('/api/compatibility', { sessionId: alex.session.id, body });
   assert.equal(first.value.score, 100);

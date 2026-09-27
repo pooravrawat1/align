@@ -21,6 +21,7 @@ button.recap-profile-link:hover strong { text-decoration: underline; text-underl
 .recap-relationship > span { display: inline-flex; gap: 4px; align-items: center; color: var(--text-secondary); }
 .recap-person-context { display: grid; gap: var(--space-3); overflow-wrap: anywhere; }
 .recap-person-context strong { display: block; margin-bottom: 4px; color: var(--text-primary); font-size: var(--type-supporting); font-weight: 500; }
+.recap-person-context .recap-conversation-length { color: var(--text-primary); }
 .recap-person-context .recap-no-note { font-size: var(--type-supporting); color: var(--text-tertiary); }
 .recap-person-actions { display: flex; align-items: flex-start; flex-direction: column; gap: var(--space-2); }
 .recap-person-actions .button { white-space: nowrap; }
@@ -38,12 +39,17 @@ button.recap-profile-link:hover strong { text-decoration: underline; text-underl
 .recap-generated-context { padding-block: var(--space-2); }
 .recap-generated-context strong { display: block; font-weight: 500; color: var(--text-primary); }
 .recap-error, .recap-notice, .recap-filter-empty { padding-block: var(--space-3); font-size: var(--type-body); line-height: 1.6; color: var(--text-secondary); }
-.recap-demo-cover { position: relative; min-height: 180px; overflow: hidden; border-radius: var(--radius-panel); background: var(--surface); }
+.recap-demo-heading { position: relative; }
+.recap-demo-heading .ds-page-header { padding-right: 300px; margin-bottom: var(--space-5); }
+.recap-persona-switch { position: absolute; right: 0; bottom: var(--space-5); display: flex; padding: 3px; border: 1px solid var(--border-control); border-radius: 999px; background: var(--surface-raised); }
+.recap-persona-switch a { min-height: 38px; display: flex; align-items: center; padding-inline: var(--space-4); border-radius: 999px; color: var(--text-secondary); font-size: var(--type-supporting); text-decoration: none; }
+.recap-persona-switch a[aria-current="page"] { background: var(--text-primary); color: var(--surface-canvas); }
+.recap-demo-cover { position: relative; min-height: 132px; overflow: hidden; border-radius: var(--radius-panel); background: var(--surface); }
 .recap-demo-cover img { position: absolute; width: 100%; height: 100%; object-fit: cover; filter: brightness(.4); }
-.recap-demo-cover > div { position: relative; padding: var(--space-6); padding-top: 64px; }
+.recap-demo-cover > div { position: relative; padding: var(--space-5); padding-top: 38px; }
 .recap-demo-cover h2 { margin: 0 0 var(--space-2); font-family: var(--font-display); font-size: var(--type-dialog-title); letter-spacing: -.025em; font-weight: 500; }
 .recap-demo-cover p { margin: 0; color: var(--text-primary); font-size: var(--type-body); }
-.recap-demo-caption { display: flex; gap: var(--space-4); justify-content: space-between; align-items: center; margin-block: var(--space-4) var(--space-6); }
+.recap-demo-caption { display: flex; gap: var(--space-4); justify-content: space-between; align-items: center; margin-block: var(--space-3) var(--space-4); }
 .recap-demo-caption p { margin: 0; color: var(--text-secondary); font-size: var(--type-supporting); line-height: 1.6; }
 .recap-demo-caption strong { font-weight: 500; color: var(--text-primary); }
 .recap-demo-caption .text-action { flex-shrink: 0; min-height: 44px; }
@@ -53,6 +59,9 @@ button.recap-profile-link:hover strong { text-decoration: underline; text-underl
 }
 @media (max-width: 700px) {
   .recap-demo-page .ds-page-header { flex-direction: column; align-items: flex-start; gap: var(--space-4); }
+  .recap-demo-heading .ds-page-header { padding-right: 0; }
+  .recap-persona-switch { position: static; width: 100%; margin-bottom: var(--space-4); }
+  .recap-persona-switch a { flex: 1; justify-content: center; }
   .recap-demo-page .ds-page-header h1 { text-wrap: balance; }
   .recap-report { padding: var(--space-5); }
   .recap-person-main, .recap-editor { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }

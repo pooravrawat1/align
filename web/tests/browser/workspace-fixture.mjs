@@ -9,7 +9,7 @@ export async function workspace(page, options = {}) {
     return response.json();
   };
   let sessionId;
-  const login = await api('login', { profileId: 'alex' });
+  const login = await api('login', { profileId: options.profileId ?? 'alex' });
   sessionId = login.session.id;
   if (options.join !== false) await api('room', { code: options.code ?? 'DEMO' });
   await page.addInitScript(id => sessionStorage.setItem('questmatch-session', id), sessionId);

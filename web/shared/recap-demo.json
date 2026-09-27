@@ -1,46 +1,20 @@
 {
+  "version": "v2",
   "eventId": "demo",
-  "ownerId": "alex",
-  "people": [
-    {
-      "id": "maya",
-      "relationship": "connected",
-      "notes": "Discussed testing her detection model on my wearable prototype. I offered to send a demo before we plan a testing session.",
-      "contacted": false,
-      "nextStep": "Share the wearable prototype and suggest a testing session.",
-      "message": "Hey Maya, great connecting at The Builders Room! Following up on testing your detection model on my wearable prototype—could I send you a demo, then find a time to try it together?"
-    },
-    {
-      "id": "leo",
-      "relationship": "connected",
-      "notes": "Compared navigation challenges in crowded spaces. I want to share my sensor setup and ask about his robotics experiments.",
-      "contacted": false,
-      "nextStep": "Compare your sensor setup with Leo’s navigation experiments.",
-      "message": "Hey Leo, I enjoyed comparing navigation challenges at The Builders Room. Would you be interested in looking at my sensor setup? I’d love to hear more about your experiments in crowded spaces."
-    },
-    {
-      "id": "jordan",
-      "relationship": "connected",
-      "notes": "Talked about making spatial directions easier to understand. We wanted to swap early interface sketches.",
-      "contacted": false,
-      "nextStep": "Swap the early interface sketches you discussed.",
-      "message": "Hey Jordan, great talking about spatial directions at The Builders Room. Want to swap those early interface sketches and compare what makes the directions easier to understand?"
-    },
-    {
-      "id": "priya",
-      "relationship": "saved",
-      "notes": "",
-      "contacted": false,
-      "nextStep": "Introduce your wearable project and ask about accessibility research.",
-      "message": "Hi Priya, I came across your profile at The Builders Room. We share an interest in assistive technology. I’m building a wearable navigation prototype and would love to hear about your accessibility research."
-    },
-    {
-      "id": "nina",
-      "relationship": "connected",
-      "notes": "Discussed open-source tools and community projects. Sent a link to my prototype after the event.",
-      "contacted": true,
-      "nextStep": "Keep the open-source conversation going when there is a new update.",
-      "message": "Hey Nina, glad we connected at The Builders Room! I sent over my prototype after our conversation about open-source tools. I’d love to hear what you think when you’ve had a chance to look."
-    }
-  ]
+  "personas": {
+    "alex": { "people": [
+      { "id": "maya", "relationship": "connected", "reason": "Her computer-vision work complements your wearable hardware.", "durationMinutes": 6, "notes": "Discussed testing her detection model on my wearable prototype. I offered to send a demo before we plan a testing session.", "contacted": false, "nextStep": "Share the wearable prototype and suggest a testing session.", "message": "Hey Maya, great connecting at The Builders Room! Following up on testing your detection model on my wearable prototype—could I send you a demo, then find a time to try it together?" },
+      { "id": "leo", "relationship": "connected", "reason": "You both work on navigation systems for complex spaces.", "durationMinutes": 9, "notes": "Compared navigation challenges in crowded spaces. I want to share my sensor setup and ask about his robotics experiments.", "contacted": false, "nextStep": "Compare your sensor setup with Leo’s navigation experiments.", "message": "Hey Leo, I enjoyed comparing navigation challenges at The Builders Room. Would you be interested in looking at my sensor setup? I’d love to hear more about your experiments in crowded spaces." },
+      { "id": "jordan", "relationship": "connected", "reason": "Jordan’s spatial-interface work can make your directions easier to understand.", "durationMinutes": 7, "notes": "Talked about making spatial directions easier to understand. We wanted to swap early interface sketches.", "contacted": false, "nextStep": "Swap the early interface sketches you discussed.", "message": "Hey Jordan, great talking about spatial directions at The Builders Room. Want to swap those early interface sketches and compare what makes the directions easier to understand?" },
+      { "id": "priya", "relationship": "saved", "reason": "Her accessibility research is relevant to your navigation prototype.", "durationMinutes": null, "notes": "", "contacted": false, "nextStep": "Introduce your wearable project and ask about accessibility research.", "message": "Hi Priya, I came across your profile at The Builders Room. We share an interest in assistive technology. I’m building a wearable navigation prototype and would love to hear about your accessibility research." },
+      { "id": "nina", "relationship": "connected", "reason": "You share an interest in open-source tools for communities.", "durationMinutes": 5, "notes": "Discussed open-source tools and community projects. Sent a link to my prototype after the event.", "contacted": true, "nextStep": "Keep the open-source conversation going when there is a new update.", "message": "Hey Nina, glad we connected at The Builders Room! I sent over my prototype after our conversation about open-source tools. I’d love to hear what you think when you’ve had a chance to look." }
+    ] },
+    "maya": { "people": [
+      { "id": "alex", "relationship": "connected", "reason": "His wearable hardware gives your vision model a real device to run on.", "durationMinutes": 6, "notes": "Discussed testing my detection model on Alex’s wearable prototype. He offered to send a demo before we plan a testing session.", "contacted": false, "nextStep": "Review Alex’s wearable demo and propose a testing session.", "message": "Hey Alex, great connecting at The Builders Room! I’d love to review the wearable demo and see how my detection model could run on it. Send it over when ready, then let’s find a time to test together." },
+      { "id": "leo", "relationship": "connected", "reason": "You both build computer-vision systems for navigation.", "durationMinutes": 8, "notes": "Compared obstacle-detection approaches and how Leo tests navigation behavior with ROS.", "contacted": false, "nextStep": "Share the visual-assistance prototype and ask about ROS testing.", "message": "Hey Leo, I enjoyed comparing obstacle-detection approaches at The Builders Room. Could I share my visual-assistance prototype and get your take on how you would test it with ROS?" },
+      { "id": "priya", "relationship": "connected", "reason": "Priya’s accessibility research can strengthen how you test navigation cues.", "durationMinutes": 11, "notes": "Talked about testing navigation cues with people with different mobility needs. I want to prepare three questions for a usability session.", "contacted": false, "nextStep": "Send three usability questions and suggest a research session.", "message": "Hey Priya, thank you for the thoughtful conversation about inclusive navigation testing. I’ll send the three usability questions we discussed—would you be open to reviewing them together?" },
+      { "id": "theo", "relationship": "connected", "reason": "Theo’s repairable hardware experience fits your wearable camera prototype.", "durationMinutes": 7, "notes": "Discussed a repairable enclosure for the camera prototype. Shared the rough dimensions after our conversation.", "contacted": true, "nextStep": "Review Theo’s enclosure sketch when it arrives.", "message": "Hey Theo, thanks again for thinking through a repairable enclosure with me. I sent the rough dimensions we discussed and would love to compare them with your first sketch." },
+      { "id": "elena", "relationship": "saved", "reason": "Her spatial-audio work could complement your visual navigation cues.", "durationMinutes": null, "notes": "", "contacted": false, "nextStep": "Introduce your prototype and ask about directional audio cues.", "message": "Hi Elena, I saved your profile from The Builders Room because your spatial-audio work could complement the visual navigation cues I’m building. Would you be open to comparing approaches?" }
+    ] }
+  }
 }

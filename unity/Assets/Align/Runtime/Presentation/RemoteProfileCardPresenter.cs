@@ -24,13 +24,22 @@ namespace Align.Presentation
         private static readonly Color Ink = new(0.035f, 0.045f, 0.045f, 1f);
         private static readonly Color NeutralGlass = new(0.89f, 0.93f, 0.93f, 0.94f);
         private static readonly Color MatchGlass = new(0.66f, 0.94f, 0.76f, 0.94f);
+        private static readonly Color TransparentPanel = new(0f, 0f, 0f, 0f);
 
         private bool _isMatched;
-        private string _reason = string.Empty;
+        private string _matchReason = string.Empty;
 
-        public void Configure(TMP_Text profileName, TMP_Text profileBio,
-            TMP_Text profileInterests, TMP_Text profileSocial, TMP_Text matchReason,
-            Graphic background, TMP_Text profileBrand = null)
+        public RemotePresentationState PresentationState { get; private set; }
+        private bool CanPresentMatch => _isMatched && !string.IsNullOrWhiteSpace(_matchReason);
+
+        public void Configure(
+            TMP_Text profileName,
+            TMP_Text profileBio,
+            TMP_Text profileInterests,
+            TMP_Text profileSocial,
+            TMP_Text matchReason,
+            Graphic background,
+            TMP_Text profileBrand = null)
         {
             nameText = profileName;
             bioText = profileBio;
@@ -40,40 +49,74 @@ namespace Align.Presentation
             brandText = profileBrand;
             panel = background;
             EnsureSurface();
+            DisableRichText();
             ApplyPresentation();
         }
 
         public void Bind(ProfileCardData profile)
         {
-            if (profile == null) return;
-            string name = profile.Name?.Trim() ?? string.Empty;
-            int space = name.IndexOf(' ');
-            if (nameText != null)
-                nameText.text = space > 0 ? name.Substring(0, space) : name;
+            if (profile == null)
+            {
+                return;
+            }
+
+            SetText(nameText, profile.Name?.Trim().ToLowerInvariant());
+            // Match inputs and contact data are never attendee-facing headset content.
+            SetText(bioText, string.Empty);
+            SetText(interestsText, string.Empty);
+            SetText(socialText, string.Empty);
             ApplyPresentation();
         }
 
         public void SetMatchState(bool isMatched, string reason)
         {
-            string nextReason = isMatched ? reason?.Trim() ?? string.Empty : string.Empty;
-            if (_isMatched == isMatched && _reason == nextReason) return;
             _isMatched = isMatched;
-            _reason = nextReason;
+            _matchReason = isMatched
+                ? RemotePresentationStatePolicy.LimitReason(reason)
+                : string.Empty;
+            if (PresentationState != RemotePresentationState.Conversation)
+            {
+                PresentationState = RemotePresentationStatePolicy.DiscoveryState(CanPresentMatch);
+            }
+            ApplyPresentation();
+        }
+
+        public void SetConversationState(bool isInConversation)
+        {
+            PresentationState = isInConversation
+                ? RemotePresentationState.Conversation
+                : RemotePresentationStatePolicy.DiscoveryState(CanPresentMatch);
             ApplyPresentation();
         }
 
         private void Awake()
         {
+            PresentationState = RemotePresentationState.DiscoveryNeutral;
             EnsureSurface();
-            // Room snapshots can arrive while the card is hidden. Preserve that
-            // result when the card becomes visible for the first time.
+            DisableRichText();
+            ApplyPresentation();
+        }
+
+        private void OnEnable()
+        {
+            // Room snapshots can arrive while the card is hidden. Snap to the
+            // latest synchronized state before the card is rendered again.
+            ApplyPresentation();
+        }
+
+        private void OnValidate()
+        {
+            EnsureSurface();
+            DisableRichText();
             ApplyPresentation();
         }
 
         private void EnsureSurface()
         {
             if (glassSurface == null)
+            {
                 glassSurface = GetComponentInChildren<RoundedGlassPanel>(true);
+            }
             if (glassSurface == null)
             {
                 var surface = new GameObject("Profile Glass", typeof(RectTransform));
@@ -82,77 +125,81 @@ namespace Align.Presentation
             }
             glassSurface.raycastTarget = false;
             glassSurface.transform.SetAsFirstSibling();
+        }
 
-            if (brandText == null)
-            {
-                Transform existing = transform.Find("Brand");
-                brandText = existing != null ? existing.GetComponent<TMP_Text>() : null;
-            }
-            if (brandText == null)
-            {
-                var label = new GameObject("Brand", typeof(RectTransform));
-                label.transform.SetParent(transform, false);
-                brandText = label.AddComponent<TextMeshProUGUI>();
-                if (nameText != null) brandText.font = nameText.font;
-            }
+        private void DisableRichText()
+        {
+            if (nameText != null) nameText.richText = false;
+            if (bioText != null) bioText.richText = false;
+            if (interestsText != null) interestsText.richText = false;
+            if (socialText != null) socialText.richText = false;
+            if (matchReasonText != null) matchReasonText.richText = false;
+            if (brandText != null) brandText.richText = false;
         }
 
         private void ApplyPresentation()
         {
-            if (nameText == null || glassSurface == null) return;
+            if (glassSurface == null)
+            {
+                return;
+            }
 
-            if (panel != null) panel.enabled = false;
+            bool showMatch = PresentationState == RemotePresentationState.DiscoveryMatched && CanPresentMatch;
+
+            // The legacy Image remains serialized in existing scenes, but the
+            // rounded mesh owns the visible surface. Its color still mirrors
+            // match state for editor tooling and tests.
+            if (panel != null)
+            {
+                panel.enabled = false;
+                panel.color = showMatch ? MatchGlass : TransparentPanel;
+            }
             SetActive(nameGlass, false);
             SetActive(matchGlass, false);
             SetActive(bioText, false);
             SetActive(interestsText, false);
             SetActive(socialText, false);
+            SetActive(brandText, false);
 
-            bool showReason = _isMatched && !string.IsNullOrWhiteSpace(_reason);
-            StyleText(nameText, 46f, FontStyles.Bold);
-            nameText.enableAutoSizing = true;
-            nameText.fontSizeMin = 34f;
-            nameText.fontSizeMax = 46f;
-            nameText.textWrappingMode = TextWrappingModes.NoWrap;
-            Layout(nameText.rectTransform, new Vector2(Padding, -52f), new Vector2(ContentWidth, 64f));
-
-            if (brandText != null)
+            if (nameText != null)
             {
-                SetActive(brandText, true);
-                brandText.text = _isMatched ? "IT'S A MATCH" : "IN YOUR ROOM";
-                StyleText(brandText, 16f, FontStyles.Bold);
-                brandText.characterSpacing = 2f;
-                Layout(brandText.rectTransform, new Vector2(Padding, -25f), new Vector2(ContentWidth, 22f));
+                SetActive(nameText, true);
+                StyleText(nameText, 46f, FontStyles.Bold);
+                nameText.enableAutoSizing = true;
+                nameText.fontSizeMin = 34f;
+                nameText.fontSizeMax = 46f;
+                nameText.textWrappingMode = TextWrappingModes.NoWrap;
+                Layout(nameText.rectTransform, new Vector2(Padding, -32f), new Vector2(ContentWidth, 64f));
             }
 
             float reasonHeight = 0f;
             if (matchReasonText != null)
             {
-                matchReasonText.text = _reason;
+                SetText(matchReasonText, showMatch ? _matchReason : string.Empty);
                 StyleText(matchReasonText, 27f, FontStyles.Normal);
                 matchReasonText.textWrappingMode = TextWrappingModes.Normal;
-                reasonHeight = showReason
-                    ? Mathf.Max(40f, matchReasonText.GetPreferredValues(_reason, ContentWidth, Mathf.Infinity).y)
+                reasonHeight = showMatch
+                    ? Mathf.Max(40f, matchReasonText.GetPreferredValues(_matchReason, ContentWidth, Mathf.Infinity).y)
                     : 0f;
-                Layout(matchReasonText.rectTransform, new Vector2(Padding, -126f),
+                Layout(matchReasonText.rectTransform, new Vector2(Padding, -102f),
                     new Vector2(ContentWidth, reasonHeight));
-                SetActive(matchReasonText, showReason);
+                SetActive(matchReasonText, showMatch);
             }
 
-            float height = showReason ? 158f + reasonHeight : 142f;
+            float height = showMatch ? 134f + reasonHeight : 112f;
             if (transform is RectTransform card)
             {
-                // Keep the top edge stable as the explanation expands downward.
                 card.pivot = new Vector2(0.5f, 1f);
                 card.sizeDelta = new Vector2(Width, height);
                 card.localScale = Vector3.one * 0.00115f;
             }
+
             RectTransform surfaceRect = glassSurface.rectTransform;
             surfaceRect.anchorMin = Vector2.zero;
             surfaceRect.anchorMax = Vector2.one;
             surfaceRect.offsetMin = Vector2.zero;
             surfaceRect.offsetMax = Vector2.zero;
-            glassSurface.color = _isMatched ? MatchGlass : NeutralGlass;
+            glassSurface.color = showMatch ? MatchGlass : NeutralGlass;
         }
 
         private static void StyleText(TMP_Text text, float size, FontStyles style)
@@ -177,10 +224,20 @@ namespace Align.Presentation
             rect.sizeDelta = size;
         }
 
+        private static void SetText(TMP_Text target, string value)
+        {
+            if (target != null)
+            {
+                target.text = value ?? string.Empty;
+            }
+        }
+
         private static void SetActive(Graphic graphic, bool active)
         {
             if (graphic != null && graphic.gameObject.activeSelf != active)
+            {
                 graphic.gameObject.SetActive(active);
+            }
         }
     }
 }

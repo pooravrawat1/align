@@ -1,14 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { loadEnvFile } from 'node:process';
 import { createServer as createHttpServer } from 'node:http';
 import { pathToFileURL } from 'node:url';
-import { assessmentFingerprint, createAssessmentService } from './assessment.mjs';
+import { ASSESSMENT_VERSION, assessmentFingerprint, createAssessmentService } from './assessment.mjs';
 import { createConnectionRequestStore } from './connection-requests.mjs';
 import { createFollowUpService } from './follow-up.mjs';
 import { followUpContext } from './follow-up-context.mjs';
 import { MATCH_THRESHOLD, experienceRoutes } from '../../matcher/src/rubric.mjs';
 import { matchingProfile } from './assessment.mjs';
 import { validateProfile as validateMatchProfile } from '../../matcher/src/profiles.mjs';
+import { getActiveStore } from './store.mjs';
 
 const HOST = '127.0.0.1';
 const DEFAULT_PORT = 4311;
@@ -46,10 +48,12 @@ const FOLLOW_UP_VALUES = new Set(['needed', 'contacted', 'none']);
 const GOAL_LIMIT = 3;
 const VISIBILITY_FIELDS = new Set(Object.keys(DEFAULT_VISIBILITY));
 
-const seed = JSON.parse(
-  readFileSync(new URL('../shared/demo-data.json', import.meta.url), 'utf8'),
-);
-const knownRoomCodes = new Set(seed.events.map((event) => event.code.toUpperCase()));
+function seed() {
+  return getActiveStore().snapshot();
+}
+function knownRoomCodes() {
+  return new Set(seed().events.map((event) => event.code.toUpperCase()));
+}
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -104,9 +108,9 @@ function withConnectionDefaults(connection) {
 }
 
 function cloneSeedData() {
-  const data = clone(seed);
+  const data = seed();
   data.profiles = data.profiles.map(withProfileDefaults);
-  data.connections = data.connections.map(withConnectionDefaults);
+  data.connections = (data.connections ?? []).map(withConnectionDefaults);
   return data;
 }
 
@@ -169,7 +173,7 @@ function sessionBootstrap(state) {
     const networkAllowed = connectionByParticipant.has(profile.id)
       && current.visibility?.previousConnections !== false;
     const audience = networkAllowed ? 'network' : sharesEvent ? 'event' : 'network';
-    return projectRequestPeer(current, audience);
+    return projectRequestPeer(current, audience, networkAllowed);
   });
   const ownProfile = profiles.find((profile) => profile.id === state.session.userId);
   const ownIndex = state.profiles.findIndex((profile) => profile.id === state.session.userId);
@@ -196,10 +200,11 @@ function sessionBootstrap(state) {
   };
 }
 
-function projectRequestPeer(profile, audience) {
+function projectRequestPeer(profile, audience, connected = false) {
   const visibility = profile.visibility ?? DEFAULT_VISIBILITY;
   const allowed = audience === 'network' ? visibility.previousConnections !== false : visibility.activeInEvent !== false;
   const visible = (field) => allowed && visibility[field] !== false;
+  const shareContact = audience === 'network' && connected && allowed;
   return {
     ...clone(profile),
     bio: visible('bio') ? profile.bio : '',
@@ -209,10 +214,10 @@ function projectRequestPeer(profile, audience) {
     goals: visible('goals') ? (profile.goals ?? []) : [],
     domains: visible('domains') ? (profile.domains ?? []) : [],
     experiences: visible('experiences') ? (profile.experiences ?? []) : [],
-    contact: audience === 'network' && visible('contact') ? profile.contact : '',
-    linkedin: audience === 'network' && visible('linkedin') ? profile.linkedin : '',
-    website: audience === 'network' && visible('website') ? profile.website : '',
-    email: audience === 'network' && visible('email') ? profile.email : '',
+    contact: shareContact ? profile.contact : '',
+    linkedin: shareContact ? profile.linkedin : '',
+    website: shareContact ? profile.website : '',
+    email: shareContact ? profile.email : '',
   };
 }
 
@@ -577,6 +582,29 @@ async function calculateMatches(state, demoMode, assessmentService, requestStore
   };
 }
 
+async function persistAssessment(store, userA, userB, assessment, context) {
+  try {
+    const [firstId, secondId] = canonicalPair(userA, userB);
+    await store.saveAssessment({
+      pairKey: `${firstId}:${secondId}`,
+      userA: firstId,
+      userB: secondId,
+      score: assessment.score,
+      route: assessment.route ?? null,
+      reason: assessment.reason ?? '',
+      source: assessment.source,
+      audience: context.audience,
+      eventId: context.eventId ?? null,
+      fingerprint: assessment.fingerprint,
+      version: ASSESSMENT_VERSION,
+      savedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    // Persistence is a best-effort cache. Never block the request on it.
+    console.warn('Failed to persist assessment:', error?.message ?? error);
+  }
+}
+
 function eventForId(state, eventId) {
   return state.events.find((event) => event.id === eventId);
 }
@@ -699,6 +727,16 @@ async function handleRequest(request, response, sessions, assessmentService, req
     return;
   }
 
+  if (request.method === 'GET' && url.pathname.startsWith('/api/people/')) {
+    const store = getActiveStore();
+    const id = decodeURIComponent(url.pathname.slice('/api/people/'.length));
+    if (!id) throw apiError(400, 'person id required');
+    const profile = await store.findPerson(id);
+    if (!profile) throw apiError(404, 'Person not found');
+    sendJson(response, 200, withProfileDefaults(projectRequestPeer(withProfileDefaults(profile), 'network')));
+    return;
+  }
+
   if (request.method === 'POST' && (url.pathname === '/api/follow-up-demo' || url.pathname === '/api/follow-up')) {
     const body = await readJson(request);
     const state = url.pathname === '/api/follow-up' ? requireSession(request, sessions) : null;
@@ -803,10 +841,11 @@ async function handleRequest(request, response, sessions, assessmentService, req
       if (field !== 'code' && field !== 'create') throw apiError(400, `Unknown room field: ${field}`);
     }
     const code = body.code.toUpperCase();
-    if (!knownRoomCodes.has(code) && !state.customRoomCodes.has(code) && body.create !== true) {
+    const rooms = knownRoomCodes();
+    if (!rooms.has(code) && !state.customRoomCodes.has(code) && body.create !== true) {
       throw apiError(404, 'Room not found');
     }
-    if (!knownRoomCodes.has(code) && !state.customRoomCodes.has(code) && body.create === true) {
+    if (!rooms.has(code) && !state.customRoomCodes.has(code) && body.create === true) {
       state.customRoomCodes.add(code);
       state.events.push({
         id: code,
@@ -910,6 +949,9 @@ async function handleRequest(request, response, sessions, assessmentService, req
     ({ current, participant } = compatibilityProfiles(state, requestStore, body.participantId, body.audience));
     if (!current || !participant || before !== assessmentFingerprint(current, participant, context)) {
       throw apiError(409, 'Profiles changed while compatibility was being generated');
+    }
+    if (assessment.status === 'ready') {
+      await persistAssessment(getActiveStore(), current.id, participant.id, assessment, context);
     }
     sendJson(response, 200, assessment);
     return;
@@ -1085,6 +1127,7 @@ async function handleRequest(request, response, sessions, assessmentService, req
 export function createRequestHandler(sessions = new Map(), options = {}) {
   const assessmentService = options.assessmentService ?? createAssessmentService(options);
   const requestStore = options.connectionRequestStore ?? createConnectionRequestStore();
+  for (const request of options.seedConnectionRequests ?? []) requestStore.send(request);
   const followUpService = options.followUpService ?? createFollowUpService(options);
   return (request, response) => {
     handleRequest(request, response, sessions, assessmentService, requestStore, followUpService).catch((error) => {
@@ -1115,8 +1158,50 @@ const executedDirectly =
   process.argv[1] !== undefined && pathToFileURL(process.argv[1]).href === import.meta.url;
 
 if (executedDirectly) {
+  const envFile = new URL('../.env', import.meta.url);
+  if (existsSync(envFile)) loadEnvFile(envFile);
   const port = configuredPort();
+  await ensureDataSource();
   createServer().listen(port, HOST, () => {
-    console.log(`Catalyst demo API listening at http://${HOST}:${port}`);
+    console.log(`Catalyst demo API listening at http://${HOST}:${port} (data: ${getActiveStore().source})`);
   });
+}
+
+let bootstrapping = null;
+let dataSourceStatus = 'memory: not loaded yet';
+
+// Never includes the connection string, only which store is active and why.
+export function getDataSourceStatus() {
+  return dataSourceStatus;
+}
+
+// Safe to call on every request: serverless instances load MongoDB once and
+// reuse the store while warm. A failed load is retried on the next call.
+export function ensureDataSource() {
+  bootstrapping ??= bootstrapDataSource().then((loaded) => {
+    if (!loaded) bootstrapping = null;
+  });
+  return bootstrapping;
+}
+
+async function bootstrapDataSource() {
+  if (!process.env.MONGODB_URI) {
+    dataSourceStatus = 'memory: MONGODB_URI not set';
+    return true;
+  }
+  try {
+    const { getDb } = await import('./mongodb.mjs');
+    const { createMongoStore, setActiveStore } = await import('./store.mjs');
+    const db = await getDb();
+    const store = await createMongoStore(db);
+    setActiveStore(store);
+    dataSourceStatus = `mongo: ${store.snapshot().profiles.length} profiles from ${db.databaseName}`;
+    console.log(`Loaded ${store.snapshot().profiles.length} profiles from MongoDB (${db.databaseName}).`);
+    return true;
+  } catch (error) {
+    const message = String(error?.message ?? error).replaceAll(process.env.MONGODB_URI, '<uri>');
+    dataSourceStatus = `memory: MongoDB failed (${error?.name ?? 'Error'}): ${message}`;
+    console.warn(`MongoDB startup failed, falling back to bundled seed: ${message}`);
+    return false;
+  }
 }

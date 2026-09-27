@@ -18,6 +18,9 @@ namespace Align.Presentation
 
         public bool IsVisible { get; private set; }
         public bool IsDismissed { get; private set; }
+        public RemoteParticipantView Participant => participant;
+        public Camera ViewerCamera => viewerCamera;
+        public GameObject CardRoot => cardRoot;
 
         public void Configure(
             RemoteParticipantView remoteParticipant,

@@ -28,6 +28,17 @@ test('public completed demo projects fixed identities and rejects arbitrary prof
   assert.equal(inputs[1].relationship, 'saved');
 });
 
+test('public completed demo isolates prepared personas and rejects cross-persona people', async t => {
+  const inputs = [];
+  const api = await harness(t, async input => { inputs.push(input); return result; });
+  const maya = await api('follow-up-demo', { ownerId: 'maya', participantId: 'alex', notes: 'Discussed testing my detection model.', style: 'standard' });
+  assert.equal(maya.status, 200);
+  assert.equal(inputs[0].senderName, 'Maya Chen');
+  assert.equal(inputs[0].recipientName, 'Alex Morgan');
+  assert.equal((await api('follow-up-demo', { ownerId: 'maya', participantId: 'jordan', notes: '', style: 'standard' })).status, 404);
+  assert.equal((await api('follow-up-demo', { ownerId: 'nobody', participantId: 'alex', notes: '', style: 'standard' })).status, 404);
+});
+
 test('ordinary generation requires session, owned event connection, and shared fields', async t => {
   const inputs = [];
   const api = await harness(t, async input => { inputs.push(input); return result; });
@@ -40,6 +51,10 @@ test('ordinary generation requires session, owned event connection, and shared f
   assert.equal((await api('follow-up', body, alex)).status, 200);
   assert.equal(inputs[0].notes, body.notes);
   assert.equal(inputs[0].relationship, 'saved');
+  const staleNote = await api('follow-up', { ...body, notes: 'An older private note.' }, alex);
+  assert.equal(staleNote.status, 409);
+  assert.equal(staleNote.data.error, 'Your note changed. Save the current note before generating again.');
+  assert.equal(inputs.length, 1);
   const leo = (await api('login', { profileId: 'leo' })).data.session.id;
   assert.equal((await api('follow-up', { ...body, participantId: 'alex' }, leo)).status, 403);
   await api('profile', { visibility: { interests: false } }, leo, 'PATCH');

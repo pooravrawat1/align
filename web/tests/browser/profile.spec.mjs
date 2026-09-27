@@ -55,7 +55,7 @@ for (const width of [1440, 390]) {
     await page.screenshot({ path: `.impeccable/review/profile-${width === 1440 ? 'desktop' : 'mobile'}.png`, fullPage: true });
     await tab(page, 'Focus').click();
     await expect(page.getByRole('heading', { name: 'Your focus', exact: true })).toBeVisible();
-    await expect(page.locator('.pe-page-heading button')).toHaveCount(0);
+    await expect(page.locator('.pe-page-heading').getByRole('button', { name: 'Preview full profile' })).toBeVisible();
     if (width === 1440) {
       await expect(page.locator('.pe-preview-rail')).toHaveClass(/pe-panel/);
       const panel = page.locator('.pe-editor');
@@ -128,7 +128,7 @@ test('failed and delayed saves retain drafts and never acknowledge later keystro
 test('preview respects contextual sharing and restores focus after Escape', async ({ page, demo }) => {
   await page.goto(`${origin}/#/profile?section=contact`);
   await page.getByRole('textbox', { name: /^Website/ }).fill('https://example.com/alex');
-  await page.getByRole('checkbox', { name: 'Share Website with saved connections' }).check();
+  await expect(page.getByRole('checkbox', { name: /saved connections/ })).toHaveCount(0);
   await save(page).click(); await expect(page.locator('.pe-save-status')).toHaveText('Saved');
   await tab(page, 'About').click();
   await page.getByRole('button', { name: 'Preview full profile', exact: true }).click();
@@ -173,7 +173,7 @@ test('tab keyboard navigation, legacy settings route, and pending topic restorat
 test('hidden focus and room presence change preview without publishing the draft', async ({ page, demo }) => {
   await page.goto(`${origin}/#/profile?section=focus`);
   await page.getByRole('checkbox', { name: 'Share current focus', exact: true }).uncheck();
-  await expect(page.locator('.pe-page-heading button')).toHaveCount(0);
+  await expect(page.locator('.pe-page-heading').getByRole('button', { name: 'Preview full profile' })).toBeVisible();
   await page.getByRole('button', { name: 'Preview full profile', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('heading', { name: 'Current focus' })).toHaveCount(0);
@@ -215,7 +215,7 @@ test('keyboard-focused fields stay above the sticky save footer on a short phone
     await input.focus();
     await expect.poll(async () => {
       const control = await input.boundingBox(), footer = await page.locator('.pe-save-footer').boundingBox();
-      return control.y >= 0 && control.y + control.height <= Math.min(footer.y, 520);
+      return control.y >= 0 && control.y + control.height <= Math.min(footer?.y ?? 520, 520);
     }).toBe(true);
   }
 });

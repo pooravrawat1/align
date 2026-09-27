@@ -2,6 +2,8 @@
 
 Status: implemented. The approved plan below records the design rationale; the completion notes describe the delivered behavior and verification.
 
+Contact-sharing and footer details in the original plan below are superseded by the September 26 refinement in `../DESIGN.md`: one saved-connection access setting controls populated contact fields; individual contact toggles and Optional badges are removed; Other contact is a regular field; save actions appear only when needed; the page header opens the audience preview. Legacy contact flags are retained for serialized-data compatibility, not visibility decisions.
+
 ## Completion notes
 
 - Delivered About, Focus, Contact, and Settings with direct URLs, keyboard tab navigation, Home-style panels, section-specific saves/discard, inline validation, and session-scoped draft recovery.

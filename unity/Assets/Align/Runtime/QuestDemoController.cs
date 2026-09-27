@@ -9,7 +9,8 @@ namespace Align.Quest
     /// <summary>
     /// Feeds one hard-coded, calibrated remote participant into the same view
     /// Person 2's network adapter will drive later. Press A/X (or Space in the
-    /// editor) to preview the matched-card state.
+    /// editor) to preview neutral, matched, conversation, and discovery states.
+    /// This staged pose source must not be present in the live network scene.
     /// </summary>
     public sealed class QuestDemoController : MonoBehaviour
     {
@@ -17,12 +18,14 @@ namespace Align.Quest
         [SerializeField] private RemoteProfileCardPresenter cardPresenter;
         [SerializeField] private Camera viewerCamera;
         [SerializeField, Min(0.5f)] private float demoDistanceMeters = 2.5f;
-        [SerializeField] private string matchReason = "You both build assistive technology";
+        [SerializeField] private string canonicalPreviewMatchReason = "Alex builds wearable hardware. Maya builds computer vision. You could turn visual assistance into a working wearable together.";
 
         private InputDevice _leftController;
         private InputDevice _rightController;
         private bool _wasPrimaryPressed;
+        private bool _wasSecondaryPressed;
         private bool _isMatched;
+        private bool _isInConversation;
         private bool _didLogPlacement;
 
         public void Configure(
@@ -35,17 +38,41 @@ namespace Align.Quest
             cardPresenter = presenter;
             viewerCamera = localViewer;
             demoDistanceMeters = Mathf.Max(0.5f, distanceMeters);
+            EnsureVisibilityGate();
         }
 
         public void ToggleMatchState()
         {
             _isMatched = !_isMatched;
-            cardPresenter?.SetMatchState(_isMatched, matchReason);
+            _isInConversation = false;
+            cardPresenter?.SetMatchState(_isMatched, canonicalPreviewMatchReason);
+            cardPresenter?.SetConversationState(false);
+        }
+
+        public void EnterConversation()
+        {
+            _isInConversation = true;
+            cardPresenter?.SetConversationState(true);
+        }
+
+        public void FinishConversation()
+        {
+            _isInConversation = false;
+            cardPresenter?.SetConversationState(false);
+        }
+
+        public void ResetDiscovery()
+        {
+            _isMatched = false;
+            _isInConversation = false;
+            cardPresenter?.SetMatchState(false, string.Empty);
+            cardPresenter?.SetConversationState(false);
         }
 
         private void OnEnable()
         {
             AcquireControllers();
+            EnsureVisibilityGate();
             if (participant != null)
             {
                 participant.SetSessionState(true, true, true);
@@ -81,16 +108,50 @@ namespace Align.Quest
             }
 
             bool primaryPressed = ReadPrimaryButton();
+            bool secondaryPressed = ReadSecondaryButton();
 #if UNITY_EDITOR
             Keyboard keyboard = Keyboard.current;
             primaryPressed |= keyboard != null && keyboard.spaceKey.isPressed;
+            secondaryPressed |= keyboard != null && keyboard.backspaceKey.isPressed;
 #endif
             if (primaryPressed && !_wasPrimaryPressed)
             {
-                ToggleMatchState();
+                AdvancePreviewState();
+            }
+            if (secondaryPressed && !_wasSecondaryPressed)
+            {
+                ResetDiscovery();
             }
 
             _wasPrimaryPressed = primaryPressed;
+            _wasSecondaryPressed = secondaryPressed;
+        }
+
+        private void AdvancePreviewState()
+        {
+            if (!_isMatched)
+            {
+                ToggleMatchState();
+            }
+            else if (!_isInConversation)
+            {
+                EnterConversation();
+            }
+            else
+            {
+                FinishConversation();
+            }
+        }
+
+        private void EnsureVisibilityGate()
+        {
+            if (participant == null || cardPresenter == null)
+            {
+                return;
+            }
+
+            RemoteParticipantPresentationWiring.EnsureVisibility(
+                participant, viewerCamera, cardPresenter.gameObject);
         }
 
         private bool ReadPrimaryButton()
@@ -103,10 +164,27 @@ namespace Align.Quest
             return IsPrimaryPressed(_leftController) || IsPrimaryPressed(_rightController);
         }
 
+        private bool ReadSecondaryButton()
+        {
+            if (!_leftController.isValid || !_rightController.isValid)
+            {
+                AcquireControllers();
+            }
+
+            return IsSecondaryPressed(_leftController) || IsSecondaryPressed(_rightController);
+        }
+
         private static bool IsPrimaryPressed(InputDevice controller)
         {
             return controller.isValid &&
                 controller.TryGetFeatureValue(CommonUsages.primaryButton, out bool pressed) &&
+                pressed;
+        }
+
+        private static bool IsSecondaryPressed(InputDevice controller)
+        {
+            return controller.isValid &&
+                controller.TryGetFeatureValue(CommonUsages.secondaryButton, out bool pressed) &&
                 pressed;
         }
 

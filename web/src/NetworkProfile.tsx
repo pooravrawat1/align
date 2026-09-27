@@ -17,7 +17,6 @@ import {
   Sparkles,
   UserCheck,
   UserPlus,
-  X,
 } from "lucide-react";
 import {
   assessmentRouteLabel,
@@ -127,8 +126,7 @@ function CompatibilityValue({ person }: { person: NetworkPerson }) {
   );
 }
 
-function Header({ name, onClose }: {
-  name: string;
+function Header({ onClose }: {
   onClose: () => void;
 }) {
   return (
@@ -136,9 +134,6 @@ function Header({ name, onClose }: {
       <button className="np-back" type="button" onClick={onClose} aria-label="Back to network">
         <ArrowLeft size={15} aria-hidden="true" />
         Back
-      </button>
-      <button className="np-close" type="button" onClick={onClose} aria-label={`Close ${name}'s profile`}>
-        <X size={17} aria-hidden="true" />
       </button>
     </header>
   );
@@ -149,7 +144,7 @@ function SaveProfileButton({ saved, busy, onSave }: { saved: boolean; busy: bool
   return (
     <Button
       type="button"
-      variant={saved ? "secondary" : "primary"}
+      variant="secondary"
       busy={busy}
       disabled={busy}
       aria-label={saved ? "Unsave connection" : "Save connection"}
@@ -199,7 +194,7 @@ function RelationshipActions({ request, userId, eligible, saved, busy, onSave, o
           <Button type="button" variant="secondary" onClick={onFollowUp}>Follow up</Button>
         </div>
       ) : eligible ? (
-        <Button type="button" busy={busy} onClick={onRequest} className="np-request-connection"><UserPlus size={15} />Request to connect</Button>
+        <Button type="button" busy={busy} onClick={onRequest} className="np-request-connection"><UserPlus size={17} />Connect</Button>
       ) : saved ? (
         <Button type="button" variant="secondary" onClick={onFollowUp}>Follow up</Button>
       ) : null}
@@ -263,7 +258,7 @@ function MessageComposer({ person, notify, message, setMessage, open, setOpen }:
   );
 }
 
-function CompatibilityRail({ person, useStarter, loading, onRetry }: { person: NetworkPerson; useStarter: () => void; loading?: boolean; onRetry?: () => void }) {
+function CompatibilitySection({ person, loading, onRetry }: { person: NetworkPerson; loading?: boolean; onRetry?: () => void }) {
   const { compatibility } = person;
   const strongestRoute = assessmentRoute(compatibility);
   const hasNetworkingDetails = compatibility.categories.some(category => category.points !== null);
@@ -286,11 +281,15 @@ function CompatibilityRail({ person, useStarter, loading, onRetry }: { person: N
       <div className="np-compatibility-head">
         <div className="np-rail-title">
           <Sparkles size={15} aria-hidden="true" />
-          <h2 id="np-compatibility-title">Why you connect</h2>
+          <h2 id="np-compatibility-title">Why you should connect</h2>
         </div>
-        <CompatibilityValue person={person} />
+        {!loading && assessmentScore(compatibility) !== null && <CompatibilityValue person={person} />}
       </div>
       <p className="np-compatibility-summary">{loading ? "Finding the strongest reason for you to talk…" : compatibility.reason || person.reason}</p>
+      <div className="np-common-ground">
+        <h3>Common ground</h3>
+        <TopicList items={person.sharedInterests} empty="No shared interests are visible yet." />
+      </div>
 
       {compatibility.source === "unavailable" && !loading && onRetry && (
         <button className="np-retry" type="button" onClick={onRetry}><RefreshCw size={14} />Try compatibility again</button>
@@ -299,6 +298,12 @@ function CompatibilityRail({ person, useStarter, loading, onRetry }: { person: N
       <details className="np-disclosure">
         <summary>{detailLabel} <ChevronDown size={15} aria-hidden="true" /></summary>
         <div className="np-breakdown">
+          {(person.theyOffer.length > 0 || person.youOffer.length > 0) && (
+            <div className="np-contributions">
+              {person.theyOffer.length > 0 && <div><h3>{firstName(person.profile)} can help you with</h3><TopicList items={person.theyOffer} empty="" /></div>}
+              {person.youOffer.length > 0 && <div><h3>You can help {firstName(person.profile)} with</h3><TopicList items={person.youOffer} empty="" /></div>}
+            </div>
+          )}
           {routes.map((route) => (
             <div className="np-category" key={route.id}>
               <div>
@@ -334,13 +339,13 @@ function CompatibilityRail({ person, useStarter, loading, onRetry }: { person: N
         </div>
       </details>
 
-      {compatibility.starter && <div className="np-conversation-starter"><span>Conversation starter</span><blockquote>{compatibility.starter}</blockquote><button type="button" onClick={useStarter}>Use this in a message</button></div>}
     </section>
   );
 }
 
-function FollowUp({ person, busy, act, notify, onClose, notes, setNotes, reminder, setReminder, status, setStatus, message, setMessage, messageOpen, setMessageOpen, open, setOpen }: {
+function FollowUp({ person, useStarter, busy, act, notify, onClose, notes, setNotes, reminder, setReminder, status, setStatus, message, setMessage, messageOpen, setMessageOpen, open, setOpen }: {
   person: NetworkPerson;
+  useStarter: () => void;
   busy: boolean;
   act: Action;
   notify: (message: string) => void;
@@ -390,6 +395,7 @@ function FollowUp({ person, busy, act, notify, onClose, notes, setNotes, reminde
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <div className="np-follow-up-body">
+        {!person.withdrawn && person.compatibility.starter && <div className="np-conversation-starter"><span>Conversation starter</span><blockquote>{person.compatibility.starter}</blockquote><button type="button" onClick={useStarter}>Use this in a message</button></div>}
         <MessageComposer
           person={person}
           notify={notify}
@@ -410,6 +416,11 @@ function FollowUp({ person, busy, act, notify, onClose, notes, setNotes, reminde
                 </select>
               </label>
               <label>
+                Follow-up date
+                <input type="date" value={reminder} onChange={(event) => setReminder(event.target.value)} />
+                <small>Only visible to you. No reminder is sent.</small>
+              </label>
+              <label>
                 Private notes
                 <textarea
                   rows={4}
@@ -418,11 +429,6 @@ function FollowUp({ person, busy, act, notify, onClose, notes, setNotes, reminde
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
                 />
-              </label>
-              <label>
-                Follow-up date
-                <input type="date" value={reminder} onChange={(event) => setReminder(event.target.value)} />
-                <small>Only visible to you. No reminder is sent.</small>
               </label>
             </div>
             <Button type="button" busy={busy} onClick={() => void saveDetails()} className="np-save-details">
@@ -517,12 +523,14 @@ function Expanded({ person, user, state, act, busy, notify, onClose, onSave, req
           onSave={onSave}
           onRequest={onRequest}
           onRespond={onRespond}
-          onFollowUp={() => setFollowUpOpen(true)}
+          onFollowUp={() => {
+            setFollowUpOpen(true);
+            requestAnimationFrame(() => document.querySelector(".np-follow-up")?.scrollIntoView({ block: "nearest" }));
+          }}
         />
       </section>
 
-      <div className="np-columns">
-        <div className="np-main">
+      <div className="np-main">
           {person.withdrawn ? (
             <div className="np-private-notice" role="status">
               <strong>This profile is now private.</strong>
@@ -530,50 +538,21 @@ function Expanded({ person, user, state, act, busy, notify, onClose, onSave, req
             </div>
           ) : (
             <>
+              <CompatibilitySection person={person} loading={assessmentLoading} onRetry={onRetryAssessment} />
               {profile.bio && (
                 <section className="np-project">
                   <div>
-                    <h2>What they’re working on</h2>
+                    <h2>What {firstName(profile)} is working on</h2>
                     <p>{profile.bio}</p>
                   </div>
                 </section>
               )}
 
-              <section className="np-section">
-                <h2>Common ground</h2>
-                <TopicList items={person.sharedInterests} empty="No shared interests are visible yet." />
-              </section>
-
-              <section className="np-bring" aria-label="What each person brings">
-                <div>
-                  <h2>They bring</h2>
-                  <TopicList items={person.theyOffer} empty="No matching skills visible." />
-                </div>
-                <div>
-                  <h2>You bring</h2>
-                  <TopicList items={person.youOffer} empty="No complementary skills visible." />
-                </div>
-              </section>
-
-              {showMore && (
-                <Disclosure className="np-more-profile" title={`More about ${firstName(profile)}`} description="Goals, skills, and past experiences">
-                  <div className="np-more-profile-body">
-                    {person.goals.length > 0 && <div><h2>Goals</h2><TopicList items={person.goals} empty="" /></div>}
-                    {profile.skills.length > 0 && <div><h2>Skills</h2><TopicList items={profile.skills} empty="" /></div>}
-                    {profile.lookingFor.length > 0 && <div><h2>Looking for</h2><TopicList items={profile.lookingFor} empty="" /></div>}
-                    {!!profile.domains?.length && <div><h2>Domains</h2><TopicList items={profile.domains} empty="" /></div>}
-                    {!!profile.experiences?.length && <div><h2>Past experiences</h2>{profile.experiences.map((experience, index) => <p key={index}>{experience.label} · {experience.kind}{experience.year ? ` · ${experience.year}` : ""}</p>)}</div>}
-                  </div>
-                </Disclosure>
-              )}
             </>
           )}
-        </div>
-
-        <aside className="np-rail">
-          {!person.withdrawn && <CompatibilityRail person={person} useStarter={useStarter} loading={assessmentLoading} onRetry={onRetryAssessment} />}
           <FollowUp
             person={person}
+            useStarter={useStarter}
             busy={busy}
             act={act}
             notify={notify}
@@ -591,7 +570,17 @@ function Expanded({ person, user, state, act, busy, notify, onClose, onSave, req
             open={followUpOpen}
             setOpen={setFollowUpOpen}
           />
-        </aside>
+          {!person.withdrawn && showMore && (
+            <Disclosure className="np-more-profile" title={`More about ${firstName(profile)}`} description="Goals, skills, and past experiences">
+              <div className="np-more-profile-body">
+                {person.goals.length > 0 && <div><h2>Goals</h2><TopicList items={person.goals} empty="" /></div>}
+                {profile.skills.length > 0 && <div><h2>Skills</h2><TopicList items={profile.skills} empty="" /></div>}
+                {profile.lookingFor.length > 0 && <div><h2>Looking for</h2><TopicList items={profile.lookingFor} empty="" /></div>}
+                {!!profile.domains?.length && <div><h2>Domains</h2><TopicList items={profile.domains} empty="" /></div>}
+                {!!profile.experiences?.length && <div><h2>Past experiences</h2>{profile.experiences.map((experience, index) => <p key={index}>{experience.label} · {experience.kind}{experience.year ? ` · ${experience.year}` : ""}</p>)}</div>}
+              </div>
+            </Disclosure>
+          )}
       </div>
     </div>
   );
@@ -629,7 +618,7 @@ export function NetworkProfile({ person, user, state, act, busy, notify, onClose
 
   return (
     <article className="np-profile np-profile--expanded">
-      <Header name={person.profile.name} onClose={onClose} />
+      <Header onClose={onClose} />
       <Expanded
         person={person}
         user={user}

@@ -196,15 +196,9 @@
 }
 
 .nm-group-label small {
-  display: grid;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border: 1px solid #ffffff14;
-  border-radius: 999px;
   color: #787d85;
   font-size: 9px;
-  place-items: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .nm-group.is-collapsed .nm-group-label {

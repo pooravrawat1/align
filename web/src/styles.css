@@ -826,18 +826,14 @@ svg {
 }
 .login-steps button:active:not(:disabled) { transform: none; }
 .login-step-number {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #ffffff16;
+  display: inline-block;
+  min-width: 14px;
   font-size: 14px;
   font-weight: 600;
+  text-align: center;
 }
 .login-steps button[aria-current="step"] .login-step-number {
-  background: #104b3d;
-  color: #fff;
+  color: inherit;
 }
 .login-form {
   min-height: 0;
@@ -1002,6 +998,7 @@ svg {
   border-radius: var(--radius-control);
   background: var(--raised);
 }
+.entry-tags-field:focus-within { border-color: var(--text); }
 .entry-tag {
   gap: 4px;
 }
@@ -1059,6 +1056,7 @@ svg {
 }
 .sidebar > .brand {
   margin-left: 8px;
+  margin-bottom: var(--space-6);
 }
 .workspace-label {
   display: flex;
@@ -1117,10 +1115,11 @@ svg {
 }
 .nav-count {
   margin-left: auto;
-  background: #ffffff09;
-  border-radius: 4px;
-  padding: 2px 5px;
-  font-size: 9px;
+  padding: 0;
+  color: currentColor;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 .sidebar-divider {
   margin: 21px 12px;
@@ -1145,26 +1144,6 @@ svg {
 .sidebar-bottom {
   margin-top: auto;
   padding-top: 30px;
-}
-.demo-note {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  padding: 20px 10px;
-  font-size: 9px;
-  color: #bcc4b5;
-  line-height: 1.6;
-}
-.demo-note .status-dot {
-  margin-top: 5px;
-  width: 4px;
-  height: 4px;
-}
-.demo-note small {
-  color: var(--quiet);
-  display: block;
-  font-size: 8px;
-  margin-top: 4px;
 }
 .account {
   margin-top: 15px;

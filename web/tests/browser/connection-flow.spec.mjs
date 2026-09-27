@@ -31,7 +31,7 @@ for (const width of [1440, 390]) test(`two people can request, accept and follow
     await alex.page.screenshot({ path: `.impeccable/review/connection-home-${width}.png`, fullPage: true });
     await alex.page.getByRole('button', { name: 'Meet people', exact: true }).click();
     await alex.page.getByRole('button', { name: "View Maya Chen's profile" }).click();
-    await alex.page.getByRole('button', { name: 'Request to connect' }).click();
+    await alex.page.getByRole('button', { name: 'Connect', exact: true }).click();
     await expect(alex.page.getByRole('button', { name: 'Request sent' })).toBeVisible();
     await expect(alex.page.getByRole('button', { name: 'Save connection' })).toContainText('Save profile');
     await alex.page.keyboard.press('Escape');

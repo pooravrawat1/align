@@ -3,8 +3,7 @@ import { ArrowRight, Check, List, Network, Search, SlidersHorizontal, Users, X }
 import type { Action, PairAssessment, Profile, State } from "./types";
 import { Avatar, Button, Chip, PageHeader, PanelHeader } from "./ui";
 import {
-  assessmentRouteLabel,
-  assessmentRoute,
+  assessmentMatchLabel,
   assessmentScore,
   MATCH_THRESHOLD,
   networkPerson,
@@ -25,6 +24,7 @@ export type PeopleDirectoryProps = {
   limit?: number;
   pageHeading?: boolean;
   headerContent?: ReactNode;
+  allowMap?: boolean;
 };
 
 let profileTrigger: HTMLElement | null = null;
@@ -51,8 +51,8 @@ function Score({ assessment, loading }: { assessment: PairAssessment | null; loa
   return (
     <span className={`nx-fit ${score !== null && score >= MATCH_THRESHOLD ? "nx-fit-high" : ""}`}>
       {score !== null
-        ? <><span>{score}<small>/100</small></span><small>{assessmentRouteLabel(assessmentRoute(assessment))}</small></>
-        : <small>{loading ? "Assessing fit…" : "View fit"}</small>}
+        ? <><span>{score}<small>/100</small></span><small>{assessmentMatchLabel(assessment)}</small></>
+        : <small>{loading ? "Assessing fit…" : assessment ? "Score unavailable" : "View fit"}</small>}
     </span>
   );
 }
@@ -89,8 +89,9 @@ function PersonRow({ state, user, profile, eventId, prefetch, audience }: {
   );
 }
 
-export function PeopleDirectory({ state, user, eventId, mode, limit, pageHeading = false, headerContent }: PeopleDirectoryProps) {
+export function PeopleDirectory({ state, user, eventId, mode, limit, pageHeading = false, headerContent, allowMap = true }: PeopleDirectoryProps) {
   const [view, setView] = useState<"people" | "map">("people");
+  const mapAllowed = allowMap;
   const [query, setQuery] = useState("");
   const [eventFilter, setEventFilter] = useState(eventId ?? "all");
   const [topic, setTopic] = useState("all");
@@ -130,14 +131,14 @@ export function PeopleDirectory({ state, user, eventId, mode, limit, pageHeading
   const search = <label className="nx-search"><Search size={17} aria-hidden="true" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a person, skill, or interest" aria-label="Search people" />{query && <button aria-label="Clear search" onClick={() => setQuery("")}><X size={14} /></button>}</label>;
   return (
     <div className={`people-directory ${compact ? "people-directory--compact" : ""}`}>
-      {pageHeading && <PageHeader className="nx-heading" title="Your network" description="A little common ground. A world of possibility." action={search} />}
+      {pageHeading && <PageHeader className="nx-heading" title="Your network" description="People you've saved or connected with. Pick up where you left off." action={search} />}
       {headerContent}
       {!compact && (
         <>
           <div className="nx-navigation nx-navigation--directory">
             <div className="nx-directory-title"><Users size={16} /><span>{mode === "network" ? "Your network" : "People at this event"}</span><small>{people.length}</small></div>
             <div className="nx-view-tools">
-              {mode === "network" && <div className="nx-view-switch" role="group" aria-label="Network view"><button aria-pressed={view === "people"} onClick={() => setView("people")}><List size={15} />People</button><button aria-pressed={view === "map"} onClick={() => setView("map")}><Network size={15} />Map</button></div>}
+              {mode === "network" && mapAllowed && <div className="nx-view-switch" role="group" aria-label="Network view"><button aria-pressed={view === "people"} onClick={() => setView("people")}><List size={15} />People</button><button aria-pressed={view === "map"} onClick={() => setView("map")}><Network size={15} />Map</button></div>}
               <button className="nx-filter-trigger" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)}><SlidersHorizontal size={15} />Filters{activeFilters > 0 && <span>{activeFilters}</span>}</button>
             </div>
           </div>
@@ -154,9 +155,9 @@ export function PeopleDirectory({ state, user, eventId, mode, limit, pageHeading
       <section className={`nx-browser ${compact ? "nx-browser--compact" : ""}`} aria-label={mode === "network" ? "Your people" : "Event people"}>
         {!compact && <PanelHeader className="nx-browser-header" title={mode === "network" ? "Your people" : "People at this event"} description={`${visible.length} ${visible.length === 1 ? "person" : "people"}${query || activeFilters ? " in this view" : mode === "network" ? " in your network" : " at this event"}`} action={view === "map" ? <label className="nx-group-label">Group by<select value={groupBy} onChange={(e) => setGroupBy(e.target.value as typeof groupBy)}><option value="connections">Connections</option><option value="event">Event</option><option value="interest">Shared interests</option></select></label> : <select aria-label="Sort people" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>{mode === "event" ? <option value="recommended">Recommended</option> : <option value="recent">Recently added</option>}<option value="name">Name</option></select>} />}
         {!shown.length ? <div className="nx-empty"><div className="nx-empty-symbol"><Users size={26} /></div><h2>{query || activeFilters ? "No people in this view" : mode === "network" ? "No people in your network yet" : "No one is sharing here yet"}</h2><p>{query || activeFilters ? "Try another name, skill, or interest." : mode === "network" ? "Connect with someone or save their profile from an event to keep them here." : "When attendees join this event, their shared profiles will appear here."}</p>{query || activeFilters ? <Button onClick={resetFilters}>Clear filters</Button> : mode === "network" ? <Button onClick={() => { location.hash = "#/home?tab=people"; }}>Find people</Button> : null}</div>
-        : mode === "network" && view === "map" ? <NetworkMap user={user} people={shown.map((person) => person.profile)} selectedId={null} onSelect={(id) => openPersonProfile(id, eventId, "network")} groupBy={groupBy} eventNames={eventNames} sharedTopics={sharedTopics} />
-        : <div className="nx-people-list">{shown.map((person) => <PersonRow key={person.profile.id} state={state} user={user} profile={person.profile} eventId={eventId ?? person.connection?.eventId} prefetch={compact} audience={mode} />)}</div>}
-        {!compact && mode === "network" && view === "map" && shown.length > 0 && <footer className="nx-browser-footer"><span><span className="nx-line-key" />People in your network</span><span>Select a portrait to explore</span></footer>}
+        : mode === "network" && view === "map" && mapAllowed ? <NetworkMap user={user} people={shown.map((person) => person.profile)} selectedId={null} onSelect={(id) => openPersonProfile(id, eventId, "network")} groupBy={groupBy} eventNames={eventNames} sharedTopics={sharedTopics} />
+        : <div className="nx-people-list">{shown.map((person) => <PersonRow key={person.profile.id} state={state} user={user} profile={person.profile} eventId={eventId ?? person.connection?.eventId} prefetch={compact || mode === "network"} audience={mode} />)}</div>}
+        {!compact && mode === "network" && view === "map" && mapAllowed && shown.length > 0 && <footer className="nx-browser-footer"><span><span className="nx-line-key" />People in your network</span><span>Select a portrait to explore</span></footer>}
       </section>
       </div>
     </div>

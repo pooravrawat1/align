@@ -1,3 +1,4 @@
+import "./SpatialSurface.css";
 import { useEffect, useRef, useState } from "react";
 import { ContactRound, EyeOff, Glasses, UserRound, X } from "lucide-react";
 import type { Profile } from "./types";
@@ -10,17 +11,17 @@ import { visibilityOf } from "./profileEditor";
 export function NearbyProfile({ profile }: { profile: Profile }) {
   const visible = visibilityOf(profile);
   return <div className="pe-room-scene">
-    {visible.activeInEvent ? <div className="pe-room-card">
+    {visible.activeInEvent ? <div className="spatial-surface pe-room-card">
       <div className="pe-person"><Avatar profile={profile} /><div><strong>{profile.name.trim().split(/\s/)[0] || "Your name"}</strong><span>{profile.role || "Your headline"}</span></div></div>
       {visible.interests && profile.interests.length > 0 && <Tags items={profile.interests} limit={3} />}
-    </div> : <div className="pe-room-card pe-paused"><EyeOff size={22} /><p>Your profile is hidden in rooms.</p></div>}
+    </div> : <div className="spatial-surface pe-room-card pe-paused"><EyeOff size={22} /><p>Your profile is hidden in rooms.</p></div>}
   </div>;
 }
 
-export function ProfilePreview({ profile, profiles, dirty, onClose }: { profile: Profile; profiles: Profile[]; dirty: boolean; onClose: () => void }) {
+export function ProfilePreview({ profile, profiles, dirty, initialAudience = "room", onClose }: { profile: Profile; profiles: Profile[]; dirty: boolean; initialAudience?: "room" | "connection"; onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const [audience, setAudience] = useState<"room" | "connection">("room");
+  const [audience, setAudience] = useState<"room" | "connection">(initialAudience);
   const [distance, setDistance] = useState<"distant" | "nearby" | "matched">("nearby");
   const visible = visibilityOf(profile);
   const example = homeCollaborators(profiles, profile).find(person => person.reason);
@@ -52,14 +53,14 @@ export function ProfilePreview({ profile, profiles, dirty, onClose }: { profile:
         <section className="pe-panel pe-preview-section">
           <PanelHeader title="In the room" description="See how your introduction changes as people get closer." icon={<Glasses size={19} />} />
           <div className="pe-segmented" role="group" aria-label="Spatial distance">{(["distant", "nearby", "matched"] as const).map(item => <button key={item} type="button" aria-pressed={distance === item} onClick={() => setDistance(item)}>{item[0].toUpperCase() + item.slice(1)}</button>)}</div>
-          {!visible.activeInEvent || distance === "nearby" ? <NearbyProfile profile={profile} /> : <div className="pe-room-scene">{distance === "distant" ? <div className="pe-room-card pe-distance-name">{profile.name.trim().split(/\s/)[0] || "Your name"}<span>A name marker at a distance.</span></div> : <div className="pe-room-card pe-match-example"><h3>{example ? `Example with ${example.profile.name}` : "No shared match yet"}</h3><p>{example?.reason || "A reason to meet appears when shared interests or complementary skills overlap."}</p></div>}</div>}
+          {!visible.activeInEvent || distance === "nearby" ? <NearbyProfile profile={profile} /> : <div className="pe-room-scene">{distance === "distant" ? <div className="spatial-surface pe-room-card pe-distance-name">{profile.name.trim().split(/\s/)[0] || "Your name"}<span>A name marker at a distance.</span></div> : <div className="spatial-surface pe-room-card pe-match-example"><h3>{example ? `Example with ${example.profile.name}` : "No shared match yet"}</h3><p>{example?.reason || "A reason to meet appears when shared interests or complementary skills overlap."}</p></div>}</div>}
           <p className="pe-help pe-scene-caption">{!visible.activeInEvent ? "Your profile is hidden at every distance." : distance === "nearby" ? "Nearby people see your name, headline, and up to three shared interests." : distance === "distant" ? "Only your first name is shown from farther away." : "This view uses shared interests, complementary skills, and your sharing choices."}</p>
         </section>
         {visible.activeInEvent && hasSharedDetails && <section className="pe-panel pe-preview-section"><PanelHeader title="Shared details" description="The information you’ve chosen to show on your profile." icon={<UserRound size={19} />} />{introduction}</section>}
       </> : <div className="pe-panel pe-preview-section pe-connection-preview">
-        <PanelHeader title="Saved connection" description="What a saved connection can see about you." icon={<ContactRound size={19} />} />
+        <PanelHeader title="Saved connection" description="What saved and accepted connections can see, including from an event page." icon={<ContactRound size={19} />} />
         <div className="pe-person"><Avatar profile={profile} size="large" /><div><strong>{profile.name || "Your name"}</strong><span>{profile.role || "Your headline"}</span>{profile.location && <span>{profile.location}</span>}</div></div>
-        {!visible.previousConnections ? <p className="pe-help">Your focus, interests, skills, and contact links are hidden from saved connections.</p> : <>{introduction}<section className="pe-preview-contact"><h3>Contact</h3><ContactLinks profile={profile} showLabels />{visible.contact && profile.contact && <p>{profile.contact}</p>}{!sharedContactLinks(profile).length && !(visible.contact && profile.contact) && <p className="pe-help">No contact information is shared.</p>}</section></>}
+        {!visible.previousConnections ? <p className="pe-help">Your focus, interests, skills, and contact links are hidden from saved connections.</p> : <>{introduction}<section className="pe-preview-contact"><h3>Contact</h3><ContactLinks profile={profile} showLabels />{profile.contact && <p>{profile.contact}</p>}{!sharedContactLinks(profile).length && !profile.contact && <p className="pe-help">No contact information is shared.</p>}</section></>}
       </div>}
       <p className="pe-demo-note">Your sharing choices control which details appear in each view.</p>
     </div>

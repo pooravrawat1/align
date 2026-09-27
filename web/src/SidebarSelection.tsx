@@ -28,7 +28,7 @@ export function SidebarSelection({ page }: { page: string }) {
     update(false);
     const resize = new ResizeObserver(() => update(false));
     resize.observe(sidebar);
-    sidebar.querySelectorAll("nav, .workspace-label").forEach(node => resize.observe(node));
+    sidebar.querySelectorAll("nav").forEach(node => resize.observe(node));
     const preferenceChanged = () => update(false);
     reduced.addEventListener("change", preferenceChanged);
     return () => {
