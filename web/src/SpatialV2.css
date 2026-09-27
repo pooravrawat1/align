@@ -30,7 +30,7 @@
 .qmv2-card-field { position: relative; isolation: isolate; width: 100%; min-width: 1120px; aspect-ratio: 1659 / 948; transition: opacity 180ms ease; }
 .qmv2-card-field .qmv2-scene { object-fit: fill; user-select: none; }
 .qmv2-person-anchor { position: absolute; top: var(--head-y); left: var(--head-x); width: clamp(260px, calc(100vw - 52px), 380px); padding-bottom: 24px; transform: translate(-50%, -100%); display: flex; justify-content: center; }
-.qmv2-look-controls { position: absolute; bottom: 92px; right: 24px; z-index: 3; display: flex; align-items: center; gap: 8px; padding: 4px; border: 1px solid var(--spatial-glass-edge); border-radius: 999px; background: var(--spatial-glass); backdrop-filter: var(--spatial-glass-filter); color: #fff; font-size: var(--type-metadata); }
+.qmv2-look-controls { position: absolute; bottom: 92px; right: 24px; z-index: 3; display: flex; align-items: center; gap: 8px; padding: 4px; border-radius: 999px; color: #fff; font-size: var(--type-metadata); }
 .qmv2-look-controls button { display: grid; place-items: center; width: 44px; height: 44px; background: transparent; border: 0; border-radius: 50%; color: inherit; }
 .qmv2-look-controls button:hover:not(:disabled) { background: #ffffff20; }
 .qmv2-stage.has-panel .qmv2-card { opacity: .25; }
@@ -49,14 +49,14 @@ button.qmv2-card:hover { border-color: #ffffff90; }
 .qmv2-card-tether { position: absolute; top: 100%; left: 50%; height: 24px; width: 1px; background: linear-gradient(#ffffff80, transparent); pointer-events: none; }
 .qmv2-card-tether::after { content: ''; position: absolute; left: -2px; bottom: -3px; width: 5px; height: 5px; border-radius: 50%; background: #ffffff99; }
 .qmv2-room-footer { position: absolute; left: 24px; right: 24px; bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; z-index: 3; }
-.qmv2-people-button { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; padding: 0 18px; border: 1px solid var(--spatial-glass-edge); border-radius: 999px; background: var(--spatial-glass); backdrop-filter: var(--spatial-glass-filter); -webkit-backdrop-filter: var(--spatial-glass-filter); color: #fff; font-size: var(--type-supporting); }
+.qmv2-people-button { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; padding: 0 18px; border-radius: 999px; color: #fff; font-size: var(--type-supporting); }
 .qmv2-people-button > span { color: #fff; padding-left: 10px; border-left: 1px solid #ffffff40; }
 .qmv2-people-button:hover, .qmv2-people-button[aria-expanded="true"] { background: #34363ae6; }
 .qmv2-room-status { display: flex; align-items: center; gap: 8px; color: #fff; font-size: var(--type-metadata); text-shadow: 0 2px 8px #000b; }
 .qmv2-room-status button { padding: 6px 0; border: 0; background: transparent; color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .qmv2-match-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: var(--accent); }
 .qmv2-panel { position: absolute; z-index: 5; top: 20px; right: 20px; bottom: 88px; width: min(420px, calc(100% - 40px)); padding: 24px; display: flex; flex-direction: column; overflow: hidden; overscroll-behavior: contain; scrollbar-color: #ffffff40 transparent; scrollbar-width: thin; border: 1px solid var(--border-control); border-radius: var(--radius-panel); background: var(--surface-panel); color: var(--text-primary); box-shadow: 0 16px 40px #0004; }
-.qmv2-person-panel { --text-primary: #fff; --text-secondary: #ffffffd9; --divider-subtle: #ffffff30; border-color: var(--spatial-glass-edge); background: var(--spatial-glass); box-shadow: var(--spatial-glass-shadow); backdrop-filter: var(--spatial-glass-filter); -webkit-backdrop-filter: var(--spatial-glass-filter); }
+.qmv2-person-panel { --text-primary: #fff; --text-secondary: #ffffffd9; --divider-subtle: #ffffff30; }
 .qmv2-panel > header { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 16px; margin-bottom: 24px; border-bottom: 1px solid var(--divider-subtle); }
 .qmv2-panel > header h2 { font-family: var(--font-display); font-size: var(--type-section-title); font-weight: var(--weight-medium); }
 .qmv2-panel > header .qmv2-icon-button { margin: -10px -10px -10px 0; }
@@ -130,15 +130,13 @@ button.qmv2-card:hover { border-color: #ffffff90; }
   .qmv2-room-status { flex-wrap: wrap; }
   .qmv2-control-section select { font-size: 16px; }
 }
-.solid-surfaces .qmv2-card, .solid-surfaces .qmv2-people-button, .solid-surfaces .qmv2-person-panel { background: #34363a; backdrop-filter: none; -webkit-backdrop-filter: none; }
-.solid-surfaces .qmv2-card.is-matched { background: #3f5a48; }
-@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-  .qmv2-card, .qmv2-people-button, .qmv2-person-panel { background: #34363a; backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .qmv2-card.is-matched { background: #3f5a48; }
-}
+
 @media (prefers-reduced-motion: reduce) {
   .qmv2 *, .qmv2 *::before, .qmv2 *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
 .qmv2-panel-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #ffffff40 transparent; padding: 4px; margin: -4px; }
 .qmv2-person-panel > .qmv2-connect { flex-shrink: 0; margin-top: 20px; padding-top: 18px; }
+
+.qmv2-entry.spatial-surface--frosted { --border-control: #ffffff40; --surface-raised: rgb(255 255 255 / .08); border-radius: 24px; }
+.qmv2-entry.spatial-surface--frosted input::placeholder { color: var(--text-tertiary); }

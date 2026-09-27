@@ -22,6 +22,7 @@ interface Props {
 export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid, logout, editor, snapshot }: Props) {
   const [section, setSection] = useState<ProfileSection>(() => profileSectionFromHash(location.hash));
   const [preview, setPreview] = useState(false);
+  const [previewAudience, setPreviewAudience] = useState<"room" | "connection">("room");
   const [sounds, setSounds] = useState(() => { try { return localStorage.getItem("questmatch-sounds") === "true"; } catch { return false; } });
   const [preferenceError, setPreferenceError] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -32,6 +33,7 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
   const tabRefs = useRef<Partial<Record<ProfileSection, HTMLButtonElement | null>>>({});
   const internalTab = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const saveStatusRef = useRef<HTMLDivElement>(null);
   const { draft, errors, saving, saved, failure } = snapshot;
   const visible = visibilityOf(draft);
   const dirty = editor.dirty(section);
@@ -71,25 +73,30 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
     location.hash = `/profile?section=${next}`;
     return true;
   };
-  const openPreview = () => {
+  const openPreview = (audience: "room" | "connection" = "room") => {
     if (!editor.commitTopics()) {
       setSection("focus"); location.hash = "/profile?section=focus"; focusTopicError(); return;
     }
+    setPreviewAudience(audience);
     setPreview(true);
   };
   const save = async () => {
     if (photoBusy) return;
+    const focusedAction = document.activeElement instanceof HTMLElement && !!document.activeElement.closest(".pe-save-actions");
     if (!await editor.save(section, act)) {
       const field = Object.keys(editor.getSnapshot().errors).find(key => formRef.current?.querySelector(`#pe-${key}`));
       if (field) formRef.current?.querySelector<HTMLElement>(`#pe-${field}`)?.focus();
+    } else if (focusedAction) {
+      requestAnimationFrame(() => {
+        if (document.activeElement === document.body) saveStatusRef.current?.focus({ preventScroll: true });
+      });
     }
   };
-  const share = (field: VisibilityField, label: string, contact = false) => <div className="pe-sharing">
-    <label className="pe-check"><input type="checkbox" checked={visible[field]} onChange={event => editor.share(field, event.target.checked)} aria-label={label} /><span>{contact ? "Share with saved connections" : "Show on my profile"}</span></label>
-    {contact && !visible.previousConnections && visible[field] && <span className="pe-help">Hidden while access for saved connections is off.</span>}
+  const share = (field: VisibilityField, label: string) => <div className="pe-sharing">
+    <label className="pe-check"><input type="checkbox" checked={visible[field]} onChange={event => editor.share(field, event.target.checked)} aria-label={label} /><span>Show on my profile</span></label>
   </div>;
   const field = (key: keyof typeof contract.stringLimits, label: string, placeholder?: string, type = "text", optional = true) => <div className="pe-field">
-    <label htmlFor={`pe-${key}`}>{label}{optional && <span className="pe-optional">Optional</span>}</label>
+    <label htmlFor={`pe-${key}`}>{label}</label>
     <input id={`pe-${key}`} name={key} type={type} value={draft[key] || ""} maxLength={contract.stringLimits[key]} placeholder={placeholder} required={!optional} autoComplete={key === "name" ? "name" : key === "email" ? "email" : "off"} aria-invalid={!!errors[key]} aria-describedby={errors[key] ? `pe-${key}-error` : undefined} onChange={event => editor.change(key, event.target.value)} />
     <FieldError field={key} message={errors[key]} />
   </div>;
@@ -101,7 +108,7 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
   };
 
   return <div className="pe-page">
-    <PageHeader className="pe-page-heading" title="Profile" />
+    <PageHeader className="pe-page-heading" title="Profile" description="Share what makes you, you. Give people a reason to say hello." action={<TextAction icon={<Eye size={16} />} iconPosition="start" onClick={() => openPreview(section === "contact" ? "connection" : "room")}>Preview full profile</TextAction>} />
     <div className="pe-tabs" role="tablist" aria-label="Profile sections">
       {profileSections.map(tab => <button key={tab} ref={element => { tabRefs.current[tab] = element; }} id={`pe-tab-${tab}`} type="button" role="tab" aria-selected={section === tab} aria-controls={`pe-panel-${tab}`} tabIndex={section === tab ? 0 : -1} onClick={() => select(tab)} onKeyDown={event => {
         const index = profileSections.indexOf(tab);
@@ -133,36 +140,36 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
             </>}
             {section === "focus" && <>
               <PanelHeading title="Your focus" icon={<Focus size={19} />} description="Help the right people find a reason to connect." />
-              <div className="pe-field"><label htmlFor="pe-bio">Current focus<span className="pe-optional">Optional</span></label><textarea ref={focusRef} id="pe-bio" name="bio" rows={4} maxLength={contract.stringLimits.bio} value={draft.bio} placeholder="What are you working on or exploring?" aria-invalid={!!errors.bio} aria-describedby="pe-bio-help pe-bio-error" onChange={event => editor.change("bio", event.target.value)} /><div className="pe-field-meta"><span id="pe-bio-help">This also appears in Your focus on Home.</span><span>{draft.bio.length}/{contract.stringLimits.bio}</span></div><FieldError field="bio" message={errors.bio} />{share("bio", "Share current focus")}</div>
+              <div className="pe-field"><label htmlFor="pe-bio">Current focus</label><textarea ref={focusRef} id="pe-bio" name="bio" rows={4} maxLength={contract.stringLimits.bio} value={draft.bio} placeholder="What are you working on or exploring?" aria-invalid={!!errors.bio} aria-describedby="pe-bio-help pe-bio-error" onChange={event => editor.change("bio", event.target.value)} /><div className="pe-field-meta"><span id="pe-bio-help">This also appears in Your focus on Home.</span><span>{draft.bio.length}/{contract.stringLimits.bio}</span></div><FieldError field="bio" message={errors.bio} />{share("bio", "Share current focus")}</div>
               {([ ["interests", "Interests", "Topics you’d enjoy talking about.", ["Robotics", "Design", "Open source", "Spatial computing"]], ["skills", "I can help with", "Skills or experience you can share.", skills], ["lookingFor", "I’m looking for help with", "Expertise you’d like to meet someone for.", skills] ] as const).map(([key, label, help, suggestions]) => <div className="pe-focus-group" key={key}><TopicInput field={key} label={label} help={help} suggestions={suggestions} editor={editor} snapshot={snapshot} />{share(key, `Share ${label}`)}</div>)}
-              <fieldset className="pe-goals"><legend>What would make this event useful?<span className="pe-optional">Optional</span></legend><p className="pe-help">Choose up to three goals.</p><div className="pe-goal-options">{[...new Set(["Collaboration", "Feedback", "Learning", "Exchanging expertise", "Finding a team", ...(draft.goals ?? [])])].map(goal => {
+              <fieldset className="pe-goals"><legend>What would make this event useful?</legend><p className="pe-help">Choose up to three goals.</p><div className="pe-goal-options">{[...new Set(["Collaboration", "Feedback", "Learning", "Exchanging expertise", "Finding a team", ...(draft.goals ?? [])])].map(goal => {
                 const goals = draft.goals ?? [];
                 const selected = goals.includes(goal);
                 return <button key={goal} type="button" className="chip chip--interactive" aria-pressed={selected} disabled={!selected && goals.length >= 3} onClick={() => editor.change("goals", selected ? goals.filter(value => value !== goal) : [...goals, goal])}>{goal}</button>;
               })}</div><FieldError field="goals" message={errors.goals} />{share("goals", "Share event goals")}</fieldset>
               <div className="pe-focus-group"><TopicInput field="domains" label="Domains" help="Fields or industries where you have context." suggestions={domains} editor={editor} snapshot={snapshot} />{share("domains", "Share domains")}</div>
-              <div className="pe-focus-group pe-experiences"><div className="pe-section-label"><div><h3>Past experiences<span className="pe-optional">Optional</span></h3><p className="pe-help">Add professional or personal experiences that may create common ground.</p></div><button type="button" className="pe-add-experience" disabled={(draft.experiences?.length ?? 0) >= contract.experienceLimit} onClick={() => editor.change("experiences", [...(draft.experiences ?? []), { category: "professional", kind: "", label: "" }])}><Plus size={16} />Add experience</button></div>
+              <div className="pe-focus-group pe-experiences"><div className="pe-section-label"><div><h3>Past experiences</h3><p className="pe-help">Add professional or personal experiences that may create common ground.</p></div><button type="button" className="pe-add-experience" disabled={(draft.experiences?.length ?? 0) >= contract.experienceLimit} onClick={() => editor.change("experiences", [...(draft.experiences ?? []), { category: "professional", kind: "", label: "" }])}><Plus size={16} />Add experience</button></div>
                 {(draft.experiences ?? []).map((experience, index) => <ExperienceRow key={index} experience={experience} index={index} onChange={next => editor.change("experiences", (draft.experiences ?? []).map((item, itemIndex) => itemIndex === index ? next : item))} onRemove={() => editor.change("experiences", (draft.experiences ?? []).filter((_, itemIndex) => itemIndex !== index))} invalid={!!errors.experiences} />)}
                 <FieldError field="experiences" message={errors.experiences} />{share("experiences", "Share past experiences")}
               </div>
               <p className="pe-help">Shared profile information is used to explain common ground and compatibility with Gemini. Contact details and private notes are excluded.</p>
             </>}
             {section === "contact" && <>
-              <PanelHeading title="Contact details" icon={<ContactRound size={19} />} description="Choose how saved connections can reach you." />
-              {([ ["linkedin", "LinkedIn", "https://www.linkedin.com/in/you", "url"], ["website", "Website", "https://your-website.com", "url"], ["email", "Email", "you@example.com", "email"] ] as const).map(([key, label, placeholder, type]) => <div className="pe-contact-group" key={key}>{field(key, label, placeholder, type)}{share(key, `Share ${label} with saved connections`, true)}</div>)}
-              <details className="pe-other-contact" open={draft.contact ? true : undefined}><summary>Other contact</summary>{field("contact", "Other contact", "Another way to reach you")}{share("contact", "Share other contact with saved connections", true)}</details>
-              <p className="pe-help">Contact details are private until you choose to share them. They aren’t used for matching.</p>
+              <PanelHeading title="Contact details" icon={<ContactRound size={19} />} description="Keep your contact information up to date." />
+              {([ ["linkedin", "LinkedIn", "https://www.linkedin.com/in/you", "url"], ["website", "Website", "https://your-website.com", "url"], ["email", "Email", "you@example.com", "email"] ] as const).map(([key, label, placeholder, type]) => <div className="pe-contact-group" key={key}>{field(key, label, placeholder, type)}</div>)}
+              <div className="pe-contact-group">{field("contact", "Other contact", "Another way to reach you")}</div>
+              <p className="pe-help">{visible.previousConnections ? "Saved connections can see the contact details you add here." : "Your contact details are hidden from saved connections."} <button type="button" className="pe-inline-link" onClick={() => select("settings")}>Manage access</button>. People you haven’t connected with can’t see these details. They aren’t used for matching.</p>
             </>}
             {section === "settings" && <>
               <PanelHeading title="Visibility" icon={<Eye size={19} />} description="Choose where your profile can be discovered." />
               <Setting title="Show me in rooms" description="Make your shared introduction available to people in your room."><Toggle label="Show me in rooms" checked={visible.activeInEvent} onChange={() => editor.share("activeInEvent", !visible.activeInEvent)} /></Setting>
-              <Setting title="Access for saved connections" description="Let saved connections see your shared focus, interests, skills, and contact links."><Toggle label="Access for saved connections" checked={visible.previousConnections} onChange={() => editor.share("previousConnections", !visible.previousConnections)} /></Setting>
-              <p className="pe-help">Individual sharing choices live beside your fields in Focus and Contact. Hidden fields stay in your profile.</p>
+              <Setting title="Access for saved connections" description="Let saved connections see your shared profile and every contact detail you add."><Toggle label="Access for saved connections" checked={visible.previousConnections} onChange={() => editor.share("previousConnections", !visible.previousConnections)} /></Setting>
+              <p className="pe-help">Individual profile sharing choices live beside your fields in Focus. Hidden fields stay in your profile.</p>
             </>}
           </div>
-          <footer className="pe-save-footer">
-            <div className="pe-save-status" role="status">{saving === section ? "Saving…" : dirty ? "Unsaved changes" : saved === section ? <><Check size={15} />Saved</> : null}</div>
-            <div className="pe-save-actions"><TextAction disabled={!dirty || !!saving || photoBusy} onClick={() => { editor.discard(section); setPhotoError(""); }}>Discard changes</TextAction><Button type="submit" busy={saving === section} disabled={!dirty || !!saving || photoBusy}>Save changes</Button></div>
+          <footer className={`pe-save-footer${!dirty && saving !== section && failure?.section !== section ? " pe-save-footer--quiet" : ""}`}>
+            <div ref={saveStatusRef} className="pe-save-status" role="status" tabIndex={-1}>{saving === section ? "Saving…" : dirty ? "Unsaved changes" : saved === section ? <><Check size={15} />Saved</> : null}</div>
+            {(dirty || saving === section || failure?.section === section) && <div className="pe-save-actions"><TextAction disabled={!dirty || !!saving || photoBusy} onClick={() => { editor.discard(section); setPhotoError(""); tabRefs.current[section]?.focus({ preventScroll: true }); }}>Discard changes</TextAction><Button type="submit" busy={saving === section} disabled={!dirty || !!saving || photoBusy}>Save changes</Button></div>}
             {failure?.section === section && <p className="pe-save-error" role="alert">{failure.message}</p>}
           </footer>
         </form>
@@ -180,9 +187,9 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
           <p className="pe-demo-note">Profiles and sharing choices belong to this local demo. They aren’t a permanent account.</p>
         </>}
       </div>
-      {(section === "about" || section === "focus") && <aside className="pe-preview-rail pe-panel" aria-label="Nearby profile preview"><PanelHeading title="In the room" icon={<Glasses size={19} />} description={visible.activeInEvent ? "Your name, headline, and shared interests at a glance." : "You can change room visibility in Settings."} /><NearbyProfile profile={draft} /><TextAction icon={visible.activeInEvent ? <Eye size={16} /> : <EyeOff size={16} />} iconPosition="start" onClick={openPreview}>Preview full profile</TextAction></aside>}
+      {(section === "about" || section === "focus") && <aside className="pe-preview-rail pe-panel" aria-label="Nearby profile preview"><PanelHeading title="In the room" icon={<Glasses size={19} />} description={visible.activeInEvent ? "Your name, headline, and shared interests at a glance." : "You can change room visibility in Settings."} /><NearbyProfile profile={draft} /><TextAction icon={visible.activeInEvent ? <Eye size={16} /> : <EyeOff size={16} />} iconPosition="start" onClick={() => openPreview("room")}>Preview room view</TextAction></aside>}
     </div>
-    {preview && <ProfilePreview profile={draft} profiles={state.profiles} dirty={anyDirty} onClose={() => setPreview(false)} />}
+    {preview && <ProfilePreview initialAudience={previewAudience} profile={draft} profiles={state.profiles} dirty={anyDirty} onClose={() => setPreview(false)} />}
   </div>;
 }
 
@@ -193,7 +200,7 @@ function ExperienceRow({ experience, index, onChange, onRemove, invalid }: { exp
       <label>Category<select aria-label={`Experience ${index + 1} category`} value={experience.category} onChange={event => onChange({ ...experience, category: event.target.value as ProfileExperience["category"] })}><option value="professional">Professional</option><option value="personal">Personal</option></select></label>
       <label>Kind<input aria-label={`Experience ${index + 1} kind`} value={experience.kind} maxLength={contract.topicItemLimit} placeholder="e.g. Hackathon" aria-invalid={invalid} onChange={event => onChange({ ...experience, kind: event.target.value })} /></label>
       <label className="pe-experience-label">Label<input aria-label={`Experience ${index + 1} label`} value={experience.label} maxLength={contract.topicItemLimit} placeholder="Name or short description" aria-invalid={invalid} onChange={event => onChange({ ...experience, label: event.target.value })} /></label>
-      <label>Year<span className="pe-optional">Optional</span><input type="number" inputMode="numeric" aria-label={`Experience ${index + 1} year`} value={experience.year ?? ""} min={contract.experienceYearMin} max={new Date().getFullYear()} aria-invalid={invalid} onChange={event => onChange({ ...experience, year: event.target.value === "" ? undefined : Number(event.target.value) })} /></label>
+      <label>Year<input type="number" inputMode="numeric" aria-label={`Experience ${index + 1} year`} value={experience.year ?? ""} min={contract.experienceYearMin} max={new Date().getFullYear()} aria-invalid={invalid} onChange={event => onChange({ ...experience, year: event.target.value === "" ? undefined : Number(event.target.value) })} /></label>
     </div>
   </div>;
 }

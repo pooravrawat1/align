@@ -229,3 +229,23 @@ test('a target within the shared stop epsilon lands exactly without a tween', ()
     assert.equal(resolutions, 0);
   } finally { h.close(); }
 });
+
+
+test('a boundary at the second stop snaps only the opening pair and releases later sections', () => {
+  const h = harness(undefined, () => 1000);
+  try {
+    h.wheel(80, 0);
+    assert.equal(h.active('travel').vars.top, 1000);
+    h.complete('travel');
+    assert.equal(h.active('hold'), undefined);
+    assert.equal(h.emit('wheel', { deltaY: 80, deltaX: 0, deltaMode: 0 }).defaultPrevented, false);
+    for (const top of [1400, 2000, 3000]) {
+      h.window.scrollY = top;
+      assert.equal(h.emit('wheel', { deltaY: -80, deltaX: 0, deltaMode: 0 }).defaultPrevented, false);
+      assert.equal(h.emit('keydown', { key: 'PageDown' }).defaultPrevented, false);
+    }
+    h.window.scrollY = 1000;
+    h.wheel(-80, 500);
+    assert.equal(h.active('travel').vars.top, 0);
+  } finally { h.close(); }
+});

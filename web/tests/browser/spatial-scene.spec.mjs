@@ -165,3 +165,36 @@ test('an event roster with no shared participants renders no spatial identities'
     await expect(page.getByRole('button', { name: /^People/ })).toContainText('0');
   } finally { await env.close(); }
 });
+
+test('unjoined entry displays its venue before typing and keeps it stable while editing the code', async ({ page }) => {
+  const env = await workspace(page, { join: false });
+  const photoRequests = [];
+  page.on('request', request => {
+    if (/\/assets\/(home-conference|event-audience|event-stage)\.webp$/.test(new URL(request.url()).pathname)) photoRequests.push(request.url());
+  });
+  try {
+    await page.goto(origin + '/#/spatial');
+    const code = page.getByRole('textbox', { name: 'Event code' });
+    await expect(code).toHaveValue('');
+    const photo = page.locator('.qmv2-stage.is-setup > .qmv2-scene');
+    await expect(photo).toHaveAttribute('src', '/assets/home-conference.webp');
+    await expect.poll(() => photo.evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true);
+    const original = await photo.elementHandle();
+    for (const value of ['D', 'DEMO', '', 'SPATIAL', 'UNKNOWN']) {
+      await code.fill(value);
+      await expect(photo).toHaveAttribute('src', '/assets/home-conference.webp');
+      expect(await original.evaluate(image => image.isConnected && image.complete && image.naturalWidth > 0)).toBe(true);
+    }
+    expect(photoRequests).toHaveLength(1);
+  } finally { await env.close(); }
+});
+
+test('joined entry uses its own venue immediately', async ({ page }) => {
+  const env = await workspace(page, { code: 'SPATIAL' });
+  try {
+    await page.goto(origin + '/#/spatial');
+    const photo = page.locator('.qmv2-stage.is-setup > .qmv2-scene');
+    await expect(photo).toHaveAttribute('src', '/assets/event-audience.webp');
+    await expect.poll(() => photo.evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true);
+  } finally { await env.close(); }
+});

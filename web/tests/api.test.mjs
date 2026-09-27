@@ -29,19 +29,21 @@ const seededProfiles = seed.profiles.map((profile) => ({
   goals: profile.goals ?? [],
   domains: profile.domains ?? [],
   experiences: profile.experiences ?? [],
-  contact: '',
-  linkedin: '',
-  website: '',
-  email: '',
+  contact: profile.contact ?? '',
+  linkedin: profile.linkedin ?? '',
+  website: profile.website ?? '',
+  email: profile.email ?? '',
   visibility: defaultVisibility,
 }));
 const seededConnections = seed.connections.map((connection) => ({
   ...connection,
+  userA: [connection.userA, connection.userB].sort()[0],
+  userB: [connection.userA, connection.userB].sort()[1],
   ownerId: connection.userA,
   participantId: connection.userB,
-  notes: '',
-  followUp: 'needed',
-  reminderDate: '',
+  notes: connection.notes ?? '',
+  followUp: connection.followUp ?? 'needed',
+  reminderDate: connection.reminderDate ?? '',
   saved: true,
 }));
 
@@ -120,6 +122,19 @@ test('health and public bootstrap expose a session-free demo seed', async () => 
   const badSession = await api('/api/bootstrap', { sessionId: 'not-a-session' });
   assert.equal(badSession.status, 401);
   assert.deepEqual(Object.keys(badSession.value), ['error']);
+});
+
+test('Maya has a populated private demo network while Alex remains available to meet', async () => {
+  const maya = await login({ profileId: 'maya' });
+  assert.deepEqual(maya.connections.map(connection => connection.participantId).sort(), ['elena', 'leo', 'priya', 'theo']);
+  assert.ok(maya.connections.every(connection => connection.ownerId === 'maya' && connection.notes.length > 0));
+  assert.ok(maya.connections.some(connection => connection.followUp === 'contacted'));
+  assert.ok(maya.connections.some(connection => connection.reminderDate));
+  assert.equal(maya.connectionRequests.length, 0);
+  const alex = await login();
+  assert.ok(alex.connections.every(connection => connection.ownerId === 'alex'));
+  assert.equal(alex.connections.some(connection => connection.participantId === 'maya'), false);
+  assert.equal(maya.profiles.find(profile => profile.id === 'alex').email, '');
 });
 
 test('logins have unique sessions and share the latest profile identity', async () => {
@@ -270,9 +285,9 @@ test('profile contact channels save, clear, and toggle visibility independently'
   const loggedIn = await login();
   const sessionId = loggedIn.session.id;
   const initial = currentProfile(loggedIn);
-  assert.equal(initial.linkedin, '');
-  assert.equal(initial.website, '');
-  assert.equal(initial.email, '');
+  assert.equal(initial.linkedin, seed.profiles[0].linkedin);
+  assert.equal(initial.website, seed.profiles[0].website);
+  assert.equal(initial.email, seed.profiles[0].email);
   assert.equal(initial.visibility.linkedin, false);
   assert.equal(initial.visibility.website, false);
   assert.equal(initial.visibility.email, false);
@@ -356,9 +371,9 @@ test('profile contact channel validation rejects unsafe values atomically', asyn
 
   const unchanged = await api('/api/bootstrap', { sessionId });
   assert.equal(currentProfile(unchanged.value).bio, seed.profiles[0].bio);
-  assert.equal(currentProfile(unchanged.value).linkedin, '');
-  assert.equal(currentProfile(unchanged.value).website, '');
-  assert.equal(currentProfile(unchanged.value).email, '');
+  assert.equal(currentProfile(unchanged.value).linkedin, seed.profiles[0].linkedin);
+  assert.equal(currentProfile(unchanged.value).website, seed.profiles[0].website);
+  assert.equal(currentProfile(unchanged.value).email, seed.profiles[0].email);
 });
 
 test('legacy contact remains supported alongside structured contact channels', async () => {
@@ -727,8 +742,10 @@ test('reset restores the seed clone while preserving session identity', async ()
 
   const reset = await api('/api/reset', { method: 'POST', sessionId, body: {} });
   assert.equal(reset.status, 200);
-  assert.deepEqual(reset.value.profiles, seededProfiles);
-  assert.deepEqual(reset.value.connections, []);
+  const mayaConnections = seededConnections.filter(connection => connection.ownerId === 'maya');
+  const visibleContactIds = new Set(['maya', ...mayaConnections.map(connection => connection.participantId)]);
+  assert.deepEqual(reset.value.profiles, seededProfiles.map(profile => visibleContactIds.has(profile.id) ? profile : { ...profile, linkedin: '', website: '', email: '' }));
+  assert.deepEqual(reset.value.connections, mayaConnections);
   assert.deepEqual(reset.value.matches, []);
   assert.deepEqual(reset.value.session, {
     id: sessionId,

@@ -3,6 +3,38 @@ import { createServer } from '../../server/index.mjs';
 
 const origin = process.env.ALIGN_TEST_ORIGIN || 'http://127.0.0.1:4320';
 
+test('profile prioritizes connection context and follow-up on desktop and mobile', async ({ page }) => {
+  const env = await requestWorkspace(page);
+  try {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto(origin + '/#/home?person=leo&event=demo&audience=network');
+      const profile = page.locator('.np-profile');
+      await expect(profile.getByRole('heading', { name: 'Why you should connect' })).toBeVisible();
+      await expect(profile.locator('.np-follow-up')).toHaveAttribute('open', '');
+      await expect(profile.getByRole('button', { name: /Close .*profile/ })).toHaveCount(0);
+      await expect(profile.getByText('Leo can help you with', { exact: true })).toBeVisible();
+      const layout = await profile.evaluate((node) => {
+        const selectors = ['.np-compatibility', '.np-project', '.np-follow-up', '.np-more-profile'];
+        const positions = selectors.map(selector => node.querySelector(selector).getBoundingClientRect().top);
+        return { ordered: positions.every((top, index) => index === 0 || top > positions[index - 1]), fits: node.scrollWidth <= node.clientWidth };
+      });
+      expect(layout).toEqual({ ordered: true, fits: true });
+      await profile.locator('.np-follow-up').scrollIntoViewIfNeeded();
+      await expect(profile.getByLabel('Private notes')).toBeVisible();
+      await profile.getByRole('button', { name: 'Back to network' }).click();
+      await expect(profile).toHaveCount(0);
+      await page.goto(origin + '/#/home?person=leo&event=demo&audience=network');
+      await expect(profile).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(profile).toHaveCount(0);
+    }
+  } finally {
+    await env.close();
+  }
+});
+
 async function requestWorkspace(page) {
   const server = createServer({ env: {} });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
