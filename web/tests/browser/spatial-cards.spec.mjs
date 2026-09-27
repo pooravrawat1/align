@@ -43,7 +43,7 @@ test('DEMO cards show only useful identity and shared context', async ({ page })
   } finally { await env.close(); }
 });
 
-test('conversation focus hides other labels and finishing does not save until Save connection is used', async ({ page }) => {
+test('conversation focus hides other labels and finishing does not remember someone until asked', async ({ page }) => {
   const env = await workspace(page);
   const connectionPosts = [];
   page.on('request', request => {
@@ -54,7 +54,7 @@ test('conversation focus hides other labels and finishing does not save until Sa
     await page.locator('[data-person-id="maya"] .qmv2-card').click();
     let drawer = page.locator('.qmv2-person-panel');
     await expect(drawer.getByRole('heading', { name: 'Maya Chen', exact: true })).toBeVisible();
-    await expect(drawer.getByRole('button', { name: 'Save connection', exact: true })).toHaveCount(0);
+    await expect(drawer.getByRole('button', { name: 'Remember person', exact: true })).toHaveCount(0);
     const material = await page.evaluate(() => {
       const panel = getComputedStyle(document.querySelector('.qmv2-person-panel'));
       const photo = getComputedStyle(document.querySelector('.qmv2-card-field .qmv2-scene'));
@@ -85,13 +85,13 @@ test('conversation focus hides other labels and finishing does not save until Sa
     await finish.click();
     drawer = page.locator('.qmv2-person-panel');
     await expect(drawer.getByRole('heading', { name: 'Maya Chen', exact: true })).toBeVisible();
-    const save = drawer.getByRole('button', { name: 'Save connection', exact: true });
+    const save = drawer.getByRole('button', { name: 'Remember person', exact: true });
     await expect(save).toBeVisible();
-    await expect(drawer.getByText('Saved to your network', { exact: true })).toHaveCount(0);
+    await expect(drawer.getByText('Added to your people', { exact: true })).toHaveCount(0);
     expect(connectionPosts).toEqual([]);
 
     await save.click();
-    await expect(drawer.getByText('Saved to your network', { exact: true })).toBeVisible();
+    await expect(drawer.getByText('Added to your people', { exact: true })).toBeVisible();
     await expect.poll(() => connectionPosts.length).toBe(1);
     expect(connectionPosts).toEqual([{ participantId: 'maya' }]);
   } finally { await env.close(); }
@@ -109,7 +109,7 @@ test('Escape during a conversation reopens its follow-up panel with focus inside
     await page.keyboard.press('Escape');
     drawer = page.locator('.qmv2-person-panel');
     await expect(drawer.getByRole('heading', { name: 'Maya Chen', exact: true })).toBeVisible();
-    await expect(drawer.getByRole('button', { name: 'Save connection', exact: true })).toBeVisible();
+    await expect(drawer.getByRole('button', { name: 'Remember person', exact: true })).toBeVisible();
     await expect.poll(() => drawer.evaluate(node => node.contains(document.activeElement))).toBe(true);
   } finally { await env.close(); }
 });
@@ -132,16 +132,16 @@ test('People-only attendees remain saveable while conversation is limited to the
     await enterDemo(page);
     let drawer = await openFromPeople('Sam Rivera');
     await expect(drawer.getByRole('button', { name: 'Start conversation', exact: true })).toHaveCount(0);
-    const saveSam = drawer.getByRole('button', { name: 'Save connection', exact: true });
+    const saveSam = drawer.getByRole('button', { name: 'Remember person', exact: true });
     await expect(saveSam).toBeVisible();
     await saveSam.click();
-    await expect(drawer.getByText('Saved to your network', { exact: true })).toBeVisible();
+    await expect(drawer.getByText('Added to your people', { exact: true })).toBeVisible();
     expect(connectionPosts).toEqual([{ participantId: 'sam' }]);
     await drawer.getByRole('button', { name: 'Close Meet someone new' }).click();
 
     drawer = await openFromPeople('Amina Okafor');
     await expect(drawer.getByRole('button', { name: 'Start conversation', exact: true })).toHaveCount(0);
-    await expect(drawer.getByRole('button', { name: 'Save connection', exact: true })).toBeVisible();
+    await expect(drawer.getByRole('button', { name: 'Remember person', exact: true })).toBeVisible();
     await drawer.getByRole('button', { name: 'Close Meet someone new' }).click();
 
     drawer = await openFromPeople('Jordan Lee');

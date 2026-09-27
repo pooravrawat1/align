@@ -1,4 +1,4 @@
-import type { Connection, PairAssessment, Profile, State } from "./types.ts";
+import type { Connection, PairAssessment, Profile, SharedExperience, State } from "./types.ts";
 import { contactHref, sharedContactLinks } from "./contactDestinations.ts";
 import matchingPolicy from "../../assets/matching-policy.json" with { type: "json" };
 
@@ -46,6 +46,7 @@ export interface NetworkPerson {
   theyOffer: string[];
   youOffer: string[];
   topics: string[];
+  sharedExperiences: SharedExperience[];
   reason: string;
   compatibility: PairAssessment;
   contacts: { kind: "linkedin" | "github" | "website" | "email"; label: string; href: string }[];
@@ -105,6 +106,24 @@ function unique(items: string[]) {
   });
 }
 
+function profileExperienceFallback(user: Profile, profile: Profile): SharedExperience[] {
+  const mine = user.experiences ?? [];
+  const theirs = profile.experiences ?? [];
+  const exact = mine.flatMap((experience) => theirs
+    .filter((candidate) => normalize(candidate.label) === normalize(experience.label))
+    .map(() => ({
+      kind: experience.category === "professional" ? "professional" as const : "activity" as const,
+      label: experience.label,
+    })));
+  if (exact.length) return exact.slice(0, 3);
+  const sharedKind = mine.find((experience) =>
+    theirs.some((candidate) => normalize(candidate.kind) === normalize(experience.kind)));
+  return sharedKind ? [{
+    kind: sharedKind.category === "professional" ? "professional" : "activity",
+    label: `Both have ${sharedKind.kind} stories`,
+  }] : [];
+}
+
 export function networkPerson(state: State, user: Profile, original: Profile, assessment?: PairAssessment, audience: "event" | "network" = "network"): NetworkPerson {
   const connection = ownedConnection(state, user.id, original.id);
   const withdrawn = audience === "network"
@@ -147,6 +166,9 @@ export function networkPerson(state: State, user: Profile, original: Profile, as
     }
   }
   const compatibility = withdrawn ? fallbackAssessment(reason, true) : assessment ?? fallbackAssessment(reason, false);
+  const sharedExperiences = connection?.sharedExperiences?.length
+    ? connection.sharedExperiences
+    : profileExperienceFallback(user, profile);
   return {
     profile,
     connection,
@@ -156,6 +178,7 @@ export function networkPerson(state: State, user: Profile, original: Profile, as
     theyOffer,
     youOffer,
     topics: unique([...sharedInterests, ...theyOffer, ...youOffer, ...profile.interests]).slice(0, 3),
+    sharedExperiences,
     reason: compatibility.status === "ready" || compatibility.status === "partial" ? compatibility.reason : reason,
     compatibility,
     contacts,

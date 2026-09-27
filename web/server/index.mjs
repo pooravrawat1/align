@@ -4,7 +4,7 @@ import { loadEnvFile } from 'node:process';
 import { createServer as createHttpServer } from 'node:http';
 import { pathToFileURL } from 'node:url';
 import { ASSESSMENT_VERSION, assessmentFingerprint, createAssessmentService } from './assessment.mjs';
-import { createConnectionRequestStore } from './connection-requests.mjs';
+import { createProfileStore } from './profile-store.mjs';
 import { createFollowUpService } from './follow-up.mjs';
 import { followUpContext } from './follow-up-context.mjs';
 import { MATCH_THRESHOLD, experienceRoutes } from '../../matcher/src/rubric.mjs';
@@ -104,6 +104,7 @@ function withConnectionDefaults(connection) {
     notes: connection.notes ?? '',
     followUp: connection.followUp ?? 'needed',
     reminderDate: connection.reminderDate ?? '',
+    sharedExperiences: connection.sharedExperiences ?? [],
     saved: connection.saved ?? true,
   };
 }
@@ -143,7 +144,6 @@ function publicBootstrap() {
     events: data.events,
     connections: data.connections,
     matches: [],
-    connectionRequests: [],
     session: null,
     demo: true,
   };
@@ -153,19 +153,8 @@ function sessionBootstrap(state) {
   if (state.session.activeEventId === undefined) {
     state.session.activeEventId = state.session.code === null ? null : connectionEventId(state);
   }
-  const requests = state.requestStore?.involving(state.session.userId) ?? [];
-  const accepted = requests.filter((request) => request.status === 'accepted');
   const ownConnections = [...state.connections.values()].filter((connection) => connection.ownerId === state.session.userId);
   const connectionByParticipant = new Map(ownConnections.map((connection) => [connection.participantId, connection]));
-  for (const request of accepted) {
-    const participantId = request.senderId === state.session.userId ? request.recipientId : request.senderId;
-    if (connectionByParticipant.has(participantId)) continue;
-    const [userA, userB] = canonicalPair(state.session.userId, participantId);
-    connectionByParticipant.set(participantId, {
-      userA, userB, ownerId: state.session.userId, participantId, eventId: request.eventId,
-      requestId: request.id, saved: false, createdAt: request.updatedAt, notes: '', followUp: 'needed', reminderDate: '',
-    });
-  }
   const profiles = state.profiles.map((profile) => {
     const current = state.requestStore?.profile(profile.id) ?? profile;
     if (profile.id === state.session.userId) return clone(current);
@@ -195,7 +184,6 @@ function sessionBootstrap(state) {
     events: clone(state.events),
     connections: clone([...connectionByParticipant.values()]),
     matches: clone(matches),
-    connectionRequests: requests,
     session: clone(state.session),
     demo: true,
   };
@@ -691,19 +679,21 @@ function connectionMatchContext(state, userA, userB) {
   const profileA = state.profiles.find((profile) => profile.id === userA);
   const profileB = state.profiles.find((profile) => profile.id === userB);
   const sharedInterests = sharedInterestsForProfiles(profileA, profileB);
+  const secondExperiences = new Set((profileB?.experiences ?? []).map((experience) =>
+    `${experience.category}:${experience.label.trim().toLocaleLowerCase('en-US')}`));
+  const sharedExperiences = (profileA?.experiences ?? []).filter((experience) =>
+    secondExperiences.has(`${experience.category}:${experience.label.trim().toLocaleLowerCase('en-US')}`))
+    .slice(0, 3)
+    .map((experience) => ({
+      kind: experience.category === 'professional' ? 'professional' : 'activity',
+      label: experience.label,
+    }));
   const reason = currentMatch?.reason ?? (
     sharedInterests.length > 0
       ? `${firstName(profileA)} and ${firstName(profileB)} share an interest in ${compactLabel(sharedInterests[0])}.`
       : ''
   );
-  return { reason, sharedInterests };
-}
-
-function acceptedRequestFor(requestStore, firstId, secondId) {
-  return requestStore.involving(firstId).find((request) =>
-    request.status === 'accepted' &&
-    ((request.senderId === firstId && request.recipientId === secondId) || (request.senderId === secondId && request.recipientId === firstId)),
-  );
+  return { reason, sharedInterests, sharedExperiences };
 }
 
 function compatibilityProfiles(state, requestStore, participantId, audience) {
@@ -716,18 +706,6 @@ function compatibilityProfiles(state, requestStore, participantId, audience) {
     current,
     participant: projectRequestPeer(storedParticipant, audience),
   };
-}
-
-function materializeAcceptedConnection(state, requestStore, participantId) {
-  const request = acceptedRequestFor(requestStore, state.session.userId, participantId);
-  if (!request) return null;
-  const [userA, userB] = canonicalPair(state.session.userId, participantId);
-  const connection = {
-    userA, userB, ownerId: state.session.userId, participantId, eventId: request.eventId,
-    requestId: request.id, saved: false, createdAt: request.updatedAt, notes: '', followUp: 'needed', reminderDate: '',
-  };
-  state.connections.set(connectionKey(state.session.userId, participantId), connection);
-  return connection;
 }
 
 async function handleRequest(request, response, sessions, assessmentService, requestStore, followUpService, narrator) {
@@ -970,9 +948,8 @@ async function handleRequest(request, response, sessions, assessmentService, req
       if (typeof eventId !== 'string') throw apiError(400, 'eventId is required for event compatibility');
       requireRosterPair(state, eventId, participant.id);
     } else {
-      const connected = state.connections.has(connectionKey(state.session.userId, participant.id))
-        || Boolean(acceptedRequestFor(requestStore, state.session.userId, participant.id));
-      if (!connected) throw apiError(403, 'Save this person or connect before requesting network compatibility');
+      const connected = state.connections.has(connectionKey(state.session.userId, participant.id));
+      if (!connected) throw apiError(403, 'Remember this person before requesting network compatibility');
       if (participant.visibility.previousConnections === false) throw apiError(403, 'This profile is not shared with saved connections');
     }
     const context = { audience: body.audience, eventId, retry: body.retry === true };
@@ -986,40 +963,6 @@ async function handleRequest(request, response, sessions, assessmentService, req
       await persistAssessment(getActiveStore(), current.id, participant.id, assessment, context);
     }
     sendJson(response, 200, assessment);
-    return;
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/connection-requests') {
-    const body = await readJson(request);
-    for (const field of Object.keys(body)) {
-      if (field !== 'participantId' && field !== 'eventId') throw apiError(400, `Unknown connection request field: ${field}`);
-    }
-    if (typeof body.participantId !== 'string') throw apiError(400, 'participantId must be a string');
-    if (body.participantId === state.session.userId) throw apiError(400, 'Cannot request a connection with yourself');
-    if (typeof body.eventId !== 'string') throw apiError(400, 'eventId must be a string');
-    requireRosterPair(state, body.eventId, body.participantId);
-    const sender = requestStore.profile(state.session.userId) ?? state.profiles.find((profile) => profile.id === state.session.userId);
-    const recipient = requestStore.profile(body.participantId) ?? state.profiles.find((profile) => profile.id === body.participantId);
-    if (!sender || !recipient) throw apiError(404, 'Participant not found');
-    if (sender.visibility?.activeInEvent === false || recipient.visibility?.activeInEvent === false) {
-      throw apiError(403, 'Both people must be sharing their profile in this event');
-    }
-    requestStore.send({ senderId: state.session.userId, recipientId: body.participantId, eventId: body.eventId });
-    sendJson(response, 200, sessionBootstrap(state));
-    return;
-  }
-
-  if (request.method === 'PATCH' && url.pathname.startsWith('/api/connection-requests/')) {
-    const body = await readJson(request);
-    if (Object.keys(body).some((field) => field !== 'action')) throw apiError(400, 'Unknown connection request field');
-    if (!['accept', 'decline', 'cancel'].includes(body.action)) throw apiError(400, 'action must be accept, decline, or cancel');
-    const id = decodeURIComponent(url.pathname.slice('/api/connection-requests/'.length));
-    if (!id || id.includes('/')) throw apiError(400, 'Connection request id is required');
-    const result = requestStore.update(id, state.session.userId, body.action);
-    if (result.error === 'not-found') throw apiError(404, 'Connection request not found');
-    if (result.error === 'forbidden') throw apiError(403, 'Only the appropriate participant can perform this action');
-    if (result.error === 'settled') throw apiError(409, 'Connection request is already settled');
-    sendJson(response, 200, sessionBootstrap(state));
     return;
   }
 
@@ -1054,8 +997,8 @@ async function handleRequest(request, response, sessions, assessmentService, req
         notes: '',
         followUp: 'needed',
         reminderDate: '',
+        sharedExperiences: [],
         saved: true,
-        requestId: acceptedRequestFor(requestStore, state.session.userId, body.participantId)?.id,
         ...matchContext,
       });
     } else if (state.connections.get(key).saved === false) {
@@ -1073,7 +1016,7 @@ async function handleRequest(request, response, sessions, assessmentService, req
       throw apiError(400, 'participantId is required');
     }
     const key = connectionKey(state.session.userId, participantId);
-    const connection = state.connections.get(key) ?? materializeAcceptedConnection(state, requestStore, participantId);
+    const connection = state.connections.get(key);
     if (!connection) throw apiError(404, 'Saved connection not found');
     state.connections.set(key, { ...connection, ...body });
     sendJson(response, 200, sessionBootstrap(state));
@@ -1087,12 +1030,7 @@ async function handleRequest(request, response, sessions, assessmentService, req
       throw apiError(400, 'participantId is required');
     }
     const key = connectionKey(state.session.userId, participantId);
-    const connection = state.connections.get(key);
-    if (connection && acceptedRequestFor(requestStore, state.session.userId, participantId)) {
-      state.connections.set(key, { ...connection, saved: false });
-    } else {
-      state.connections.delete(key);
-    }
+    state.connections.delete(key);
     sendJson(response, 200, sessionBootstrap(state));
     return;
   }
@@ -1114,7 +1052,6 @@ async function handleRequest(request, response, sessions, assessmentService, req
       const inScope = body.scope === 'all' || connection.eventId === eventId;
       if (ownedByCurrentUser && inScope) state.connections.delete(key);
     }
-    requestStore.removeFor(state.session.userId, { eventId, all: body.scope === 'all' });
     state.matches = [];
     state.matchFingerprints.clear();
     state.session.code = null;
@@ -1128,7 +1065,6 @@ async function handleRequest(request, response, sessions, assessmentService, req
     const body = await readJson(request);
     if (Object.keys(body).length > 0) throw apiError(400, 'Reset body must be empty');
     const resetState = cloneSeedState();
-    requestStore.removeFor(state.session.userId, { all: true });
     requestStore.rememberProfile(
       resetState.profiles.find((profile) => profile.id === state.session.userId),
     );
@@ -1158,8 +1094,7 @@ async function handleRequest(request, response, sessions, assessmentService, req
 
 export function createRequestHandler(sessions = new Map(), options = {}) {
   const assessmentService = options.assessmentService ?? createAssessmentService(options);
-  const requestStore = options.connectionRequestStore ?? createConnectionRequestStore();
-  for (const request of options.seedConnectionRequests ?? []) requestStore.send(request);
+  const requestStore = options.profileStore ?? createProfileStore();
   const followUpService = options.followUpService ?? createFollowUpService(options);
   const narrator = options.narrator ?? createMatchNarrator(options);
   return (request, response) => {
@@ -1190,6 +1125,9 @@ function configuredPort() {
 const executedDirectly =
   process.argv[1] !== undefined && pathToFileURL(process.argv[1]).href === import.meta.url;
 
+let bootstrapping = null;
+let dataSourceStatus = 'memory: not loaded yet';
+
 if (executedDirectly) {
   const envFile = new URL('../.env', import.meta.url);
   if (existsSync(envFile)) loadEnvFile(envFile);
@@ -1199,9 +1137,6 @@ if (executedDirectly) {
     console.log(`Catalyst demo API listening at http://${HOST}:${port} (data: ${getActiveStore().source})`);
   });
 }
-
-let bootstrapping = null;
-let dataSourceStatus = 'memory: not loaded yet';
 
 // Never includes the connection string, only which store is active and why.
 export function getDataSourceStatus() {

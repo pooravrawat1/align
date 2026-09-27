@@ -25,7 +25,7 @@ test('public completed demo projects fixed identities and rejects arbitrary prof
   assert.equal((await api('follow-up-demo', { participantId: 'nobody', notes: '', style: 'standard' })).status, 404);
   assert.equal((await api('follow-up-demo', { participantId: 'maya', notes: '', style: 'standard', recipientName: 'Injected' })).status, 400);
   assert.equal((await api('follow-up-demo', { participantId: 'priya', notes: '', style: 'short' })).status, 200);
-  assert.equal(inputs[1].relationship, 'saved');
+  assert.equal(inputs[1].relationship, 'met');
 });
 
 test('public completed demo isolates prepared personas and rejects cross-persona people', async t => {
@@ -50,7 +50,7 @@ test('ordinary generation requires session, owned event connection, and shared f
   await api('connections/leo', { notes: body.notes }, alex, 'PATCH');
   assert.equal((await api('follow-up', body, alex)).status, 200);
   assert.equal(inputs[0].notes, body.notes);
-  assert.equal(inputs[0].relationship, 'saved');
+  assert.equal(inputs[0].relationship, 'met');
   const staleNote = await api('follow-up', { ...body, notes: 'An older private note.' }, alex);
   assert.equal(staleNote.status, 409);
   assert.equal(staleNote.data.error, 'Your note changed. Save the current note before generating again.');

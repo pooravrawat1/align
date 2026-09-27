@@ -257,7 +257,7 @@ export default function App() {
     state.profiles.find((p) => p.id === state.session?.userId) ||
     state.profiles[0];
   const { editor: profileEditor, snapshot: profileSnapshot } = useProfileEditor(user, state.session?.id ?? null);
-  const connected = state.connections
+  const remembered = state.connections
     .filter((c) => (c.ownerId ? c.ownerId === user.id : c.userA === user.id))
     .map((c) => c.participantId || (c.userA === user.id ? c.userB : c.userA));
   const login = async (id: string, details: OnboardingDetails): Promise<boolean> => {
@@ -308,9 +308,9 @@ export default function App() {
       /* Inline error. */
     }
   };
-  const addConnection = async (id: string) => {
+  const rememberPerson = async (id: string) => {
     await act("connections", { participantId: id });
-    setToast("Connection saved. Find them in your network.");
+    setToast("Added to your people. Find them in Network.");
   };
   const onSessionExpired = () => {
     if (sessionId.current !== state.session?.id) return;
@@ -320,7 +320,7 @@ export default function App() {
     putState({ ...stateRef.current, session: null });
     setError('Your session expired. Enter the app again to continue.');
   };
-  const sharedProps = { state, user, connected, act, busy, notify: setToast, onSessionExpired };
+  const sharedProps = { state, user, act, busy, notify: setToast, onSessionExpired };
   const isPublic = ["landing", "login", "recap-demo"].includes(page);
   useEffect(() => {
     // Keep an unfinished entry refreshable even after a partial session creation.
@@ -410,7 +410,7 @@ export default function App() {
                   <Icon size={18} />
                   <span>{name}</span>
                   {id === "network" && (
-                    <span className="nav-count">{connected.length}</span>
+                    <span className="nav-count">{remembered.length}</span>
                   )}
                 </a>
               ))}
@@ -475,8 +475,8 @@ export default function App() {
                 user={user}
                 act={act}
                 busy={busy}
-                connected={connected}
-                onConnect={addConnection}
+                remembered={remembered}
+                onRemember={rememberPerson}
                 notify={setToast}
               />
             )}

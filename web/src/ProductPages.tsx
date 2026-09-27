@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Copy, Download, MapPin, Pencil } from 'lucide-react';
 import type { Action, Event as QuestEvent, Profile, State } from './types';
 import { Avatar, Button, PageHeader, PanelHeader, TextAction } from './ui';
-import { pendingRequests } from './connectionRequests';
 import { EventRecap } from './EventRecap';
 import { HomeSections } from './HomeSections';
 import { PeopleDirectory } from './PeopleDirectory';
@@ -14,7 +13,7 @@ import './Home.css';
 import './SpatialSurface.css';
 import './EventWorkspace.css';
 
-type ProductProps = { state: State; user: Profile; connected: string[]; act: Action; busy: boolean; notify: (message: string) => void; onSessionExpired?: () => void };
+type ProductProps = { state: State; user: Profile; act: Action; busy: boolean; notify: (message: string) => void; onSessionExpired?: () => void };
 const navigate = (path: string) => { location.hash = '/' + path; };
 const query = () => new URLSearchParams(location.hash.split('?')[1]);
 function useRouteQuery() {
@@ -37,7 +36,6 @@ export function HomeProduct(props: ProductProps) {
   const ended = event ? eventPhase(event, now) === 'ended' : false;
   const peopleTab = params.get('tab') === 'people' || params.get('people') === '1';
   const recapTab = params.get('tab') === 'recap';
-  const incomingCount = pendingRequests(state, user.id).filter(request => request.recipientId === user.id).length;
   const firstName = user.name.trim().split(/\s+/u)[0];
   if (!event) return <div className="home-page">
     <PageHeader className="home-heading" title={'Good to see you, ' + firstName + '.'} description="Find your next room. Bring something of yourself." />
@@ -55,7 +53,7 @@ export function HomeProduct(props: ProductProps) {
   };
   const meetPeople = () => navigate('home?tab=people');
   return <div className="home-page event-workspace">
-    <PageHeader className="home-heading" title={'Good to see you, ' + firstName + '.'} description="Your next conversation starts here." action={incomingCount > 0 ? <TextAction href="#/network" icon={<ArrowRight size={16} aria-hidden="true" />}>{incomingCount} connection {incomingCount === 1 ? 'request' : 'requests'}</TextAction> : undefined} />
+    <PageHeader className="home-heading" title={'Good to see you, ' + firstName + '.'} description="Your next conversation starts here." />
     <section className="home-event" aria-labelledby="home-event-title">
       <img className="home-event-image" src={eventPhoto(event)} alt="" fetchPriority="high" />
       <div className="home-event-topline"><span>{event.date} · {event.location}</span></div>
@@ -64,7 +62,7 @@ export function HomeProduct(props: ProductProps) {
     </section>
     {peopleTab || recapTab ? <>
       <TextAction className="home-back-action" href="#/home" icon={<ArrowLeft size={16} />} iconPosition="start">Back to Home</TextAction>
-      {recapTab ? <EventRecap {...props} eventId={event.id} /> : <section aria-label="People at your event"><p className="people-introduction">Explore the people at {event.name}. Open a profile to see your common ground, save it privately, or request to connect.</p><PeopleDirectory {...props} mode="event" eventId={event.id} /></section>}
+      {recapTab ? <EventRecap {...props} eventId={event.id} /> : <section aria-label="People at your event"><p className="people-introduction">Explore the people at {event.name}. Open a profile to see your common ground, then remember the people you meet.</p><PeopleDirectory {...props} mode="event" eventId={event.id} /></section>}
     </> : <>
       <HomeSections {...props} />
       <section className="product-panel home-explore" aria-labelledby="home-explore-title">

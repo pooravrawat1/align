@@ -6,7 +6,9 @@ const INPUT_FIELDS = Object.freeze([
   'eventName', 'senderName', 'recipientName', 'sharedInterests', 'notes', 'relationship', 'style',
 ]);
 const OUTPUT_FIELDS = Object.freeze(['summary', 'nextStep', 'message', 'evidence']);
-const RELATIONSHIPS = new Set(['connected', 'saved']);
+// Accept the pre-redesign values for old recap fixtures and API clients, but
+// current product flows always send "met".
+const RELATIONSHIPS = new Set(['met', 'connected', 'saved']);
 const STYLES = new Set(['standard', 'short']);
 const CACHE_LIMIT = 128;
 const OUTSTANDING_LIMIT = 12;
@@ -61,7 +63,7 @@ export function validateFollowUpInput(value) {
   const sharedInterests = value.sharedInterests.map((interest, index) =>
     validateText(interest, `sharedInterests[${index}]`, 80));
   if (!RELATIONSHIPS.has(value.relationship)) {
-    throw serviceError(400, 'relationship must be connected or saved');
+    throw serviceError(400, 'relationship must be met');
   }
   if (!STYLES.has(value.style)) throw serviceError(400, 'style must be standard or short');
 

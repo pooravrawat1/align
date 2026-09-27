@@ -47,7 +47,7 @@ export function ProfilePreview({ profile, profiles, dirty, initialAudience = "ro
       <PanelHeader className="pe-drawer-header" headingId="pe-preview-title" title="Profile preview" description={dirty ? "Showing your draft. Save changes to update your shared profile." : "Showing your saved profile."} action={<button ref={closeRef} className="pe-icon-button" type="button" aria-label="Close profile preview" onClick={onClose}><X size={20} /></button>} />
       <div className="pe-segmented" role="group" aria-label="Preview audience">
         <button type="button" aria-pressed={audience === "room"} onClick={() => setAudience("room")}>In a room</button>
-        <button type="button" aria-pressed={audience === "connection"} onClick={() => setAudience("connection")}>Saved connection</button>
+        <button type="button" aria-pressed={audience === "connection"} onClick={() => setAudience("connection")}>People you’ve met</button>
       </div>
       {audience === "room" ? <>
         <section className="pe-panel pe-preview-section">
@@ -58,9 +58,9 @@ export function ProfilePreview({ profile, profiles, dirty, initialAudience = "ro
         </section>
         {visible.activeInEvent && hasSharedDetails && <section className="pe-panel pe-preview-section"><PanelHeader title="Shared details" description="The information you’ve chosen to show on your profile." icon={<UserRound size={19} />} />{introduction}</section>}
       </> : <div className="pe-panel pe-preview-section pe-connection-preview">
-        <PanelHeader title="Saved connection" description="What saved and accepted connections can see, including from an event page." icon={<ContactRound size={19} />} />
+        <PanelHeader title="People you’ve met" description="What people you remember from an event can see." icon={<ContactRound size={19} />} />
         <div className="pe-person"><Avatar profile={profile} size="large" /><div><strong>{profile.name || "Your name"}</strong><span>{profile.role || "Your headline"}</span>{profile.location && <span>{profile.location}</span>}</div></div>
-        {!visible.previousConnections ? <p className="pe-help">Your focus, interests, skills, and contact links are hidden from saved connections.</p> : <>{introduction}<section className="pe-preview-contact"><h3>Contact</h3><ContactLinks profile={profile} showLabels />{profile.contact && <p>{profile.contact}</p>}{!sharedContactLinks(profile).length && !profile.contact && <p className="pe-help">No contact information is shared.</p>}</section></>}
+        {!visible.previousConnections ? <p className="pe-help">Your focus, interests, skills, and contact links are hidden from people you met.</p> : <>{introduction}<section className="pe-preview-contact"><h3>Contact</h3><ContactLinks profile={profile} showLabels />{profile.contact && <p>{profile.contact}</p>}{!sharedContactLinks(profile).length && !profile.contact && <p className="pe-help">No contact information is shared.</p>}</section></>}
       </div>}
       <p className="pe-demo-note">Your sharing choices control which details appear in each view.</p>
     </div>

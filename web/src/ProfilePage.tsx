@@ -158,12 +158,12 @@ export function ProfileProduct({ state, user, act, busy, notify, solid, setSolid
               <PanelHeading title="Contact details" icon={<ContactRound size={19} />} description="Keep your contact information up to date." />
               {([ ["linkedin", "LinkedIn", "https://www.linkedin.com/in/you", "url"], ["website", "Website", "https://your-website.com", "url"], ["email", "Email", "you@example.com", "email"] ] as const).map(([key, label, placeholder, type]) => <div className="pe-contact-group" key={key}>{field(key, label, placeholder, type)}</div>)}
               <div className="pe-contact-group">{field("contact", "Other contact", "Another way to reach you")}</div>
-              <p className="pe-help">{visible.previousConnections ? "Saved connections can see the contact details you add here." : "Your contact details are hidden from saved connections."} <button type="button" className="pe-inline-link" onClick={() => select("settings")}>Manage access</button>. People you haven’t connected with can’t see these details. They aren’t used for matching.</p>
+              <p className="pe-help">{visible.previousConnections ? "People you remember from an event can see the contact details you add here." : "Your contact details are hidden from people you met."} <button type="button" className="pe-inline-link" onClick={() => select("settings")}>Manage access</button>. Other event attendees can’t see these details. They aren’t used for matching.</p>
             </>}
             {section === "settings" && <>
               <PanelHeading title="Visibility" icon={<Eye size={19} />} description="Choose where your profile can be discovered." />
               <Setting title="Show me in rooms" description="Make your shared introduction available to people in your room."><Toggle label="Show me in rooms" checked={visible.activeInEvent} onChange={() => editor.share("activeInEvent", !visible.activeInEvent)} /></Setting>
-              <Setting title="Access for saved connections" description="Let saved connections see your shared profile and every contact detail you add."><Toggle label="Access for saved connections" checked={visible.previousConnections} onChange={() => editor.share("previousConnections", !visible.previousConnections)} /></Setting>
+              <Setting title="Access for people you’ve met" description="Let people you remember from an event see your shared profile and contact details."><Toggle label="Access for people you’ve met" checked={visible.previousConnections} onChange={() => editor.share("previousConnections", !visible.previousConnections)} /></Setting>
               <p className="pe-help">Individual profile sharing choices live beside your fields in Focus. Hidden fields stay in your profile.</p>
             </>}
           </div>

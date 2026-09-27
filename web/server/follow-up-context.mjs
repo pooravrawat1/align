@@ -20,17 +20,17 @@ export function followUpContext(body, snapshot = null) {
     sender = seed.profiles.find(profile => profile.id === ownerId);
     recipient = seed.profiles.find(profile => profile.id === person.id);
     event = seed.events.find(item => item.id === demo.eventId);
-    relationship = person.relationship;
+    relationship = 'met';
   } else {
     const ownerId = snapshot.session.userId;
     const connection = snapshot.connections.find(item => item.ownerId === ownerId && item.participantId === body.participantId && item.eventId === body.eventId);
-    if (!connection) fail(403, 'Save or connect with this person at this event first');
+    if (!connection) fail(403, 'Remember this person at this event first');
     notes = connection.notes ?? '';
     if (body.notes !== notes) fail(409, 'Your note changed. Save the current note before generating again.');
     sender = snapshot.profiles.find(item => item.id === ownerId);
     recipient = snapshot.profiles.find(item => item.id === body.participantId);
     event = snapshot.events.find(item => item.id === body.eventId);
-    relationship = snapshot.connectionRequests.some(item => item.status === 'accepted' && ((item.senderId === ownerId && item.recipientId === body.participantId) || (item.recipientId === ownerId && item.senderId === body.participantId))) ? 'connected' : 'saved';
+    relationship = 'met';
     if (recipient?.visibility?.previousConnections === false) fail(403, 'This profile is no longer shared');
   }
   if (!sender || !recipient || !event) fail(404, 'Connection unavailable');

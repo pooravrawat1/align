@@ -6,7 +6,7 @@ import { openPersonProfile } from './PeopleDirectory';
 import { networkPerson } from './networkModel';
 import { homeEvent } from './eventModel';
 
-type Props = { state: State; user: Profile; connected: string[]; act: Action; busy: boolean; notify: (message: string) => void };
+type Props = { state: State; user: Profile; act: Action; busy: boolean; notify: (message: string) => void };
 
 /** Familiar Home sections remain useful before, during and after an event. */
 export function HomeSections(props: Props) {

@@ -61,6 +61,10 @@ export interface PairAssessment {
   error?: string;
   fingerprint?: string;
 }
+export interface SharedExperience {
+  kind: "music" | "activity" | "community" | "professional";
+  label: string;
+}
 export interface Connection {
   ownerId?: string;
   participantId?: string;
@@ -70,20 +74,12 @@ export interface Connection {
   createdAt: string;
   reason?: string;
   sharedInterests?: string[];
+  sharedExperiences?: SharedExperience[];
   notes?: string;
   followUp?: "none" | "needed" | "contacted";
   reminderDate?: string;
   requestId?: string;
   saved?: boolean;
-}
-export interface ConnectionRequest {
-  id: string;
-  senderId: string;
-  recipientId: string;
-  eventId: string;
-  status: "pending" | "accepted" | "declined" | "cancelled";
-  createdAt: string;
-  updatedAt: string;
 }
 export interface Event {
   id: string;
@@ -111,7 +107,6 @@ export interface State {
   events: Event[];
   connections: Connection[];
   matches: Match[];
-  connectionRequests?: ConnectionRequest[];
   session: Session | null;
   demo: boolean;
 }

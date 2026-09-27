@@ -1,17 +1,9 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { ArrowRight, Check, List, Network, Search, SlidersHorizontal, Users, X } from "lucide-react";
-import type { Action, PairAssessment, Profile, State } from "./types";
+import type { Action, Profile, State } from "./types";
 import { Avatar, Button, Chip, PageHeader, PanelHeader } from "./ui";
-import {
-  assessmentMatchLabel,
-  assessmentScore,
-  MATCH_THRESHOLD,
-  networkPerson,
-  recommendationRank,
-} from "./networkModel";
+import { networkPerson, recommendationRank } from "./networkModel";
 import { NetworkMap } from "./NetworkMap";
-import { requestFor } from "./connectionRequests";
-import { useCompatibility } from "./CompatibilityContext";
 
 export type PeopleDirectoryProps = {
   state: State;
@@ -46,44 +38,32 @@ export function openPersonProfile(personId: string, eventId?: string, audience?:
 
 export function consumeProfileTrigger() { return profileTrigger; }
 
-function Score({ assessment, loading }: { assessment: PairAssessment | null; loading?: boolean }) {
-  const score = assessmentScore(assessment);
-  return (
-    <span className={`nx-fit ${score !== null && score >= MATCH_THRESHOLD ? "nx-fit-high" : ""}`}>
-      {score !== null
-        ? <><span>{score}<small>/100</small></span><small>{assessmentMatchLabel(assessment)}</small></>
-        : <small>{loading ? "Assessing fit…" : assessment ? "Score unavailable" : "View fit"}</small>}
-    </span>
-  );
-}
-
-function PersonRow({ state, user, profile, eventId, prefetch, audience }: {
+function PersonRow({ state, user, profile, eventId, eventName, audience }: {
   state: State;
   user: Profile;
   profile: Profile;
   eventId?: string;
-  prefetch: boolean;
+  eventName?: string;
   audience: "event" | "network";
 }) {
-  const { assessment, loading } = useCompatibility(profile.id, eventId, audience, prefetch);
-  const person = networkPerson(state, user, profile, assessment ?? undefined, audience);
-  const relationship = requestFor(state, user.id, profile.id);
+  const person = networkPerson(state, user, profile, undefined, audience);
+  const memoryLabels = person.sharedExperiences.map((experience) => experience.label).slice(0, 2);
+  const rowTopics = audience === "network" && memoryLabels.length ? memoryLabels : person.topics;
   return (
     <button className="nx-person-row" aria-label={`View ${profile.name}'s profile`} onClick={() => openPersonProfile(profile.id, eventId, audience)}>
       <Avatar profile={person.profile} />
       <span className="nx-row-identity">
         <strong>{person.profile.name}</strong>
         <span>{person.profile.role}</span>
-        {relationship?.status === "accepted" && <small className="nx-relationship is-connected">Connected</small>}
-        {relationship?.status === "pending" && <small className="nx-relationship">{relationship.senderId === user.id ? "Request sent" : "Wants to connect"}</small>}
+        {audience === "network" && eventName && <small className="nx-row-reason">Met at {eventName}</small>}
         {audience === "event" && <small className="nx-row-reason">{person.reason}</small>}
-        {person.topics.length > 0 && (
-          <span className="nx-row-topics" aria-label={`Topics: ${person.topics.join(", ")}`}>
-            {person.topics.map((topic) => <Chip key={topic}>{topic}</Chip>)}
+        {rowTopics.length > 0 && (
+          <span className="nx-row-topics" aria-label={`Shared context: ${rowTopics.join(", ")}`}>
+            {rowTopics.map((topic) => <Chip key={topic}>{topic}</Chip>)}
           </span>
         )}
       </span>
-      <Score assessment={assessment} loading={loading} />
+      <span className="nx-view-profile">View profile</span>
       <ArrowRight className="nx-row-arrow" size={17} aria-hidden="true" />
     </button>
   );
@@ -131,12 +111,12 @@ export function PeopleDirectory({ state, user, eventId, mode, limit, pageHeading
   const search = <label className="nx-search"><Search size={17} aria-hidden="true" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a person, skill, or interest" aria-label="Search people" />{query && <button aria-label="Clear search" onClick={() => setQuery("")}><X size={14} /></button>}</label>;
   return (
     <div className={`people-directory ${compact ? "people-directory--compact" : ""}`}>
-      {pageHeading && <PageHeader className="nx-heading" title="Your network" description="People you've saved or connected with. Pick up where you left off." action={search} />}
+      {pageHeading && <PageHeader className="nx-heading" title="People you’ve met" description="Remember the context and pick up where you left off." action={search} />}
       {headerContent}
       {!compact && (
         <>
           <div className="nx-navigation nx-navigation--directory">
-            <div className="nx-directory-title"><Users size={16} /><span>{mode === "network" ? "Your network" : "People at this event"}</span><small>{people.length}</small></div>
+            <div className="nx-directory-title"><Users size={16} /><span>{mode === "network" ? "People you’ve met" : "People at this event"}</span><small>{people.length}</small></div>
             <div className="nx-view-tools">
               {mode === "network" && mapAllowed && <div className="nx-view-switch" role="group" aria-label="Network view"><button aria-pressed={view === "people"} onClick={() => setView("people")}><List size={15} />People</button><button aria-pressed={view === "map"} onClick={() => setView("map")}><Network size={15} />Map</button></div>}
               <button className="nx-filter-trigger" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)}><SlidersHorizontal size={15} />Filters{activeFilters > 0 && <span>{activeFilters}</span>}</button>
@@ -153,10 +133,10 @@ export function PeopleDirectory({ state, user, eventId, mode, limit, pageHeading
       )}
       <div className={compact ? "" : `nx-workspace ${view === "people" ? "nx-workspace-people" : ""}`}>
       <section className={`nx-browser ${compact ? "nx-browser--compact" : ""}`} aria-label={mode === "network" ? "Your people" : "Event people"}>
-        {!compact && <PanelHeader className="nx-browser-header" title={mode === "network" ? "Your people" : "People at this event"} description={`${visible.length} ${visible.length === 1 ? "person" : "people"}${query || activeFilters ? " in this view" : mode === "network" ? " in your network" : " at this event"}`} action={view === "map" ? <label className="nx-group-label">Group by<select value={groupBy} onChange={(e) => setGroupBy(e.target.value as typeof groupBy)}><option value="connections">Connections</option><option value="event">Event</option><option value="interest">Shared interests</option></select></label> : <select aria-label="Sort people" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>{mode === "event" ? <option value="recommended">Recommended</option> : <option value="recent">Recently added</option>}<option value="name">Name</option></select>} />}
-        {!shown.length ? <div className="nx-empty"><div className="nx-empty-symbol"><Users size={26} /></div><h2>{query || activeFilters ? "No people in this view" : mode === "network" ? "No people in your network yet" : "No one is sharing here yet"}</h2><p>{query || activeFilters ? "Try another name, skill, or interest." : mode === "network" ? "Connect with someone or save their profile from an event to keep them here." : "When attendees join this event, their shared profiles will appear here."}</p>{query || activeFilters ? <Button onClick={resetFilters}>Clear filters</Button> : mode === "network" ? <Button onClick={() => { location.hash = "#/home?tab=people"; }}>Find people</Button> : null}</div>
+        {!compact && <PanelHeader className="nx-browser-header" title={mode === "network" ? "People you’ve met" : "People at this event"} description={`${visible.length} ${visible.length === 1 ? "person" : "people"}${query || activeFilters ? " in this view" : mode === "network" ? " to remember" : " at this event"}`} action={view === "map" ? <label className="nx-group-label">Group by<select value={groupBy} onChange={(e) => setGroupBy(e.target.value as typeof groupBy)}><option value="connections">People</option><option value="event">Event</option><option value="interest">Shared interests</option></select></label> : <select aria-label="Sort people" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>{mode === "event" ? <option value="recommended">Recommended</option> : <option value="recent">Recently met</option>}<option value="name">Name</option></select>} />}
+        {!shown.length ? <div className="nx-empty"><div className="nx-empty-symbol"><Users size={26} /></div><h2>{query || activeFilters ? "No people in this view" : mode === "network" ? "No people here yet" : "No one is sharing here yet"}</h2><p>{query || activeFilters ? "Try another name, skill, or shared experience." : mode === "network" ? "People you remember after an event will appear here with the context you shared." : "When attendees join this event, their shared profiles will appear here."}</p>{query || activeFilters ? <Button onClick={resetFilters}>Clear filters</Button> : mode === "network" ? <Button onClick={() => { location.hash = "#/home?tab=people"; }}>Browse your event</Button> : null}</div>
         : mode === "network" && view === "map" && mapAllowed ? <NetworkMap user={user} people={shown.map((person) => person.profile)} selectedId={null} onSelect={(id) => openPersonProfile(id, eventId, "network")} groupBy={groupBy} eventNames={eventNames} sharedTopics={sharedTopics} />
-        : <div className="nx-people-list">{shown.map((person) => <PersonRow key={person.profile.id} state={state} user={user} profile={person.profile} eventId={eventId ?? person.connection?.eventId} prefetch={compact || mode === "network"} audience={mode} />)}</div>}
+        : <div className="nx-people-list">{shown.map((person) => <PersonRow key={person.profile.id} state={state} user={user} profile={person.profile} eventId={eventId ?? person.connection?.eventId} eventName={state.events.find((item) => item.id === (eventId ?? person.connection?.eventId))?.name} audience={mode} />)}</div>}
         {!compact && mode === "network" && view === "map" && mapAllowed && shown.length > 0 && <footer className="nx-browser-footer"><span><span className="nx-line-key" />People in your network</span><span>Select a portrait to explore</span></footer>}
       </section>
       </div>

@@ -11,9 +11,9 @@ import { MatchNarrator, type NarrationStatus } from "./matchNarration";
 import "./SpatialV2.css";
 import "./SpatialSurface.css";
 
-type Props = { state: State; user: Profile; act: Action; busy: boolean; connected: string[]; onConnect: (id: string) => Promise<void>; notify: (message: string) => void };
+type Props = { state: State; user: Profile; act: Action; busy: boolean; remembered: string[]; onRemember: (id: string) => Promise<void>; notify: (message: string) => void };
 
-export function Spatial({ state, user, act, busy, connected, onConnect, notify }: Props) {
+export function Spatial({ state, user, act, busy, remembered, onRemember, notify }: Props) {
   const [entered, setEntered] = useState(false);
   const [room, dispatch] = useReducer(roomReducer, initialRoomState);
   const [code, setCode] = useState(activeEvent(state)?.code ?? "");
@@ -53,7 +53,7 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
   const cards = selectSpatialCards(participants);
   const sampleDemo = state.demo && event?.code.toUpperCase() === "DEMO";
   const hasSampleMatches = sampleMatches && displayedMatches.some(match => match.compatible);
-  const savedIds = new Set(connected.filter(id => ownedConnection(state, user.id, id)?.saved !== false));
+  const savedIds = new Set(remembered.filter(id => ownedConnection(state, user.id, id)?.saved !== false));
   const focused = room.kind === "profile" ? participants.find(person => person.id === room.profileId) : undefined;
   const distanceTarget = participants.find(person => person.id === distanceTargetId) ?? participants[0];
   const distanceFor = (person: Profile) => distanceOverrides[person.id] ?? Math.max(0.8, person.distance || 3.2);
@@ -201,10 +201,10 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
     } catch { /* Keep the preview available for a retry. */ }
     finally { actionPendingRef.current = false; }
   }
-  async function saveConnection(id: string) {
+  async function rememberPerson(id: string) {
     if (savedIds.has(id) || busy || savePendingRef.current) return;
     savePendingRef.current = true; setSavingProfileId(id); setSaveError(null);
-    try { await onConnect(id); }
+    try { await onRemember(id); }
     catch { if (activeRef.current) setSaveError(id); }
     finally { savePendingRef.current = false; if (activeRef.current) setSavingProfileId(null); }
   }
@@ -269,7 +269,7 @@ export function Spatial({ state, user, act, busy, connected, onConnect, notify }
           <p>This is a simulated interruption. People stay hidden until you restore the preview.</p>
           <Button busy={busy} onClick={() => void restorePreview()}>Restore preview<RefreshCw size={16} /></Button>
         </section>}
-        {room.kind === "profile" && focused && <ProfileDrawer afterConversation={Boolean(room.afterConversation)} state={state} user={user} profile={focused} match={matchFor(focused.id)} sampleMatch={sampleMatches} saved={savedIds.has(focused.id)} saving={savingProfileId === focused.id} disabled={busy || savingProfileId !== null} error={saveError === focused.id} onClose={closePanel} onStart={cards.some(person => person.id === focused.id) ? () => dispatch({ type: "START_CONVERSATION" }) : undefined} onSave={() => void saveConnection(focused.id)} />}
+        {room.kind === "profile" && focused && <ProfileDrawer afterConversation={Boolean(room.afterConversation)} state={state} user={user} profile={focused} match={matchFor(focused.id)} sampleMatch={sampleMatches} saved={savedIds.has(focused.id)} saving={savingProfileId === focused.id} disabled={busy || savingProfileId !== null} error={saveError === focused.id} onClose={closePanel} onStart={cards.some(person => person.id === focused.id) ? () => dispatch({ type: "START_CONVERSATION" }) : undefined} onSave={() => void rememberPerson(focused.id)} />}
         {room.kind === "ambient" && room.panel === "people" && <PreviewPanel title="People in this room" onClose={closePanel}>
           <p className="qmv2-panel-intro">Choose a person to see what you have in common.</p>
           <div className="qmv2-people-list">{participants.map(profile => <button key={profile.id} onClick={() => openPerson(profile.id)}><Avatar profile={profile} /><span><strong>{profile.name}</strong><small>{profile.role}</small></span>{savedIds.has(profile.id) ? <Check size={17} aria-label="Saved" /> : matchFor(profile.id) ? <Sparkles size={17} aria-label="Reason to meet" /> : <ChevronRight size={17} />}</button>)}</div>
@@ -333,8 +333,8 @@ function ProfileDrawer({ afterConversation, state, user, profile, match, sampleM
   return <PreviewPanel title="Meet someone new" onClose={onClose} className="qmv2-person-panel spatial-surface" footer={
     <div ref={confirmationRef} className={`qmv2-connect${saved ? " is-saved" : ""}`}>
       {onStart && !afterConversation && <Button disabled={disabled || saving} onClick={onStart}><MessageCircle size={16} />Start conversation</Button>}
-      {showFollowUp && (saved ? <><div className="qmv2-save-confirmation" role="status"><Check size={20} /><div><strong>Saved to your network</strong><p>Keep notes and follow up from Network.</p></div></div><Button onClick={onClose}>Back to the room<ArrowRight size={17} /></Button></> : <><h3>Keep the conversation going</h3><p>Save {profile.name.split(" ")[0]} to your Network so you can find them after the event.</p><Button busy={saving} disabled={disabled} onClick={onSave}><Bookmark size={17} />{error ? "Try saving again" : "Save connection"}</Button><small>Only saved to your network. No request is sent.</small></>)}
-      {showFollowUp && error && !saved && <p className="qmv2-save-error" role="alert">Couldn’t save this connection. Try again.</p>}
+      {showFollowUp && (saved ? <><div className="qmv2-save-confirmation" role="status"><Check size={20} /><div><strong>Added to your people</strong><p>Remember what you shared and follow up from Network.</p></div></div><Button onClick={onClose}>Back to the room<ArrowRight size={17} /></Button></> : <><h3>Remember this person</h3><p>Add {profile.name.split(" ")[0]} to your people so you keep the context after the event.</p><Button busy={saving} disabled={disabled} onClick={onSave}><Bookmark size={17} />{error ? "Try again" : "Remember person"}</Button><small>This is your private memory of meeting them.</small></>)}
+      {showFollowUp && error && !saved && <p className="qmv2-save-error" role="alert">Couldn’t remember this person. Try again.</p>}
     </div>
     }>
     <div className="qmv2-person-identity"><Avatar profile={profile} size="large" /><div><h3>{profile.name}</h3><p>{profile.role}</p></div></div>

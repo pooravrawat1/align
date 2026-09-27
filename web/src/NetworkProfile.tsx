@@ -5,7 +5,6 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
-  Clock3,
   Copy,
   ExternalLink,
   Github,
@@ -13,20 +12,10 @@ import {
   Linkedin,
   Mail,
   MapPin,
-  RefreshCw,
   Sparkles,
-  UserCheck,
-  UserPlus,
 } from "lucide-react";
-import {
-  assessmentRouteLabel,
-  assessmentRoute,
-  assessmentScore,
-  assessmentSourceLabel,
-  MATCH_THRESHOLD,
-  type NetworkPerson,
-} from "./networkModel";
-import type { Action, ConnectionRequest, Profile, State } from "./types";
+import { type NetworkPerson } from "./networkModel";
+import type { Action, Profile, State } from "./types";
 import { Avatar, Button, Chip, Disclosure } from "./ui";
 import "./NetworkProfile.css";
 
@@ -104,28 +93,6 @@ function ContactLinks({ person }: { person: NetworkPerson }) {
   );
 }
 
-function CompatibilityValue({ person }: { person: NetworkPerson }) {
-  const { compatibility } = person;
-  const score = assessmentScore(compatibility);
-  const hasScore = score !== null;
-  return (
-    <div className={`np-score ${hasScore && score >= MATCH_THRESHOLD ? "np-score--high" : ""}`}>
-      <span className="np-score-value">
-        {hasScore ? score : "—"}
-        {hasScore && <small>/100</small>}
-      </span>
-      <span className="np-score-copy">
-        <strong>{hasScore ? assessmentRouteLabel(assessmentRoute(compatibility)) : "Score unavailable"}</strong>
-        <small>
-          {compatibility.status === "partial" || compatibility.status === "unavailable"
-            ? "Not enough shared information"
-            : assessmentSourceLabel(compatibility)}
-        </small>
-      </span>
-    </div>
-  );
-}
-
 function Header({ onClose }: {
   onClose: () => void;
 }) {
@@ -139,7 +106,7 @@ function Header({ onClose }: {
   );
 }
 
-function SaveProfileButton({ saved, busy, onSave }: { saved: boolean; busy: boolean; onSave: () => void }) {
+function RememberPersonButton({ saved, busy, onSave }: { saved: boolean; busy: boolean; onSave: () => void }) {
   const [highlighted, setHighlighted] = useState(false);
   return (
     <Button
@@ -147,7 +114,7 @@ function SaveProfileButton({ saved, busy, onSave }: { saved: boolean; busy: bool
       variant="secondary"
       busy={busy}
       disabled={busy}
-      aria-label={saved ? "Unsave connection" : "Save connection"}
+      aria-label={saved ? "Remove from your people" : "Remember this person"}
       onPointerEnter={() => setHighlighted(true)}
       onPointerLeave={() => setHighlighted(false)}
       onFocus={() => setHighlighted(true)}
@@ -156,49 +123,21 @@ function SaveProfileButton({ saved, busy, onSave }: { saved: boolean; busy: bool
       className="np-save-connection"
     >
       {saved ? <Check size={15} aria-hidden="true" /> : <Bookmark size={15} aria-hidden="true" />}
-      {saved ? highlighted ? "Unsave" : "Saved" : "Save profile"}
+      {saved ? highlighted ? "Remove" : "Remembered" : "Remember person"}
     </Button>
   );
 }
 
-function RelationshipActions({ request, userId, eligible, saved, busy, onSave, onRequest, onRespond, onFollowUp }: {
-  request?: ConnectionRequest;
-  userId: string;
-  eligible: boolean;
+function RelationshipActions({ saved, busy, onSave, onFollowUp }: {
   saved: boolean;
   busy: boolean;
   onSave: () => void;
-  onRequest: () => void;
-  onRespond: (action: "accept" | "decline" | "cancel") => void;
   onFollowUp: () => void;
 }) {
-  const pending = request?.status === "pending";
-  const incoming = pending && request.recipientId === userId;
-  const outgoing = pending && request.senderId === userId;
-  const accepted = request?.status === "accepted";
   return (
     <div className="np-relationship-actions" aria-label="Profile actions">
-      {incoming ? (
-        <div className="np-request-actions">
-          <Button type="button" busy={busy} onClick={() => onRespond("accept")}><UserCheck size={15} />Accept</Button>
-          <Button type="button" variant="secondary" disabled={busy} onClick={() => onRespond("decline")}>Decline</Button>
-        </div>
-      ) : outgoing ? (
-        <div className="np-request-actions">
-          <Button type="button" variant="secondary" disabled><Clock3 size={15} />Request sent</Button>
-          <button className="np-request-text-action" type="button" disabled={busy} onClick={() => onRespond("cancel")}>Cancel request</button>
-        </div>
-      ) : accepted ? (
-        <div className="np-request-actions">
-          <Button type="button" variant="secondary" disabled><Check size={15} />Connected</Button>
-          <Button type="button" variant="secondary" onClick={onFollowUp}>Follow up</Button>
-        </div>
-      ) : eligible ? (
-        <Button type="button" busy={busy} onClick={onRequest} className="np-request-connection"><UserPlus size={17} />Connect</Button>
-      ) : saved ? (
-        <Button type="button" variant="secondary" onClick={onFollowUp}>Follow up</Button>
-      ) : null}
-      <SaveProfileButton saved={saved} busy={busy} onSave={onSave} />
+      {saved && <Button type="button" variant="secondary" onClick={onFollowUp}>Follow up</Button>}
+      <RememberPersonButton saved={saved} busy={busy} onSave={onSave} />
     </div>
   );
 }
@@ -258,87 +197,38 @@ function MessageComposer({ person, notify, message, setMessage, open, setOpen }:
   );
 }
 
-function CompatibilitySection({ person, loading, onRetry }: { person: NetworkPerson; loading?: boolean; onRetry?: () => void }) {
-  const { compatibility } = person;
-  const strongestRoute = assessmentRoute(compatibility);
-  const hasNetworkingDetails = compatibility.categories.some(category => category.points !== null);
-  const detailLabel = compatibility.source === "gemini"
-    ? "AI estimate from shared profile information"
-    : compatibility.source === "fixture"
-      ? "Prepared example details"
-      : compatibility.source === "rules"
-        ? assessmentSourceLabel(compatibility)
-        : "Compatibility details";
-  const routes = compatibility.routes
-    ? [
-        { id: "networking", label: "Networking fit", score: compatibility.routes.networking },
-        { id: "professional", label: "Professional experience", score: compatibility.routes.professional },
-        { id: "personal", label: "Personal experience", score: compatibility.routes.personal },
-      ] as const
-    : [];
+function SharedContext({ person, state }: { person: NetworkPerson; state: State }) {
+  const event = eventName(state, person);
+  const date = metDate(person);
+  const readyReason = person.compatibility.status === "ready" ? person.compatibility.reason : "";
   return (
-    <section className="np-compatibility" aria-labelledby="np-compatibility-title">
-      <div className="np-compatibility-head">
-        <div className="np-rail-title">
-          <Sparkles size={15} aria-hidden="true" />
-          <h2 id="np-compatibility-title">Why you should connect</h2>
+    <section className="np-compatibility" aria-labelledby="np-shared-context-title">
+      <div className="np-rail-title">
+        <Sparkles size={15} aria-hidden="true" />
+        <h2 id="np-shared-context-title">What you share</h2>
+      </div>
+      {(event || date) && (
+        <div className="np-common-ground">
+          <h3>How you know each other</h3>
+          <p>{event ? `Met at ${event}` : "Met through Catalyst"}{date ? ` · ${date}` : ""}</p>
         </div>
-        {!loading && assessmentScore(compatibility) !== null && <CompatibilityValue person={person} />}
-      </div>
-      <p className="np-compatibility-summary">{loading ? "Finding the strongest reason for you to talk…" : compatibility.reason || person.reason}</p>
-      <div className="np-common-ground">
-        <h3>Common ground</h3>
-        <TopicList items={person.sharedInterests} empty="No shared interests are visible yet." />
-      </div>
-
-      {compatibility.source === "unavailable" && !loading && onRetry && (
-        <button className="np-retry" type="button" onClick={onRetry}><RefreshCw size={14} />Try compatibility again</button>
       )}
-
-      <details className="np-disclosure">
-        <summary>{detailLabel} <ChevronDown size={15} aria-hidden="true" /></summary>
-        <div className="np-breakdown">
-          {(person.theyOffer.length > 0 || person.youOffer.length > 0) && (
-            <div className="np-contributions">
-              {person.theyOffer.length > 0 && <div><h3>{firstName(person.profile)} can help you with</h3><TopicList items={person.theyOffer} empty="" /></div>}
-              {person.youOffer.length > 0 && <div><h3>You can help {firstName(person.profile)} with</h3><TopicList items={person.youOffer} empty="" /></div>}
-            </div>
-          )}
-          {routes.map((route) => (
-            <div className="np-category" key={route.id}>
-              <div>
-                <strong>{route.label}</strong>
-                <span>{route.score === null ? "Not assessed" : `${route.score} / 100`}</span>
-              </div>
-              <p>{strongestRoute === route.id ? "Strongest route" : "Route score"}</p>
-            </div>
-          ))}
-          {hasNetworkingDetails && (
-            <p className="np-empty-copy">
-              {strongestRoute && strongestRoute !== "networking"
-                ? `Networking rubric · separate from the ${assessmentRouteLabel(strongestRoute).toLowerCase()} score`
-                : "Networking rubric"}
-            </p>
-          )}
-          {hasNetworkingDetails && compatibility.categories.map((category) => {
-            const known = category.points !== null;
-            const width = known && category.max > 0
-              ? `${Math.min(100, Math.max(0, (category.points! / category.max) * 100))}%`
-              : "0%";
-            return (
-              <div className="np-category" key={category.id}>
-                <div><strong>{category.label}</strong><span>{known ? category.points : "—"} / {category.max}</span></div>
-                <span className="np-category-track" aria-hidden="true"><span style={{ width }} /></span>
-                <p>{category.evidence}</p>
-              </div>
-            );
-          })}
-          {!routes.length && !hasNetworkingDetails && (
-            <p className="np-empty-copy">No score details are available for this assessment.</p>
-          )}
+      {person.sharedExperiences.length > 0 && (
+        <div className="np-common-ground">
+          <h3>Shared experiences</h3>
+          <TopicList items={person.sharedExperiences.map((experience) => experience.label)} empty="" />
         </div>
-      </details>
-
+      )}
+      {readyReason && <p className="np-compatibility-summary">{readyReason}</p>}
+      {person.sharedInterests.length > 0 && (
+        <div className="np-common-ground">
+          <h3>Common ground</h3>
+          <TopicList items={person.sharedInterests} empty="" />
+        </div>
+      )}
+      {!person.sharedExperiences.length && !person.sharedInterests.length && !readyReason && (
+        <p className="np-empty-copy">Add a private note about what you talked about.</p>
+      )}
     </section>
   );
 }
@@ -369,7 +259,7 @@ function FollowUp({ person, useStarter, busy, act, notify, onClose, notes, setNo
     if (!connection) return;
     try {
       await act(`connections/${person.profile.id}`, { notes, reminderDate: reminder, followUp: status }, "PATCH");
-      notify("Connection details saved.");
+      notify("Follow-up details saved.");
     } catch {
       // The parent presents service errors.
     }
@@ -380,7 +270,7 @@ function FollowUp({ person, useStarter, busy, act, notify, onClose, notes, setNo
     try {
       await act(`connections/${person.profile.id}`, undefined, "DELETE");
       onClose();
-      notify("Profile removed from your saved people.");
+      notify("Removed from your people.");
     } catch {
       // The parent presents service errors.
     }
@@ -389,7 +279,7 @@ function FollowUp({ person, useStarter, busy, act, notify, onClose, notes, setNo
   return (
     <Disclosure
       className="np-follow-up"
-      title={connection ? "Your follow-up" : "Start a conversation"}
+      title={connection ? "Your follow-up" : "After you meet"}
       description={connection ? "Message, notes, and reminder" : "Draft a message when you’re ready"}
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
@@ -436,7 +326,7 @@ function FollowUp({ person, useStarter, busy, act, notify, onClose, notes, setNo
             </Button>
             {connection.saved !== false && (
               <button className="np-remove" type="button" disabled={busy} onClick={() => void removeConnection()}>
-                Remove saved profile
+                Remove from your people
               </button>
             )}
           </>
@@ -446,21 +336,14 @@ function FollowUp({ person, useStarter, busy, act, notify, onClose, notes, setNo
   );
 }
 
-function Expanded({ person, user, state, act, busy, notify, onClose, onSave, request, requestEligible, onRequest, onRespond, assessmentLoading, onRetryAssessment, notes, setNotes, reminder, setReminder, status, setStatus, message, setMessage, messageOpen, setMessageOpen, followUpOpen, setFollowUpOpen }: {
+function Expanded({ person, state, act, busy, notify, onClose, onSave, notes, setNotes, reminder, setReminder, status, setStatus, message, setMessage, messageOpen, setMessageOpen, followUpOpen, setFollowUpOpen }: {
   person: NetworkPerson;
-  user: Profile;
   state: State;
   act: Action;
   busy: boolean;
   notify: (message: string) => void;
   onClose: () => void;
   onSave: () => void;
-  request?: ConnectionRequest;
-  requestEligible: boolean;
-  onRequest: () => void;
-  onRespond: (action: "accept" | "decline" | "cancel") => void;
-  assessmentLoading?: boolean;
-  onRetryAssessment?: () => void;
   notes: string;
   setNotes: (value: string) => void;
   reminder: string;
@@ -515,14 +398,9 @@ function Expanded({ person, user, state, act, busy, notify, onClose, onSave, req
           )}
         </div>
         <RelationshipActions
-          request={request}
-          userId={user.id}
-          eligible={requestEligible}
           saved={Boolean(connection && connection.saved !== false)}
           busy={busy}
           onSave={onSave}
-          onRequest={onRequest}
-          onRespond={onRespond}
           onFollowUp={() => {
             setFollowUpOpen(true);
             requestAnimationFrame(() => document.querySelector(".np-follow-up")?.scrollIntoView({ block: "nearest" }));
@@ -538,7 +416,7 @@ function Expanded({ person, user, state, act, busy, notify, onClose, onSave, req
             </div>
           ) : (
             <>
-              <CompatibilitySection person={person} loading={assessmentLoading} onRetry={onRetryAssessment} />
+              <SharedContext person={person} state={state} />
               {profile.bio && (
                 <section className="np-project">
                   <div>
@@ -586,21 +464,14 @@ function Expanded({ person, user, state, act, busy, notify, onClose, onSave, req
   );
 }
 
-export function NetworkProfile({ person, user, state, act, busy, notify, onClose, onSave, request, requestEligible = false, onRequest, onRespond, assessmentLoading, onRetryAssessment }: {
+export function NetworkProfile({ person, state, act, busy, notify, onClose, onSave }: {
   person: NetworkPerson;
-  user: Profile;
   state: State;
   act: Action;
   busy: boolean;
   notify: (s: string) => void;
   onClose: () => void;
   onSave: () => void;
-  request?: ConnectionRequest;
-  requestEligible?: boolean;
-  onRequest: () => void;
-  onRespond: (action: "accept" | "decline" | "cancel") => void;
-  assessmentLoading?: boolean;
-  onRetryAssessment?: () => void;
 }) {
   const connection = person.connection;
   const [notes, setNotes] = useState(connection?.notes || "");
@@ -621,19 +492,12 @@ export function NetworkProfile({ person, user, state, act, busy, notify, onClose
       <Header onClose={onClose} />
       <Expanded
         person={person}
-        user={user}
         state={state}
         act={act}
         busy={busy}
         notify={notify}
         onClose={onClose}
         onSave={onSave}
-        request={request}
-        requestEligible={requestEligible}
-        onRequest={onRequest}
-        onRespond={onRespond}
-        assessmentLoading={assessmentLoading}
-        onRetryAssessment={onRetryAssessment}
         notes={notes}
         setNotes={setNotes}
         reminder={reminder}

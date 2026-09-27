@@ -121,8 +121,6 @@ test('compatibility is server-scoped, structured, symmetric, and deduplicated ac
   await networkingOnly(api, alex.session.id);
   const maya = await login('maya');
   await networkingOnly(api, maya.session.id);
-  const mayaSent = await api('/api/connection-requests', { sessionId: maya.session.id, body: { participantId: 'alex', eventId: 'demo' } });
-  assert.equal(mayaSent.status, 200);
   const first = await api('/api/compatibility', { sessionId: alex.session.id, body: { participantId: 'maya', eventId: 'demo', audience: 'event' } });
   const reverse = await api('/api/compatibility', { sessionId: maya.session.id, body: { participantId: 'alex', eventId: 'demo', audience: 'event' } });
   assert.equal(first.status, 200);

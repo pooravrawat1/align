@@ -157,6 +157,78 @@ const GOAL_POOL = [
   'Hiring', 'Job search', 'Community building', 'Investment',
 ];
 
+// Relationship memories make the network feel like a record of people you
+// actually met, not a list of professional recommendations. These belong to
+// the connection: two people can remember the same concert or activity even
+// when neither puts it on their public profile.
+const MUSIC_ARTISTS = [
+  'Khruangbin', 'Japanese Breakfast', 'Men I Trust', 'The Marías',
+  'Hiatus Kaiyote', 'Parcels', 'Little Simz', 'Mitski', 'BADBADNOTGOOD',
+  'Jungle', 'Big Thief', 'Toro y Moi', 'Cleo Sol', 'Tame Impala',
+  'Snarky Puppy', 'Kaytranada',
+];
+const MUSIC_VENUES = [
+  'Shaky Knees', 'The Eastern', 'Variety Playhouse', 'Terminal West',
+  'Music Midtown', 'The Tabernacle', 'Aisle 5', 'Chastain Park',
+  'The Masquerade', 'a rooftop set downtown',
+];
+const ACTIVITY_MEMORIES = [
+  'Ran the BeltLine night 5K', 'Joined the same street photography walk',
+  'Took the same weekend ceramics class', 'Climbed at the same bouldering gym',
+  'Joined a sunrise hike at Stone Mountain', 'Played in the same casual soccer league',
+  'Tried the same dumpling-making class', 'Rode the Silver Comet Trail',
+  'Joined a Saturday sketching group', 'Took the same beginner salsa class',
+  'Went kayaking on the Chattahoochee', 'Joined the same sci-fi book club',
+  'Played at a neighborhood chess night', 'Took part in a city architecture walk',
+  'Joined a screen-printing workshop', 'Visited the same independent film screening',
+  'Took a native-plant gardening class', 'Joined the same Sunday run club',
+  'Volunteered at a bicycle repair workshop', 'Went to the same pop-up supper club',
+  'Joined a night-sky viewing session', 'Took the same woodworking introduction',
+  'Visited the High Museum on member night', 'Joined a weekend bird-count walk',
+];
+const COMMUNITY_MEMORIES = [
+  'Helped at an Atlanta maker meetup', 'Joined an open-source volunteer night',
+  'Met before at a neighborhood supper club', 'Mentored at a student hackathon',
+  'Volunteered at a community garden workday', 'Helped run a neighborhood repair café',
+  'Joined a mutual-aid supply drive', 'Worked the same local arts festival',
+  'Helped map accessible city routes', 'Joined a library technology clinic',
+  'Volunteered at a youth robotics showcase', 'Attended a transit advocacy meetup',
+  'Helped at a community tool library', 'Joined a local climate-action cleanup',
+  'Hosted tables at the same makers market', 'Attended a neighborhood planning session',
+  'Volunteered at an electronics recycling day', 'Joined a civic design critique',
+  'Helped organize a food-rescue pickup', 'Attended an inclusive-design meetup',
+  'Joined a public-data volunteer sprint', 'Helped at a community science fair',
+  'Volunteered at an adaptive sports day', 'Joined a local creative-coding meetup',
+];
+const PROFESSIONAL_MEMORIES = [
+  'Attended Civic Data Day', 'Built alongside each other at AT Hack',
+  'Joined the Spatial Sessions workshop', 'Compared prototypes at Build Together',
+  'Attended an Open Models roundtable', 'Joined a climate-sensor workshop',
+  'Shared feedback at an accessibility design review', 'Attended a creative-tools demo night',
+  'Joined a responsible-AI discussion', 'Tested ideas at an XR prototyping lab',
+  'Attended a sustainable hardware showcase', 'Joined an interaction-design critique',
+  'Compared notes at a robotics research mixer', 'Attended a community technology forum',
+  'Joined a public-interest technology salon', 'Shared a table at a founder studio day',
+  'Attended an open hardware office hour', 'Joined a spatial-audio listening lab',
+  'Tested prototypes at a wearable computing meetup', 'Attended a data storytelling workshop',
+  'Joined a design-systems working session', 'Shared feedback at a climate-tech roundtable',
+  'Attended a computer-vision research night', 'Joined an indie developer show-and-tell',
+];
+const ALEX_PINNED_EXPERIENCES = {
+  jordan: [
+    { kind: 'professional', label: 'Joined the same Spatial Sessions workshop' },
+    { kind: 'music', label: 'Caught Japanese Breakfast at The Eastern' },
+  ],
+  nina: [
+    { kind: 'music', label: 'Saw Khruangbin at Shaky Knees' },
+    { kind: 'community', label: 'Joined the same open-source volunteer night' },
+  ],
+  leo: [
+    { kind: 'professional', label: 'Compared prototypes at Build Together' },
+    { kind: 'activity', label: 'Ran the BeltLine night 5K' },
+  ],
+};
+
 const FIRST_NAMES = [
   'Aditi', 'Amelia', 'Aiden', 'Alicia', 'Amir', 'Ana', 'Andrei', 'Arjun', 'Asha', 'Ayesha',
   'Ben', 'Bianca', 'Bo', 'Cai', 'Caleb', 'Cara', 'Carmen', 'Cass', 'Chen', 'Chika',
@@ -213,14 +285,22 @@ async function loadDemoSeed() {
   return JSON.parse(raw);
 }
 
+const PAST_EVENT_NAMES = [
+  'Signals After Dark', 'Neighborhood Build Night', 'Field Notes',
+  'Open Studio Exchange', 'Small Systems Salon', 'Prototype Picnic',
+  'Ideas in Motion', 'Side Project Social', 'Tools for Tomorrow',
+  'Local Futures Forum', 'Hands-on Commons', 'The Practice Room',
+  'Community Demo Hour', 'Working Session', 'Curious Builders Club',
+  'People and Prototypes', 'Friday Field Lab', 'Making Things Together',
+];
+
 function generatePastEvents(count) {
   const events = [];
   for (let i = 0; i < count; i += 1) {
     const month = 1 + Math.floor(rng() * 8);
     const day = 1 + Math.floor(rng() * 27);
     const community = COMMUNITIES[i % COMMUNITIES.length];
-    const themes = ['Meetup', 'Workshop', 'Studio Day', 'Roundtable', 'Salon', 'Mixer'];
-    const name = `${pick(themes)} · ${community.domains[0]}`;
+    const name = `${PAST_EVENT_NAMES[i % PAST_EVENT_NAMES.length]} · ${community.domains[0]}`;
     events.push({
       id: `past-${community.name}-${i}`,
       code: `PAST${i}`,
@@ -265,6 +345,7 @@ function synthesizeProfile(index, existingIds) {
 
   const role = pick(community.roles);
   const bio = pick(BIO_TEMPLATES)({ role: role.toLowerCase(), community: community.domains[0].toLowerCase() });
+  const avatar = `https://i.pravatar.cc/512?img=${(index % 70) + 1}`;
 
   // 60% of interests/skills from the primary community, 40% from a random one.
   const secondary = COMMUNITIES[(COMMUNITIES.indexOf(community) + 1 + Math.floor(rng() * (COMMUNITIES.length - 1))) % COMMUNITIES.length];
@@ -314,7 +395,7 @@ function synthesizeProfile(index, existingIds) {
       goals: [],
       domains: [],
       experiences: [],
-      avatar: '',
+      avatar,
       location: pick(CITIES),
       distance: Math.round(rng() * 10 * 10) / 10,
       synthetic: true,
@@ -333,7 +414,7 @@ function synthesizeProfile(index, existingIds) {
     goals,
     domains,
     experiences,
-    avatar: '',
+    avatar,
     location: pick(CITIES),
     distance: Math.round(rng() * 10 * 10) / 10,
     synthetic: true,
@@ -359,17 +440,50 @@ function generateConnections(profiles, events) {
     const setB = new Set((eventsFor.get(b) ?? []).map((event) => event.id));
     const shared = listA.filter((event) => setB.has(event.id));
     if (shared.length > 0) return pick(shared).id;
-    // Fall back to either person's first event, or the default demo event.
-    return listA[0]?.id ?? eventsFor.get(b)?.[0]?.id ?? 'demo';
+    // Historical connection context can reference the other person's event
+    // even when it is no longer in the current user's visible event list.
+    return eventsFor.get(b)?.[0]?.id ?? listA[0]?.id ?? 'demo';
   };
 
   const now = new Date('2026-09-26T10:00:00Z').getTime();
   const bag = new Map();
-  const add = (ownerId, participantId) => {
+  const usedExperienceLabels = new Map();
+  const labelsFor = (ownerId) => {
+    if (!usedExperienceLabels.has(ownerId)) usedExperienceLabels.set(ownerId, new Set());
+    return usedExperienceLabels.get(ownerId);
+  };
+  const createSharedExperience = () => {
+    const kind = pick(['music', 'activity', 'community', 'professional']);
+    if (kind === 'music') {
+      return { kind, label: `Saw ${pick(MUSIC_ARTISTS)} at ${pick(MUSIC_VENUES)}` };
+    }
+    const pool = kind === 'activity'
+      ? ACTIVITY_MEMORIES
+      : kind === 'community'
+        ? COMMUNITY_MEMORIES
+        : PROFESSIONAL_MEMORIES;
+    return { kind, label: pick(pool) };
+  };
+  const variedExperiences = (ownerId, count) => {
+    const used = labelsFor(ownerId);
+    const experiences = [];
+    let attempts = 0;
+    while (experiences.length < count && attempts < 500) {
+      attempts += 1;
+      const experience = createSharedExperience();
+      if (used.has(experience.label)) continue;
+      used.add(experience.label);
+      experiences.push(experience);
+    }
+    return experiences;
+  };
+  const add = (ownerId, participantId, sharedExperiences = null) => {
     if (ownerId === participantId) return;
     const key = `${ownerId}:${participantId}`;
     if (bag.has(key)) return;
     const [userA, userB] = [ownerId, participantId].sort();
+    const experiences = sharedExperiences ?? variedExperiences(ownerId, 1 + Math.floor(rng() * 3));
+    for (const experience of experiences) labelsFor(ownerId).add(experience.label);
     bag.set(key, {
       ownerId,
       participantId,
@@ -381,6 +495,7 @@ function generateConnections(profiles, events) {
       followUp: 'needed',
       reminderDate: '',
       saved: true,
+      sharedExperiences: experiences,
     });
   };
 
@@ -396,13 +511,18 @@ function generateConnections(profiles, events) {
   // Big connection sets for the demo users.
   for (const [demoId, community] of Object.entries(DEMO_COMMUNITY)) {
     if (!byId.has(demoId)) continue;
-    const target = 25 + Math.floor(rng() * 16); // 25–40
-    const same = (byCommunity.get(community) ?? []).filter((id) => id !== demoId);
+    // Alex is the primary browser-demo identity; keep the visible Network
+    // count stable instead of letting unrelated vocabulary changes move it.
+    const target = demoId === 'alex' ? 39 : 25 + Math.floor(rng() * 16); // 25–40
+    const pinned = demoId === 'alex' ? Object.keys(ALEX_PINNED_EXPERIENCES) : [];
+    for (const participantId of pinned) add(demoId, participantId, ALEX_PINNED_EXPERIENCES[participantId]);
+    const remaining = target - pinned.length;
+    const same = (byCommunity.get(community) ?? []).filter((id) => id !== demoId && !pinned.includes(id));
     const other = profiles
-      .filter((profile) => profile.id !== demoId && profile.community && profile.community !== community)
+      .filter((profile) => profile.id !== demoId && profile.community && profile.community !== community && !pinned.includes(profile.id))
       .map((profile) => profile.id);
-    const primary = pickN(same, Math.min(same.length, Math.floor(target * 0.75)));
-    const secondary = pickN(other, Math.max(0, target - primary.length));
+    const primary = pickN(same, Math.min(same.length, Math.floor(remaining * 0.75)));
+    const secondary = pickN(other, Math.max(0, remaining - primary.length));
     for (const pid of [...primary, ...secondary]) add(demoId, pid);
   }
 
@@ -466,6 +586,10 @@ async function ensureIndexes(db) {
     db.collection('events').createIndex({ id: 1 }, { unique: true }),
     db.collection('events').createIndex({ participantIds: 1 }),
     db.collection('connections').createIndex({ ownerId: 1 }),
+    db.collection('connections').createIndex(
+      { ownerId: 1, participantId: 1 },
+      { unique: true, partialFilterExpression: { ownerId: { $type: 'string' }, participantId: { $type: 'string' } } },
+    ),
     db.collection('connections').createIndex({ userA: 1, userB: 1 }),
     db.collection('assessments').createIndex({ pairKey: 1 }, { unique: true }),
     db.collection('assessments').createIndex({ score: -1 }),
@@ -516,7 +640,7 @@ async function main() {
   }
 
   // Events: existing + several past events.
-  let events = [...demoSeed.events, ...generatePastEvents(6)];
+  let events = [...demoSeed.events, ...generatePastEvents(18)];
   events = assignEvents(profiles, events);
 
   // Rules-scored assessments for every pair at or above the threshold.
@@ -563,6 +687,11 @@ async function main() {
   await db.collection('events').deleteMany({ id: { $regex: '^past-' } });
   await db.collection('assessments').deleteMany({ source: 'rules' });
   await db.collection('connections').deleteMany({ seeded: true });
+  // Remove records from the pre-owner schema. Keeping them would materialize
+  // a second copy beside the owner-scoped connection seeded below.
+  await db.collection('connections').deleteMany({
+    $or: [{ ownerId: { $exists: false } }, { participantId: { $exists: false } }],
+  });
 
   await upsertMany(db.collection('profiles'), profiles);
   await upsertMany(db.collection('events'), events);

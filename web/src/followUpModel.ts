@@ -3,7 +3,7 @@ import type { Profile } from './types';
 export type FollowUpPerson = {
   id: string;
   profile: Profile;
-  relationship: 'connected' | 'saved';
+  relationship: 'met';
   sharedInterests: string[];
   notes: string;
   contacted: boolean;
@@ -27,9 +27,7 @@ export function followUpContext(person: FollowUpPerson, eventName: string, sende
 export function preparedFollowUp(person: FollowUpPerson, eventName: string) {
   if (person.example && person.example.notes === person.notes) return person.example.message;
   const firstName = person.profile.name.trim().split(/\s+/u)[0];
-  const greeting = person.relationship === 'connected'
-    ? `Hi ${firstName}, glad we connected through ${eventName}!`
-    : `Hi ${firstName}, I came across your profile at ${eventName}.`;
+  const greeting = `Hi ${firstName}, it was great meeting you at ${eventName}!`;
   const common = person.sharedInterests.length ? ` We share an interest in ${person.sharedInterests.slice(0, 2).join(' and ')}.` : '';
   return `${greeting}${common} I'd love to hear more about what you're working on and explore a way to collaborate.`;
 }

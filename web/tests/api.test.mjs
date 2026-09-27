@@ -44,6 +44,7 @@ const seededConnections = seed.connections.map((connection) => ({
   notes: connection.notes ?? '',
   followUp: connection.followUp ?? 'needed',
   reminderDate: connection.reminderDate ?? '',
+  sharedExperiences: connection.sharedExperiences ?? [],
   saved: true,
 }));
 
@@ -116,7 +117,7 @@ test('health and public bootstrap expose a session-free demo seed', async () => 
   assert.deepEqual(bootstrap.value.events, seed.events);
   assert.deepEqual(bootstrap.value.connections, seededConnections);
   assert.deepEqual(bootstrap.value.matches, []);
-  assert.deepEqual(bootstrap.value.connectionRequests, []);
+  assert.equal('connectionRequests' in bootstrap.value, false);
   assert.equal(bootstrap.value.session, null);
 
   const badSession = await api('/api/bootstrap', { sessionId: 'not-a-session' });
@@ -124,17 +125,27 @@ test('health and public bootstrap expose a session-free demo seed', async () => 
   assert.deepEqual(Object.keys(badSession.value), ['error']);
 });
 
-test('Maya has a populated private demo network while Alex remains available to meet', async () => {
+test('Maya has a populated private people list while Alex remains owner-scoped', async () => {
   const maya = await login({ profileId: 'maya' });
   assert.deepEqual(maya.connections.map(connection => connection.participantId).sort(), ['elena', 'leo', 'priya', 'theo']);
   assert.ok(maya.connections.every(connection => connection.ownerId === 'maya' && connection.notes.length > 0));
   assert.ok(maya.connections.some(connection => connection.followUp === 'contacted'));
   assert.ok(maya.connections.some(connection => connection.reminderDate));
-  assert.equal(maya.connectionRequests.length, 0);
   const alex = await login();
   assert.ok(alex.connections.every(connection => connection.ownerId === 'alex'));
   assert.equal(alex.connections.some(connection => connection.participantId === 'maya'), false);
   assert.equal(maya.profiles.find(profile => profile.id === 'alex').email, '');
+});
+
+test('the removed connection-request API is no longer exposed', async () => {
+  const loggedIn = await login();
+  const response = await api('/api/connection-requests', {
+    method: 'POST',
+    sessionId: loggedIn.session.id,
+    body: { participantId: 'maya', eventId: 'demo' },
+  });
+  assert.equal(response.status, 404);
+  assert.equal('connectionRequests' in loggedIn, false);
 });
 
 test('logins have unique sessions and share the latest profile identity', async () => {
@@ -577,6 +588,10 @@ test('saved connection metadata is bounded, validated, and preserves connection 
   assert.equal(connection.followUp, 'contacted');
   assert.equal(connection.reminderDate, '2026-10-05');
   assert.equal(connection.eventId, 'demo');
+  assert.deepEqual(connection.sharedExperiences, [
+    { kind: 'professional', label: 'Joined the same Spatial Sessions workshop' },
+    { kind: 'music', label: 'Caught Japanese Breakfast at The Eastern' },
+  ]);
 
   for (const body of [
     { notes: 'x'.repeat(2001) },
@@ -604,6 +619,7 @@ test('saved connection metadata is bounded, validated, and preserves connection 
   );
   assert.equal(preservedConnection.notes, 'Send the prototype deck.');
   assert.equal(preservedConnection.eventId, 'demo');
+  assert.deepEqual(preservedConnection.sharedExperiences, connection.sharedExperiences);
 
   const isolatedOwner = await login();
   const privateConnection = isolatedOwner.connections.find(

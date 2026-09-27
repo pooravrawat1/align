@@ -5,7 +5,6 @@ import { networkPerson, ownedConnection } from "./networkModel";
 import { NetworkProfile } from "./NetworkProfile";
 import { activeEvent } from "./eventModel";
 import { consumeProfileTrigger } from "./PeopleDirectory";
-import { requestFor } from "./connectionRequests";
 
 type Props = {
   state: State;
@@ -49,17 +48,15 @@ export function PersonProfileDialog({ state, user, act, busy, notify, eventId: s
   const visibleInContext = Boolean(original && (isNetworkRoute
     ? connection
     : event?.participantIds?.includes(user.id) && event.participantIds.includes(original.id) && original.visibility?.activeInEvent !== false));
-  const request = selection.personId ? requestFor(state, user.id, selection.personId) : undefined;
-  const { assessment, loading, retry } = useCompatibility(visibleInContext ? original?.id : undefined, resolvedEventId, isNetworkRoute ? "network" : "event", visibleInContext);
+  const { assessment } = useCompatibility(visibleInContext ? original?.id : undefined, resolvedEventId, isNetworkRoute ? "network" : "event", visibleInContext);
   const person = useMemo(() => {
     if (!original || !visibleInContext) return undefined;
     const eventPerson = networkPerson(state, user, original, assessment ?? undefined, audience);
-    if (audience !== "event" || request?.status !== "accepted" || !connection) return eventPerson;
+    if (audience !== "event" || !connection) return eventPerson;
     const savedPerson = networkPerson(state, user, original, assessment ?? undefined, "network");
     if (savedPerson.withdrawn) return eventPerson;
     return { ...eventPerson, profile: { ...eventPerson.profile, contact: savedPerson.profile.contact }, contacts: savedPerson.contacts };
-  }, [assessment, audience, connection, original, request?.status, state, user, visibleInContext]);
-  const requestEligible = Boolean(resolvedEventId && event?.participantIds?.includes(user.id) && original && event.participantIds.includes(original.id) && original.visibility?.activeInEvent !== false && request?.status !== "accepted" && request?.status !== "pending");
+  }, [assessment, audience, connection, original, state, user, visibleInContext]);
 
   const close = () => {
     if (history.state?.catalystProfile) history.back();
@@ -90,28 +87,12 @@ export function PersonProfileDialog({ state, user, act, busy, notify, eventId: s
     try {
       if (person.connection && person.connection.saved !== false) {
         await act(`connections/${person.profile.id}`, undefined, "DELETE");
-        notify("Profile removed from your saved people.");
+        notify("Removed from your people.");
         close();
       } else {
         await act("connections", { participantId: person.profile.id, eventId: resolvedEventId });
-        notify("Person saved to your network.");
+        notify("Added to your people.");
       }
-    } catch { /* App presents service errors. */ }
-  }
-
-  async function createRequest() {
-    if (!person || !resolvedEventId || busy) return;
-    try {
-      await act("connection-requests", { participantId: person.profile.id, eventId: resolvedEventId });
-      notify("Connection request sent.");
-    } catch { /* App presents service errors. */ }
-  }
-
-  async function respondToRequest(action: "accept" | "decline" | "cancel") {
-    if (!request || busy) return;
-    try {
-      await act(`connection-requests/${request.id}`, { action }, "PATCH");
-      notify(action === "accept" ? "Connection accepted." : action === "decline" ? "Request declined." : "Request cancelled.");
     } catch { /* App presents service errors. */ }
   }
 
@@ -124,7 +105,7 @@ export function PersonProfileDialog({ state, user, act, busy, notify, eventId: s
   );
   return (
     <dialog ref={dialogRef} className="nx-profile-layer nx-profile-expanded" aria-label={`${person.profile.name} — full profile`} onCancel={(event) => { event.preventDefault(); close(); }} onClick={(event) => { if (event.target === event.currentTarget) close(); }}>
-      <NetworkProfile key={`${user.id}:${person.profile.id}`} person={person} user={user} state={state} act={act} busy={busy} notify={notify} onClose={close} onSave={() => void savePerson()} request={request} requestEligible={requestEligible} onRequest={() => void createRequest()} onRespond={(action) => void respondToRequest(action)} assessmentLoading={loading} onRetryAssessment={retry} />
+      <NetworkProfile key={`${user.id}:${person.profile.id}`} person={person} state={state} act={act} busy={busy} notify={notify} onClose={close} onSave={() => void savePerson()} />
     </dialog>
   );
 }

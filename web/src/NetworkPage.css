@@ -113,6 +113,9 @@
 .nx-row-identity > .nx-row-reason { color: #c8d1ca; }
 .nx-row-identity > .nx-row-topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .nx-row-topics .chip { min-height: 22px; padding: 2px 8px; font-size: 11px; line-height: 1.35; }
+.nx-view-profile { flex-shrink: 0; margin-left: 20px; color: var(--muted); font-size: var(--type-metadata); white-space: nowrap; }
+.nx-person-row:hover .nx-view-profile,
+.nx-person-row:focus-visible .nx-view-profile { color: var(--text); }
 .nx-person-row .nx-fit { flex-shrink: 0; min-width: 110px; margin-left: 20px; color: var(--text); }
 .nx-person-row .nx-fit > span { font-size: 26px; font-weight: 500; letter-spacing: -.025em; }
 .nx-person-row .nx-fit > span > small { font-size: var(--type-label); color: var(--muted); }
@@ -179,6 +182,7 @@
   .nx-person-row { gap: 12px; }
   .nx-person-row .avatar { width: 44px; height: 44px; }
   .nx-person-row .nx-fit { min-width: 72px; margin-left: 0; }
+  .nx-view-profile { margin-left: 0; }
   .nx-person-row .nx-fit > span { font-size: 22px; }
   .nx-person-row .nx-fit > small { font-size: 10px; }
   .nx-row-arrow { width: 15px; height: 15px; }

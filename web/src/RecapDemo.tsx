@@ -51,7 +51,7 @@ function PersonaRecap({ persona }: { persona: PersonaId }) {
   const event = seed.events.find(item => item.id === demo.eventId)!;
   const people: FollowUpPerson[] = story.people.map(item => {
     const profile = seed.profiles.find(profile => profile.id === item.id)! as Profile;
-    return { id: item.id, profile, relationship: item.relationship as 'connected' | 'saved', sharedInterests: intersection(user.interests, profile.interests), ...progress[item.id], withdrawn: false, contacts: [], example: { notes: item.notes, message: item.message, nextStep: item.nextStep, reason: item.reason, durationMinutes: item.durationMinutes } };
+    return { id: item.id, profile, relationship: 'met', sharedInterests: intersection(user.interests, profile.interests), ...progress[item.id], withdrawn: false, contacts: [], example: { notes: item.notes, message: item.message, nextStep: item.nextStep, reason: item.reason, durationMinutes: item.durationMinutes } };
   });
   const persist = (next: Progress) => {
     setProgress(next);

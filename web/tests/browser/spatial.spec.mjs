@@ -18,11 +18,11 @@ async function openMaya(page) {
   await people.getByRole('button').filter({ hasText: 'Maya Chen' }).click();
   const drawer = page.locator('.qmv2-person-panel');
   await expect(drawer.getByRole('heading', { name: 'Maya Chen', exact: true })).toBeVisible();
-  await expect(drawer.getByRole('button', { name: 'Save connection', exact: true })).toHaveCount(0);
+  await expect(drawer.getByRole('button', { name: 'Remember person', exact: true })).toHaveCount(0);
   await drawer.getByRole('button', { name: 'Start conversation', exact: true }).click();
   await page.getByRole('button', { name: 'Finish conversation', exact: true }).click();
   await expect(drawer.getByRole('heading', { name: 'Maya Chen', exact: true })).toBeVisible();
-  await expect(drawer.getByRole('button', { name: 'Save connection', exact: true })).toBeVisible();
+  await expect(drawer.getByRole('button', { name: 'Remember person', exact: true })).toBeVisible();
   return drawer;
 }
 
@@ -93,15 +93,15 @@ test('saving a selected person submits once and confirms only after success', as
   try {
     await enterJoinedPreview(page);
     const drawer = await openMaya(page);
-    await expect(drawer.getByText('Saved to your network', { exact: true })).toHaveCount(0);
+    await expect(drawer.getByText('Added to your people', { exact: true })).toHaveCount(0);
 
-    const save = drawer.getByRole('button', { name: 'Save connection', exact: true });
+    const save = drawer.getByRole('button', { name: 'Remember person', exact: true });
     await save.evaluate(button => { button.click(); button.click(); });
 
     await expect.poll(() => saves.length).toBe(1);
-    await expect(drawer.getByText('Saved to your network', { exact: true })).toHaveCount(0);
+    await expect(drawer.getByText('Added to your people', { exact: true })).toHaveCount(0);
     releaseSave();
-    await expect(drawer.getByText('Saved to your network', { exact: true })).toBeVisible();
+    await expect(drawer.getByText('Added to your people', { exact: true })).toBeVisible();
     expect(saves).toEqual([{ participantId: 'maya' }]);
     const state = await env.api('bootstrap');
     expect(state.connections.filter(connection => connection.ownerId === 'alex' && connection.participantId === 'maya')).toHaveLength(1);
@@ -122,45 +122,16 @@ test('a failed save stays unsaved and a retry can succeed', async ({ page }) => 
   try {
     await enterJoinedPreview(page);
     const drawer = await openMaya(page);
-    await drawer.getByRole('button', { name: 'Save connection', exact: true }).click();
+    await drawer.getByRole('button', { name: 'Remember person', exact: true }).click();
 
-    await expect(drawer.getByRole('alert')).toHaveText('Couldn’t save this connection. Try again.');
-    await expect(drawer.getByText('Saved to your network', { exact: true })).toHaveCount(0);
+    await expect(drawer.getByRole('alert')).toHaveText('Couldn’t remember this person. Try again.');
+    await expect(drawer.getByText('Added to your people', { exact: true })).toHaveCount(0);
     expect((await env.api('bootstrap')).connections.some(connection => connection.ownerId === 'alex' && connection.participantId === 'maya')).toBe(false);
 
-    await drawer.getByRole('button', { name: 'Try saving again', exact: true }).click();
-    await expect(drawer.getByText('Saved to your network', { exact: true })).toBeVisible();
+    await drawer.getByRole('button', { name: 'Try again', exact: true }).click();
+    await expect(drawer.getByText('Added to your people', { exact: true })).toBeVisible();
     expect(attempts).toBe(2);
     expect((await env.api('bootstrap')).connections.filter(connection => connection.ownerId === 'alex' && connection.participantId === 'maya')).toHaveLength(1);
-  } finally { await env.close(); }
-});
-
-test('an accepted but unsaved person still offers Save connection', async ({ page }) => {
-  const env = await workspace(page);
-  await page.route('**/api/bootstrap', async route => {
-    const state = await env.api('bootstrap');
-    state.connections.push({
-      userA: 'alex',
-      userB: 'maya',
-      ownerId: 'alex',
-      participantId: 'maya',
-      eventId: 'demo',
-      createdAt: '2026-09-26T12:00:00Z',
-      notes: '',
-      followUp: 'needed',
-      reminderDate: '',
-      saved: false,
-    });
-    await route.fulfill({ status: 200, json: state });
-  });
-  try {
-    await enterJoinedPreview(page);
-    const drawer = await openMaya(page);
-    await expect(drawer.getByText('Saved to your network', { exact: true })).toHaveCount(0);
-    await drawer.getByRole('button', { name: 'Save connection', exact: true }).click();
-    await expect(drawer.getByText('Saved to your network', { exact: true })).toBeVisible();
-    const saved = (await env.api('bootstrap')).connections.find(connection => connection.ownerId === 'alex' && connection.participantId === 'maya');
-    expect(saved?.saved).toBe(true);
   } finally { await env.close(); }
 });
 
@@ -194,8 +165,8 @@ test('Back to event leaves presence while retaining the event, profile, and save
   try {
     await enterJoinedPreview(page);
     const drawer = await openMaya(page);
-    await drawer.getByRole('button', { name: 'Save connection', exact: true }).click();
-    await expect(drawer.getByText('Saved to your network', { exact: true })).toBeVisible();
+    await drawer.getByRole('button', { name: 'Remember person', exact: true }).click();
+    await expect(drawer.getByText('Added to your people', { exact: true })).toBeVisible();
     const before = await env.api('bootstrap');
     const profileBefore = before.profiles.find(profile => profile.id === 'alex');
     const savedBefore = before.connections.find(connection => connection.ownerId === 'alex' && connection.participantId === 'maya');

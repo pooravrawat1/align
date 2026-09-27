@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { clearFollowUpDrafts, draftStorageKey, readDraft, preparedFollowUp, followUpContext } from '../src/followUpModel.ts';
-const person = { id: 'maya', profile: { name: 'Maya Chen' }, relationship: 'saved', sharedInterests: ['Robotics'], notes: '', withdrawn: false };
-test('prepared starters distinguish saving from connecting and never claim a conversation', () => {
-  assert.match(preparedFollowUp(person, 'Builders'), /came across your profile/);
-  assert.doesNotMatch(preparedFollowUp(person, 'Builders'), /discussed|met|conversation/);
-  assert.match(preparedFollowUp({ ...person, relationship: 'connected' }, 'Builders'), /glad we connected/);
+const person = { id: 'maya', profile: { name: 'Maya Chen' }, relationship: 'met', sharedInterests: ['Robotics'], notes: '', withdrawn: false };
+test('prepared starters remember a real meeting without inventing its details', () => {
+  assert.match(preparedFollowUp(person, 'Builders'), /great meeting you at Builders/);
+  assert.doesNotMatch(preparedFollowUp(person, 'Builders'), /discussed|promised|agreed/);
 });
 test('draft keys separate owners, events and people; context includes notes and visibility', () => {
   const base = draftStorageKey('owner', 'event', 'maya');
