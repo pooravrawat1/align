@@ -14,8 +14,8 @@
   <a href="assets/match-prd.md">Product spec</a>
 </p>
 <p align="center">
-  <img alt="Gemini" src="https://img.shields.io/badge/Gemini-matching-4285F4?logo=googlegemini&logoColor=white">
-  <img alt="ElevenLabs" src="https://img.shields.io/badge/ElevenLabs-spoken%20match-000">
+  <img alt="Gemini" src="https://img.shields.io/badge/Gemini-4285F4?logo=googlegemini&logoColor=white">
+  <img alt="ElevenLabs" src="https://img.shields.io/badge/ElevenLabs-000">
   <img alt="Meta Quest 2" src="https://img.shields.io/badge/Meta%20Quest%202-000?logo=meta&logoColor=white">
   <img alt="Unity 6000.0" src="https://img.shields.io/badge/Unity-6000.0.66f2-000?logo=unity&logoColor=white">
   <img alt="React" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white">
